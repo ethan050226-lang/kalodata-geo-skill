@@ -3,6 +3,7 @@ import argparse
 from collections import defaultdict
 from contextlib import closing
 from datetime import date, datetime, timezone
+from getpass import GetPassWarning, getpass
 import hashlib
 import io
 import json
@@ -11,6 +12,7 @@ from pathlib import Path
 import sqlite3
 import sys
 import tempfile
+import warnings
 from unicodedata import normalize
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
@@ -160,6 +162,33 @@ def analysis_state(record):
     return analysis.get("state") if isinstance(analysis, dict) else None
 
 
+def question_metadata(row, detail):
+    group_id = row.get("title_id") or detail.get("title_id")
+    group_name = row.get("title_name") or detail.get("title_name")
+    raw_tags = row.get("tags")
+    if not isinstance(raw_tags, list):
+        raw_tags = detail.get("tags")
+    tags, conflicting = {}, set()
+    complete = isinstance(raw_tags, list)
+    for item in raw_tags if complete else []:
+        if not isinstance(item, dict) or not identifier(item.get("tag_id")) or not isinstance(item.get("tag_name"), str):
+            complete = False
+            continue
+        tag_id, name = item["tag_id"], item["tag_name"]
+        kind = item.get("tag_type")
+        value = (name, kind if type(kind) is int else None)
+        if tag_id in tags and tags[tag_id] != value:
+            conflicting.add(tag_id)
+            complete = False
+        tags[tag_id] = value
+    return (
+        group_id if identifier(group_id) else None,
+        group_name if isinstance(group_name, str) and group_name.strip() else None,
+        int(complete),
+        [(tag_id, *value) for tag_id, value in tags.items() if tag_id not in conflicting],
+    )
+
+
 def date_arg(value):
     try:
         require(isinstance(value, str) and date.fromisoformat(value).isoformat() == value,
@@ -169,7 +198,7 @@ def date_arg(value):
         raise ArchiveError("日期 / 需要 YYYY-MM-DD") from None
 
 
-def refresh(bank, output, brand, begin, end, call):
+def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=()):
     begin, end = date_arg(begin), date_arg(end)
     require(begin <= end and identifier(brand), "取数 / 日期范围或 Kalodata 品牌 ID 无效")
     require(output.suffix == ".sqlite" and bank.resolve() != output.resolve(),
@@ -177,7 +206,7 @@ def refresh(bank, output, brand, begin, end, call):
     version, questions, by_text = load_bank(bank)
     records = task_list(call, brand, begin, end)
     require(records, "取数 / 当前日期范围无 Answerbit 记录，请核对首轮采样状态；已有本地库保留")
-    samples, issues = [], []
+    samples, groups, tags, issues = [], [], [], []
     valid_count = 0
     for row in records:
         task = row["task_id"]
@@ -191,6 +220,7 @@ def refresh(bank, output, brand, begin, end, call):
             continue
         state = analysis_state(row)
         status, mentioned, official, form = "unconfirmed", None, None, None
+        detail = {}
         if type(state) is int and state == 2:
             detail = call(DETAIL, dict(brand_id=brand, task_id=task))
             body, links = detail.get("llm_output"), detail.get("links")
@@ -215,6 +245,11 @@ def refresh(bank, output, brand, begin, end, call):
                     issues.append((task, number, platform, day, "citation_unknown", "Answerbit 引用字段"))
         if status != "valid":
             issues.append((task, number, platform, day, "answer_unconfirmed", "Answerbit 回答分析状态"))
+        title_id, title_name, tags_known, task_tags = question_metadata(row, detail)
+        groups.append((task, title_id, title_name, tags_known))
+        tags.extend((task, *tag) for tag in task_tags)
+        if not tags_known:
+            issues.append((task, number, platform, day, "tag_metadata_incomplete", "Answerbit 提问标签"))
         zone = row.get("zone")
         samples.append((task, number, platform, language, day, zone if identifier(zone) else None,
                         status, mentioned, official, form))
@@ -242,18 +277,28 @@ def refresh(bank, output, brand, begin, end, call):
                 CREATE TABLE issue (
                     task_id TEXT, question_id TEXT, platform TEXT, task_date TEXT, code TEXT, check_at TEXT
                 );
+                CREATE TABLE sample_group (
+                    task_id TEXT PRIMARY KEY REFERENCES sample(task_id), group_id TEXT, group_name TEXT,
+                    tags_known INTEGER NOT NULL
+                );
+                CREATE TABLE sample_tag (
+                    task_id TEXT REFERENCES sample(task_id), tag_id TEXT, tag_name TEXT, tag_type INTEGER,
+                    PRIMARY KEY (task_id, tag_id)
+                );
             """)
             db.execute("INSERT INTO batch VALUES (?, ?, ?, ?, ?, ?, ?)",
                        ("Answerbit", begin, end, datetime.now(timezone.utc).isoformat(), version, VERSION, len(records)))
             db.executemany("INSERT INTO question VALUES (?, ?, ?, ?, ?)", [(key, *value) for key, value in questions.items()])
             db.executemany("INSERT INTO sample VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", samples)
+            db.executemany("INSERT INTO sample_group VALUES (?, ?, ?, ?)", groups)
+            db.executemany("INSERT INTO sample_tag VALUES (?, ?, ?, ?)", tags)
             db.executemany("INSERT INTO issue VALUES (?, ?, ?, ?, ?, ?)", issues)
-        report = read_snapshot(db_path)
+        report = read_snapshot(db_path, group_id, tag_ids)
         write_atomic(output, db_path.read_bytes())
     return report
 
 
-def read_snapshot(path):
+def read_snapshot(path, group_id=None, tag_ids=()):
     with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)) as db:
         db.row_factory = sqlite3.Row
         batch = dict(db.execute("SELECT * FROM batch").fetchone())
@@ -262,25 +307,68 @@ def read_snapshot(path):
         form = "q.prompt_brand_form" if version == VERSION else "NULL"
         latin_count = "COUNT(*) FILTER (WHERE s.answer_brand_form IN ('latin', 'both'))" if version == VERSION else "NULL"
         ja_count = "COUNT(*) FILTER (WHERE s.answer_brand_form IN ('ja', 'both'))" if version == VERSION else "NULL"
-        groups = [dict(row) for row in db.execute(f"""
-            SELECT q.market, s.language, s.platform, q.named_prompt, {form} AS prompt_brand_form,
-                {latin_count} AS mentioned_latin, {ja_count} AS mentioned_ja, COUNT(*) AS matched,
-                COUNT(*) FILTER (WHERE s.status = 'valid') AS valid,
-                COUNT(*) FILTER (WHERE s.mentioned = 1) AS mentioned,
-                COUNT(s.official) AS citation_known,
-                COUNT(*) FILTER (WHERE s.official = 1) AS official
-            FROM sample s JOIN question q USING (question_id)
-            GROUP BY 1, 2, 3, 4, 5 ORDER BY 1, 2, 3, 4, 5
-        """)]
-        for row in groups:
-            for metric, num, den in (
-                ("mention_rate", "mentioned", "valid"),
-                ("official_citation_rate", "official", "citation_known"),
-                ("citation_field_coverage", "citation_known", "valid"),
-            ):
-                row[metric] = row[num] / row[den] if row[den] else None
-        return {"batch": batch, "coverage": None, "coverage_reason": "未取得独立的实际启用与采样计划",
-                "groups": groups, "issues": [dict(row) for row in db.execute("SELECT * FROM issue ORDER BY task_id")]}
+        tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+        metadata_available = {"sample_group", "sample_tag"} <= tables
+        require(metadata_available or (group_id is None and not tag_ids),
+                "本地库 / 此快照没有 Answerbit 分组与标签，请重新刷新")
+        conditions, parameters = [], []
+        if group_id is not None:
+            conditions.append("EXISTS (SELECT 1 FROM sample_group g WHERE g.task_id = s.task_id AND g.group_id = ?)")
+            parameters.append(group_id)
+        for tag_id in dict.fromkeys(tag_ids):
+            conditions.append("EXISTS (SELECT 1 FROM sample_tag f WHERE f.task_id = s.task_id AND f.tag_id = ?)")
+            parameters.append(tag_id)
+        where = "WHERE " + " AND ".join(conditions) if conditions else ""
+
+        def summarize(dimensions=(), join=""):
+            columns = ["q.market", "s.language", "s.platform", "q.named_prompt", f"{form} AS prompt_brand_form",
+                       *dimensions]
+            positions = ", ".join(str(i) for i in range(1, len(columns) + 1))
+            results = [dict(row) for row in db.execute(f"""
+                SELECT {', '.join(columns)}, {latin_count} AS mentioned_latin, {ja_count} AS mentioned_ja,
+                    COUNT(*) AS matched, COUNT(*) FILTER (WHERE s.status = 'valid') AS valid,
+                    COUNT(*) FILTER (WHERE s.mentioned = 1) AS mentioned, COUNT(s.official) AS citation_known,
+                    COUNT(*) FILTER (WHERE s.official = 1) AS official
+                FROM sample s JOIN question q USING (question_id) {join} {where}
+                GROUP BY {positions} ORDER BY {positions}
+            """, parameters)]
+            for row in results:
+                for metric, num, den in (
+                    ("mention_rate", "mentioned", "valid"),
+                    ("official_citation_rate", "official", "citation_known"),
+                    ("citation_field_coverage", "citation_known", "valid"),
+                ):
+                    row[metric] = row[num] / row[den] if row[den] else None
+            return results
+
+        return {
+            "batch": batch, "coverage": None, "coverage_reason": "未取得独立的实际启用与采样计划",
+            "filters": {"group_id": group_id, "tag_ids": list(tag_ids)},
+            "groups": summarize(), "answerbit_metadata_available": metadata_available,
+            "question_categories": summarize(("q.category",)),
+            "answerbit_groups": summarize(("g.group_id", "g.group_name"),
+                                          "LEFT JOIN sample_group g ON g.task_id = s.task_id") if metadata_available else None,
+            "answerbit_tags": summarize(("t.tag_id", "t.tag_name", "t.tag_type"),
+                                        "JOIN sample_tag t ON t.task_id = s.task_id") if metadata_available else None,
+            "issues": [dict(row) for row in db.execute("SELECT * FROM issue ORDER BY task_id")],
+        }
+
+
+def operator_credentials():
+    brand = os.environ.get("ANSWERBIT_BRAND_ID")
+    require(identifier(brand), "凭证 / 请配置本次要读取的 Answerbit 品牌 ID（ANSWERBIT_BRAND_ID）")
+    key = os.environ.get("ANSWERBIT_API_KEY")
+    if not key:
+        require(sys.stdin.isatty(), "凭证 / 请由当前运行者在本机环境配置自己的 Answerbit 只读 Key（ANSWERBIT_API_KEY）")
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("error", GetPassWarning)
+                key = getpass("输入当前运行者的 Answerbit 品牌级只读 Key（隐藏输入）: ")
+        except (EOFError, GetPassWarning, KeyboardInterrupt, OSError):
+            raise ArchiveError("凭证 / 无法安全获取 Key，请在本机环境配置 ANSWERBIT_API_KEY") from None
+    require(key and key.isascii() and key.isprintable() and not any(char.isspace() for char in key),
+            "凭证 / Key 为空或格式无效，请重新配置当前运行者的只读 Key")
+    return key, brand
 
 
 def main():
@@ -291,17 +379,19 @@ def main():
     pull.add_argument("output", type=Path)
     pull.add_argument("--begin", required=True)
     pull.add_argument("--end", required=True)
-    commands.add_parser("query").add_argument("output", type=Path)
+    query = commands.add_parser("query")
+    query.add_argument("output", type=Path)
+    for command in (pull, query):
+        command.add_argument("--group-id")
+        command.add_argument("--tag-id", action="append", default=[])
     args = parser.parse_args()
     try:
         if args.command == "query":
-            result = read_snapshot(args.output)
+            result = read_snapshot(args.output, args.group_id, args.tag_id)
         else:
-            key, brand = os.environ.get("ANSWERBIT_API_KEY"), os.environ.get("ANSWERBIT_BRAND_ID")
-            require(key and "\n" not in key and "\r" not in key and identifier(brand),
-                    "凭证 / 请在获批运行环境配置只读品牌 Key 与 Kalodata 品牌 ID")
+            key, brand = operator_credentials()
             result = refresh(args.bank, args.output, brand, args.begin, args.end,
-                             lambda path, payload: request(path, payload, key))
+                             lambda path, payload: request(path, payload, key), args.group_id, args.tag_id)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
     except ArchiveError as error:

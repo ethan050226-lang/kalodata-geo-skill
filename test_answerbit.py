@@ -1,10 +1,12 @@
 import contextlib
 import hashlib
 import io
+import os
 from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+import warnings
 from unittest.mock import patch
 from zipfile import ZipFile
 
@@ -15,6 +17,40 @@ try:
     from openpyxl import Workbook
 except ImportError:
     Workbook = None
+
+
+class OperatorCredentialsTest(unittest.TestCase):
+    def test_missing_key_blocks_noninteractive_refresh(self):
+        args = ["answerbit.py", "refresh", "bank.xlsx", "local.sqlite", "--begin", "2026-11-01",
+                "--end", "2026-11-01"]
+        error = io.StringIO()
+        with patch.dict(os.environ, {"ANSWERBIT_BRAND_ID": "demo-brand"}, clear=True), \
+                patch("sys.argv", args), patch("sys.stdin.isatty", return_value=False), \
+                patch.object(answerbit, "refresh") as refresh, contextlib.redirect_stderr(error):
+            self.assertEqual(answerbit.main(), 1)
+        refresh.assert_not_called()
+        self.assertIn("当前运行者", error.getvalue())
+
+    def test_operator_environment_or_hidden_prompt(self):
+        with patch.dict(os.environ, {"ANSWERBIT_BRAND_ID": "demo-brand", "ANSWERBIT_API_KEY": "TEST_ONLY"},
+                        clear=True), patch.object(answerbit, "getpass") as prompt:
+            self.assertEqual(answerbit.operator_credentials(), ("TEST_ONLY", "demo-brand"))
+        prompt.assert_not_called()
+        with patch.dict(os.environ, {"ANSWERBIT_BRAND_ID": "demo-brand"}, clear=True), \
+                patch("sys.stdin.isatty", return_value=True), \
+                patch.object(answerbit, "getpass", return_value="TEST_ONLY") as prompt:
+            self.assertEqual(answerbit.operator_credentials(), ("TEST_ONLY", "demo-brand"))
+        prompt.assert_called_once()
+
+    def test_hidden_input_fails_closed_if_terminal_would_echo(self):
+        def unsafe_prompt(_):
+            warnings.warn("terminal echo fallback", answerbit.GetPassWarning)
+            raise AssertionError("must stop before reading the key")
+
+        with patch.dict(os.environ, {"ANSWERBIT_BRAND_ID": "demo-brand"}, clear=True), \
+                patch("sys.stdin.isatty", return_value=True), patch.object(answerbit, "getpass", unsafe_prompt):
+            with self.assertRaisesRegex(ArchiveError, "无法安全获取"):
+                answerbit.operator_credentials()
 
 
 @unittest.skipIf(Workbook is None, "install requirements.txt to test XLSX integration")
@@ -36,11 +72,15 @@ class AnswerbitTest(unittest.TestCase):
 
     def records(self):
         return [
-            dict(task_id="mock-1", query_str="Shared question?", tags=[{"tag_name": "英国"}],
+            dict(task_id="mock-1", query_str="Shared question?", title_id="group-research", title_name="商品调研",
+                 tags=[{"tag_id": "gb", "tag_name": "英国", "tag_type": 1},
+                       {"tag_id": "core", "tag_name": "Core", "tag_type": 2},
+                       {"tag_id": "core", "tag_name": "Core", "tag_type": 2},
+                       {"tag_id": "model", "tag_name": "测试模型", "tag_type": 3}],
                  platform="test-engine", language="en", zone="US", date=self.day, analysis={"state": 2}),
             dict(task_id="mock-2", query_str="Shared question?", platform="test-engine",
                  language="en", zone="US", date=self.day, analysis={"state": 2}),
-            dict(task_id="mock-3", query_str="Frage?", platform="test-engine",
+            dict(task_id="mock-3", query_str="Frage?", tags=[], platform="test-engine",
                  language="de", zone="US", date=self.day, analysis={"state": 1}),
         ]
 
@@ -69,6 +109,13 @@ class AnswerbitTest(unittest.TestCase):
         british = next(row for row in report["groups"] if row["market"] == "GB")
         self.assertEqual(british["mention_rate"], 1)
         self.assertIsNone(british["official_citation_rate"])
+        self.assertEqual(sum(row["matched"] for row in report["groups"]), 2)
+        self.assertEqual({(row["tag_id"], row["tag_type"], row["matched"]) for row in report["answerbit_tags"]},
+                         {("gb", 1, 1), ("core", 2, 1), ("model", 3, 1)})
+        self.assertEqual(next(row for row in report["answerbit_groups"] if row["market"] == "GB")["group_name"],
+                         "商品调研")
+        self.assertEqual(len(answerbit.read_snapshot(self.output, "group-research", ["gb", "core"])["groups"]), 1)
+        self.assertEqual(answerbit.read_snapshot(self.output, "group-research", ["gb", "missing"])["groups"], [])
         self.assertNotIn(b"RAW_ANSWER_SENTINEL", self.output.read_bytes())
         self.assertNotIn(b"Shared question?", self.output.read_bytes())
         with contextlib.closing(sqlite3.connect(self.output.as_uri() + "?mode=ro", uri=True)) as db:
@@ -103,7 +150,7 @@ class AnswerbitTest(unittest.TestCase):
             sheet.append(["测试", "TEST-B005-JP", "Kalodataとは？"])
             sheet.append(["测试", "TEST-B005-JP-v2", "カロデータとは？"])
             book.save(self.bank)
-        records = [dict(task_id=f"ja-{i}", query_str=prompt, platform="test-engine", language="ja",
+        records = [dict(task_id=f"ja-{i}", query_str=prompt, platform="test-engine", language="ja", tags=[],
                         date=self.day, analysis={"state": 2})
                    for i, prompt in enumerate(("Kalodataとは？", "カロデータとは？"))]
 
