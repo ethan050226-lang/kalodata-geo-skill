@@ -68,12 +68,15 @@ def host(url):
     return ""
 
 
-def answer_flags(body, sources):
-    mentioned = int(bool(BRAND.search(URL.sub(" ", body))))
+def citation_flag(sources):
     hosts = [host(link) for link in sources] if isinstance(sources, list) else None
     if hosts is None or not all(hosts):
-        return mentioned, None
-    return mentioned, int(any(h == "kalodata.com" or h.endswith(".kalodata.com") for h in hosts))
+        return None
+    return int(any(h == "kalodata.com" or h.endswith(".kalodata.com") for h in hosts))
+
+
+def answer_flags(body, sources):
+    return int(bool(BRAND.search(URL.sub(" ", body)))), citation_flag(sources)
 
 
 def write_atomic(path, content):

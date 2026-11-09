@@ -95,6 +95,33 @@ class AnswerbitTest(unittest.TestCase):
         with self.assertRaisesRegex(ArchiveError, "只读允许列表"):
             answerbit.request("/geo/prompt/run", {}, "SYNTHETIC_KEY")
 
+    def test_japanese_spelling_variants_are_separate_and_both_count_once(self):
+        from openpyxl import load_workbook
+        with contextlib.closing(load_workbook(self.bank)) as book:
+            sheet = book.create_sheet("日本")
+            sheet.append(["分类名称", "编号", "问题内容"])
+            sheet.append(["测试", "TEST-B005-JP", "Kalodataとは？"])
+            sheet.append(["测试", "TEST-B005-JP-v2", "カロデータとは？"])
+            book.save(self.bank)
+        records = [dict(task_id=f"ja-{i}", query_str=prompt, platform="test-engine", language="ja",
+                        date=self.day, analysis={"state": 2})
+                   for i, prompt in enumerate(("Kalodataとは？", "カロデータとは？"))]
+
+        def call(path, payload):
+            if path == answerbit.LIST:
+                return {"scores": records, "total": 2}
+            row = next(r for r in records if r["task_id"] == payload["task_id"])
+            body = "カロデータ（Kalodata）" if row["task_id"] == "ja-0" else "ｶﾛﾃﾞｰﾀ https://kalodata.com/"
+            return dict(query=row["query_str"], platform=row["platform"], language="ja", date=self.day,
+                        llm_output=body, links=[])
+
+        report = answerbit.refresh(self.bank, self.output, "kalodata-test", self.day, self.day, call)
+        groups = {row["prompt_brand_form"]: row for row in report["groups"]}
+        self.assertEqual(set(groups), {"latin", "ja"})
+        self.assertTrue(all(row["named_prompt"] == 1 and row["mentioned"] == 1 for row in groups.values()))
+        self.assertEqual((groups["latin"]["mentioned_latin"], groups["latin"]["mentioned_ja"]), (1, 1))
+        self.assertEqual((groups["ja"]["mentioned_latin"], groups["ja"]["mentioned_ja"]), (0, 1))
+
     def test_feishu_export_dimension_and_batch_diagnostics(self):
         changed = io.BytesIO()
         with ZipFile(self.bank) as source, ZipFile(changed, "w") as target:

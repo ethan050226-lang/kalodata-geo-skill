@@ -16,7 +16,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from zipfile import BadZipFile
 
-from archive import ArchiveError, BRAND, URL, answer_flags, identifier, read_json, require, write_atomic
+from archive import ArchiveError, BRAND, URL, citation_flag, identifier, read_json, require, write_atomic
 
 BASE = "https://answerbit.qq.com"
 LIST = "/geo/task/get"
@@ -26,7 +26,7 @@ MARKETS = dict(zip(
     ("美国", "英国", "德国", "法国", "中国", "泰国", "越南", "印尼", "马来西亚", "日本", "韩国"),
     ("US", "GB", "DE", "FR", "CN", "TH", "VN", "ID", "MY", "JP", "KR"),
 ))
-VERSION = "answerbit-observed/1"
+VERSION = "answerbit-observed/2"
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -54,6 +54,15 @@ def request(path, payload, key):
 
 def question_text(value):
     return " ".join(normalize("NFC", value).split()) if isinstance(value, str) else ""
+
+
+def brand_form(text):
+    body = normalize("NFKC", URL.sub(" ", text))
+    latin = bool(BRAND.search(body))
+    japanese = "カロデータ" in body
+    return {(False, False): "none", (True, False): "latin", (False, True): "ja", (True, True): "both"}[
+        latin, japanese
+    ]
 
 
 def load_bank(path):
@@ -97,7 +106,8 @@ def load_bank(path):
                         field = "题文" if not prompt else "分类"
                         issues.append(f"题库 / {location} {number} 缺少有效{field}")
                         continue
-                    rows[number] = (market, category.strip(), int(bool(BRAND.search(URL.sub(" ", prompt)))))
+                    form = brand_form(prompt)
+                    rows[number] = (market, category.strip(), int(form != "none"), form)
                     by_text[prompt].append(number)
             require(not issues, "\n".join(issues + ["请在飞书题库修正后重新导出；已有本地库保留"]))
     except (BadZipFile, KeyError, ValueError) as error:
@@ -168,6 +178,7 @@ def refresh(bank, output, brand, begin, end, call):
     records = task_list(call, brand, begin, end)
     require(records, "取数 / 当前日期范围无 Answerbit 记录，请核对首轮采样状态；已有本地库保留")
     samples, issues = [], []
+    valid_count = 0
     for row in records:
         task = row["task_id"]
         platform, language, day = row.get("platform"), row.get("language"), row.get("date")
@@ -179,7 +190,7 @@ def refresh(bank, output, brand, begin, end, call):
             issues.append((task, number, platform, day, problem, "飞书题库与 Answerbit 回答记录"))
             continue
         state = analysis_state(row)
-        status, mentioned, official = "unconfirmed", None, None
+        status, mentioned, official, form = "unconfirmed", None, None, None
         if type(state) is int and state == 2:
             detail = call(DETAIL, dict(brand_id=brand, task_id=task))
             body, links = detail.get("llm_output"), detail.get("links")
@@ -195,18 +206,20 @@ def refresh(bank, output, brand, begin, end, call):
                     f"详情 / 题号 {number} 任务 {task} 与列表不一致，请回 Answerbit 核对")
             if isinstance(body, str) and body.strip():
                 status = "valid"
+                valid_count += 1
                 urls = [item.get("url") if isinstance(item, dict) else None
                         for item in links] if isinstance(links, list) else None
-                mentioned, official = answer_flags(body, urls)
+                form = brand_form(body)
+                mentioned, official = int(form != "none"), citation_flag(urls)
                 if official is None:
                     issues.append((task, number, platform, day, "citation_unknown", "Answerbit 引用字段"))
         if status != "valid":
             issues.append((task, number, platform, day, "answer_unconfirmed", "Answerbit 回答分析状态"))
         zone = row.get("zone")
         samples.append((task, number, platform, language, day, zone if identifier(zone) else None,
-                        status, mentioned, official))
+                        status, mentioned, official, form))
     require(samples, "题号对账 / 无记录能唯一匹配飞书题库，请核对题文、市场标签和题库版本；已有本地库保留")
-    require(any(row[-3] == "valid" for row in samples),
+    require(valid_count > 0,
             "取数 / 当前窗口没有可判定的有效回答，请回 Answerbit 核对分析状态；已有本地库保留")
 
     with tempfile.TemporaryDirectory() as directory:
@@ -218,12 +231,13 @@ def refresh(bank, output, brand, begin, end, call):
                     question_version TEXT, metric_version TEXT, returned_records INTEGER
                 );
                 CREATE TABLE question (
-                    question_id TEXT PRIMARY KEY, market TEXT, category TEXT, named_prompt INTEGER
+                    question_id TEXT PRIMARY KEY, market TEXT, category TEXT, named_prompt INTEGER,
+                    prompt_brand_form TEXT
                 );
                 CREATE TABLE sample (
                     task_id TEXT PRIMARY KEY, question_id TEXT REFERENCES question(question_id),
                     platform TEXT, language TEXT, task_date TEXT, zone TEXT,
-                    status TEXT, mentioned INTEGER, official INTEGER
+                    status TEXT, mentioned INTEGER, official INTEGER, answer_brand_form TEXT
                 );
                 CREATE TABLE issue (
                     task_id TEXT, question_id TEXT, platform TEXT, task_date TEXT, code TEXT, check_at TEXT
@@ -231,8 +245,8 @@ def refresh(bank, output, brand, begin, end, call):
             """)
             db.execute("INSERT INTO batch VALUES (?, ?, ?, ?, ?, ?, ?)",
                        ("Answerbit", begin, end, datetime.now(timezone.utc).isoformat(), version, VERSION, len(records)))
-            db.executemany("INSERT INTO question VALUES (?, ?, ?, ?)", [(key, *value) for key, value in questions.items()])
-            db.executemany("INSERT INTO sample VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", samples)
+            db.executemany("INSERT INTO question VALUES (?, ?, ?, ?, ?)", [(key, *value) for key, value in questions.items()])
+            db.executemany("INSERT INTO sample VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", samples)
             db.executemany("INSERT INTO issue VALUES (?, ?, ?, ?, ?, ?)", issues)
         report = read_snapshot(db_path)
         write_atomic(output, db_path.read_bytes())
@@ -243,14 +257,20 @@ def read_snapshot(path):
     with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)) as db:
         db.row_factory = sqlite3.Row
         batch = dict(db.execute("SELECT * FROM batch").fetchone())
-        groups = [dict(row) for row in db.execute("""
-            SELECT q.market, s.language, s.platform, q.named_prompt, COUNT(*) AS matched,
+        version = batch["metric_version"]
+        require(version in ("answerbit-observed/1", VERSION), "本地库 / 指标版本不受支持，请重新刷新")
+        form = "q.prompt_brand_form" if version == VERSION else "NULL"
+        latin_count = "COUNT(*) FILTER (WHERE s.answer_brand_form IN ('latin', 'both'))" if version == VERSION else "NULL"
+        ja_count = "COUNT(*) FILTER (WHERE s.answer_brand_form IN ('ja', 'both'))" if version == VERSION else "NULL"
+        groups = [dict(row) for row in db.execute(f"""
+            SELECT q.market, s.language, s.platform, q.named_prompt, {form} AS prompt_brand_form,
+                {latin_count} AS mentioned_latin, {ja_count} AS mentioned_ja, COUNT(*) AS matched,
                 COUNT(*) FILTER (WHERE s.status = 'valid') AS valid,
                 COUNT(*) FILTER (WHERE s.mentioned = 1) AS mentioned,
                 COUNT(s.official) AS citation_known,
                 COUNT(*) FILTER (WHERE s.official = 1) AS official
             FROM sample s JOIN question q USING (question_id)
-            GROUP BY q.market, s.language, s.platform, q.named_prompt ORDER BY 1, 2, 3, 4
+            GROUP BY 1, 2, 3, 4, 5 ORDER BY 1, 2, 3, 4, 5
         """)]
         for row in groups:
             for metric, num, den in (
