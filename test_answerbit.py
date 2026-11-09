@@ -53,6 +53,19 @@ class OperatorCredentialsTest(unittest.TestCase):
                 answerbit.operator_credentials()
 
 
+class WebsiteFlagsTest(unittest.TestCase):
+    def test_body_and_formal_sources_are_independent(self):
+        self.assertEqual(answerbit.website_flags(
+            "访问kalodata.com。也可看 [FastMoss](https://www.fastmoss.com/)，同一链接 https://kalodata.com/",
+            ["https://docs.kalodata.com/"],
+        ), [("Kalodata", 1, 1), ("FastMoss", 1, 0)])
+        self.assertEqual(answerbit.website_flags(
+            "https://example.com/kalodata.com https://kalodata.com.evil.test notfastmoss.com "
+            "info@kalodata.com example.com?next=fastmoss.com https://kalodata.com@evil.test",
+            None,
+        ), [("Kalodata", 0, None), ("FastMoss", 0, None)])
+
+
 @unittest.skipIf(Workbook is None, "install requirements.txt to test XLSX integration")
 class AnswerbitTest(unittest.TestCase):
     def setUp(self):
@@ -95,8 +108,8 @@ class AnswerbitTest(unittest.TestCase):
                 offset = (payload["page"] - 1) * payload["page_size"]
                 return {"scores": records[offset:offset + payload["page_size"]], "total": len(records)}
             self.assertEqual(payload["task_id"], "mock-1")
-            return dict(prompt="Shared question?", platform="test-engine", language="en",
-                        date=self.day, llm_output="RAW_ANSWER_SENTINEL Kalodata.", analysis={"state": 2})
+            return dict(prompt="Shared question?", platform="test-engine", language="en", date=self.day,
+                        llm_output="RAW_ANSWER_SENTINEL Kalodata. See fastmoss.com.", analysis={"state": 2})
 
         with patch.object(answerbit, "PAGE_SIZE", 2):
             report = answerbit.refresh(self.bank, self.output, "kalodata-test", self.day, self.day, call)
@@ -117,6 +130,15 @@ class AnswerbitTest(unittest.TestCase):
                          "商品调研")
         self.assertEqual(len(answerbit.read_snapshot(self.output, "group-research", ["gb", "core"])["groups"]), 1)
         self.assertEqual(answerbit.read_snapshot(self.output, "group-research", ["gb", "missing"])["groups"], [])
+        links = {row["brand"]: row for row in answerbit.read_snapshot(self.output, "group-research", ["core"])["website_links"]}
+        self.assertEqual(links["FastMoss"]["body_link_rate"], 1)
+        self.assertEqual(links["Kalodata"]["body_link_rate"], 0)
+        self.assertIsNone(links["FastMoss"]["formal_link_rate"])
+        self.assertEqual(links["FastMoss"]["formal_field_coverage"], 0)
+        self.assertEqual(answerbit.read_snapshot(self.output, "other-group")["website_links"], [])
+        self.assertEqual({row["group_id"] for row in report["website_links_by_group"]}, {"group-research"})
+        self.assertEqual({row["tag_id"] for row in report["website_links_by_tag"]}, {"gb", "core", "model"})
+        self.assertTrue(all(row["valid"] == 1 for row in report["website_links_by_tag"]))
         self.assertNotIn(b"RAW_ANSWER_SENTINEL", self.output.read_bytes())
         self.assertNotIn(b"Shared question?", self.output.read_bytes())
         with contextlib.closing(sqlite3.connect(self.output.as_uri() + "?mode=ro", uri=True)) as db:

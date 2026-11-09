@@ -68,11 +68,15 @@ def host(url):
     return ""
 
 
-def citation_flag(sources):
+def domain_hit(hosts, domain):
+    return int(any(h == domain or h.endswith("." + domain) for h in hosts))
+
+
+def citation_flag(sources, domain="kalodata.com"):
     hosts = [host(link) for link in sources] if isinstance(sources, list) else None
     if hosts is None or not all(hosts):
         return None
-    return int(any(h == "kalodata.com" or h.endswith(".kalodata.com") for h in hosts))
+    return domain_hit(hosts, domain)
 
 
 def answer_flags(body, sources):

@@ -9,6 +9,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import sqlite3
 import sys
 import tempfile
@@ -18,7 +19,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from zipfile import BadZipFile
 
-from archive import ArchiveError, BRAND, URL, citation_flag, identifier, read_json, require, write_atomic
+from archive import ArchiveError, BRAND, URL, citation_flag, domain_hit, host, identifier, read_json, require, write_atomic
 
 BASE = "https://answerbit.qq.com"
 LIST = "/geo/task/get"
@@ -29,6 +30,13 @@ MARKETS = dict(zip(
     ("US", "GB", "DE", "FR", "CN", "TH", "VN", "ID", "MY", "JP", "KR"),
 ))
 VERSION = "answerbit-observed/2"
+WEBSITES = (("Kalodata", "kalodata.com"), ("FastMoss", "fastmoss.com"))
+BODY_URL = re.compile(r"""(?:[a-z][a-z0-9+.-]*:)?//[^\s<>"'\x60\[\]）】，。；！？、]+""", re.I)
+BARE_URL = re.compile(
+    r"""(?<![a-z0-9_.@/-])(?:[a-z0-9-]+\.)+[a-z]{2,}(?![a-z0-9-]|\.[a-z0-9-])"""
+    r"""(?:[/?#][^\s<>"'\x60\[\]）】，。；！？、]*)?""",
+    re.I,
+)
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -65,6 +73,17 @@ def brand_form(text):
     return {(False, False): "none", (True, False): "latin", (False, True): "ja", (True, True): "both"}[
         latin, japanese
     ]
+
+
+def website_flags(body, sources):
+    # Consume complete URLs before matching bare domains so URL paths never count as hosts.
+    hosts = set()
+    for url in BODY_URL.findall(body):
+        url = url.rstrip(".,;!?)]}")
+        hosts.add(host("https:" + url if url.startswith("//") else url))
+    for url in BARE_URL.findall(BODY_URL.sub(" ", body)):
+        hosts.add(host("https://" + url.rstrip(".,;!?)]}")))
+    return [(brand, domain_hit(hosts, domain), citation_flag(sources, domain)) for brand, domain in WEBSITES]
 
 
 def load_bank(path):
@@ -207,7 +226,7 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=()):
     version, questions, by_text = load_bank(bank)
     records = task_list(call, brand, begin, end)
     require(records, "取数 / 当前日期范围无 Answerbit 记录，请核对首轮采样状态；已有本地库保留")
-    samples, groups, tags, issues = [], [], [], []
+    samples, groups, tags, websites, issues = [], [], [], [], []
     valid_count = 0
     for row in records:
         task = row["task_id"]
@@ -241,7 +260,9 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=()):
                 urls = [item.get("url") if isinstance(item, dict) else None
                         for item in links] if isinstance(links, list) else None
                 form = brand_form(body)
-                mentioned, official = int(form != "none"), citation_flag(urls)
+                flags = website_flags(body, urls)
+                websites.extend((task, *result) for result in flags)
+                mentioned, official = int(form != "none"), {name: formal for name, _, formal in flags}["Kalodata"]
                 if official is None:
                     issues.append((task, number, platform, day, "citation_unknown", "Answerbit 引用字段"))
         if status != "valid":
@@ -286,6 +307,10 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=()):
                     task_id TEXT REFERENCES sample(task_id), tag_id TEXT, tag_name TEXT, tag_type INTEGER,
                     PRIMARY KEY (task_id, tag_id)
                 );
+                CREATE TABLE sample_website (
+                    task_id TEXT REFERENCES sample(task_id), brand TEXT, body_hit INTEGER, formal_hit INTEGER,
+                    PRIMARY KEY (task_id, brand)
+                );
             """)
             db.execute("INSERT INTO batch VALUES (?, ?, ?, ?, ?, ?, ?)",
                        ("Answerbit", begin, end, datetime.now(timezone.utc).isoformat(), version, VERSION, len(records)))
@@ -293,6 +318,7 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=()):
             db.executemany("INSERT INTO sample VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", samples)
             db.executemany("INSERT INTO sample_group VALUES (?, ?, ?, ?)", groups)
             db.executemany("INSERT INTO sample_tag VALUES (?, ?, ?, ?)", tags)
+            db.executemany("INSERT INTO sample_website VALUES (?, ?, ?, ?)", websites)
             db.executemany("INSERT INTO issue VALUES (?, ?, ?, ?, ?, ?)", issues)
         report = read_snapshot(db_path, group_id, tag_ids)
         write_atomic(output, db_path.read_bytes())
@@ -342,10 +368,31 @@ def read_snapshot(path, group_id=None, tag_ids=()):
                     row[metric] = row[num] / row[den] if row[den] else None
             return results
 
+        def summarize_websites(dimensions=(), join=""):
+            columns = ", ".join(("w.brand", *dimensions))
+            results = [dict(row) for row in db.execute(f"""
+                SELECT {columns}, COUNT(w.body_hit) AS valid, SUM(w.body_hit) AS body_hits,
+                    COUNT(w.formal_hit) AS formal_known, COALESCE(SUM(w.formal_hit), 0) AS formal_hits
+                FROM sample s JOIN sample_website w USING (task_id) {join} {where}
+                GROUP BY {columns} ORDER BY {columns}
+            """, parameters)]
+            for row in results:
+                row["body_link_rate"] = row["body_hits"] / row["valid"]
+                row["formal_link_rate"] = row["formal_hits"] / row["formal_known"] if row["formal_known"] else None
+                row["formal_field_coverage"] = row["formal_known"] / row["valid"]
+            return results
+
+        websites_available = "sample_website" in tables
+
         return {
             "batch": batch, "coverage": None, "coverage_reason": "未取得独立的实际启用与采样计划",
             "filters": {"group_id": group_id, "tag_ids": list(tag_ids)},
             "groups": summarize(), "answerbit_metadata_available": metadata_available,
+            "website_links": summarize_websites() if websites_available else None,
+            "website_links_by_group": summarize_websites(("g.group_id", "g.group_name"),
+                "JOIN sample_group g ON g.task_id = s.task_id") if websites_available and metadata_available else None,
+            "website_links_by_tag": summarize_websites(("t.tag_id", "t.tag_name", "t.tag_type"),
+                "JOIN sample_tag t ON t.task_id = s.task_id") if websites_available and metadata_available else None,
             "question_categories": summarize(("q.category",)),
             "answerbit_groups": summarize(("g.group_id", "g.group_name"),
                                           "LEFT JOIN sample_group g ON g.task_id = s.task_id") if metadata_available else None,
