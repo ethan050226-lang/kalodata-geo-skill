@@ -65,13 +65,16 @@ def load_bank(path):
     try:
         book = load_workbook(io.BytesIO(content), read_only=True, data_only=True, keep_links=False)
         with closing(book):
-            rows = {}
+            rows, locations, issues = {}, {}, []
             by_text = defaultdict(list)
             for title in book.sheetnames:
                 if title not in MARKETS:
                     continue
                 market = MARKETS[title]
-                values = book[title].iter_rows(values_only=True)
+                sheet = book[title]
+                # Feishu exports can declare A1:A1 even when the worksheet contains data.
+                sheet.reset_dimensions()
+                values = sheet.iter_rows(values_only=True)
                 header = next(values, ())
                 needed = ("编号", "问题内容", "分类名称")
                 require(all(header.count(name) == 1 for name in needed),
@@ -82,11 +85,21 @@ def load_bank(path):
                         continue
                     number, prompt, category = [row[i] if i < len(row) else None for i in positions]
                     prompt = question_text(prompt)
-                    require(identifier(number) and prompt and isinstance(category, str) and category.strip(),
-                            f"题库 / {title} 第 {line} 行的编号、题文或分类无效")
-                    require(number not in rows, f"题库 / 编号 {number} 重复，请核对飞书题库")
+                    location = f"{title} 第 {line} 行"
+                    if not identifier(number):
+                        issues.append(f"题库 / {location} 编号无效")
+                        continue
+                    if number in locations:
+                        issues.append(f"题库 / 编号 {number} 重复：{locations[number]}、{location}")
+                        continue
+                    locations[number] = location
+                    if not prompt or not isinstance(category, str) or not category.strip():
+                        field = "题文" if not prompt else "分类"
+                        issues.append(f"题库 / {location} {number} 缺少有效{field}")
+                        continue
                     rows[number] = (market, category.strip(), int(bool(BRAND.search(URL.sub(" ", prompt)))))
                     by_text[prompt].append(number)
+            require(not issues, "\n".join(issues + ["请在飞书题库修正后重新导出；已有本地库保留"]))
     except (BadZipFile, KeyError, ValueError) as error:
         if isinstance(error, ArchiveError):
             raise

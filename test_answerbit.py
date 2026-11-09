@@ -1,10 +1,12 @@
 import contextlib
 import hashlib
+import io
 from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
 from unittest.mock import patch
+from zipfile import ZipFile
 
 import answerbit
 from archive import ArchiveError
@@ -92,6 +94,29 @@ class AnswerbitTest(unittest.TestCase):
     def test_refuses_platform_mutation(self):
         with self.assertRaisesRegex(ArchiveError, "只读允许列表"):
             answerbit.request("/geo/prompt/run", {}, "SYNTHETIC_KEY")
+
+    def test_feishu_export_dimension_and_batch_diagnostics(self):
+        changed = io.BytesIO()
+        with ZipFile(self.bank) as source, ZipFile(changed, "w") as target:
+            for name in source.namelist():
+                data = source.read(name)
+                target.writestr(name, data.replace(b'dimension ref="A1:C2"', b'dimension ref="A1:A1"')
+                                if name.startswith("xl/worksheets/") else data)
+        self.bank.write_bytes(changed.getvalue())
+        self.assertEqual(len(answerbit.load_bank(self.bank)[1]), 3)
+
+        from openpyxl import load_workbook
+        with contextlib.closing(load_workbook(self.bank)) as book:
+            sheet = book.create_sheet("日本")
+            sheet.append(["分类名称", "编号", "问题内容"])
+            sheet.append([None, "TEST-01-JP", "Question one?"])
+            sheet.append(["测试", "TEST-02-JP", "Question two?"])
+            sheet.append(["测试", "TEST-02-JP", "Question three?"])
+            book.save(self.bank)
+        with self.assertRaises(ArchiveError) as error:
+            answerbit.load_bank(self.bank)
+        self.assertIn("日本 第 2 行 TEST-01-JP 缺少有效分类", str(error.exception))
+        self.assertIn("编号 TEST-02-JP 重复：日本 第 3 行、日本 第 4 行", str(error.exception))
 
 
 if __name__ == "__main__":
