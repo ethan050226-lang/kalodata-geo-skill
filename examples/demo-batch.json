@@ -1,0 +1,118 @@
+{
+  "batch": {
+    "id": "trial-001",
+    "question_version": "synthetic-v1",
+    "start": "2026-11-01T00:00:00+00:00",
+    "end": "2026-11-02T00:00:00+00:00",
+    "synthetic": true,
+    "retrieval_complete": true
+  },
+  "plan": [
+    {
+      "question_id": "DEMO-01-US",
+      "market": "US",
+      "language": "en",
+      "platform": "ChatGPT",
+      "round": "demo-r1",
+      "question": "Which tools help analyze TikTok Shop?"
+    },
+    {
+      "question_id": "DEMO-02-US",
+      "market": "US",
+      "language": "en",
+      "platform": "ChatGPT",
+      "round": "demo-r1",
+      "question": "Which tools track TikTok Shop trends?"
+    },
+    {
+      "question_id": "DEMO-03-DE",
+      "market": "DE",
+      "language": "de",
+      "platform": "Claude",
+      "round": "demo-r1",
+      "question": "Welche Tools analysieren TikTok Shop?"
+    },
+    {
+      "question_id": "DEMO-04-DE",
+      "market": "DE",
+      "language": "de",
+      "platform": "Claude",
+      "round": "demo-r1",
+      "question": "Welche Quellen erklären TikTok Shop?"
+    },
+    {
+      "question_id": "DEMO-05-DE",
+      "market": "DE",
+      "language": "de",
+      "platform": "Claude",
+      "round": "demo-r1",
+      "question": "Welche Tools vergleichen TikTok Shops?"
+    }
+  ],
+  "samples": [
+    {
+      "question_id": "DEMO-01-US",
+      "language": "en",
+      "platform": "ChatGPT",
+      "round": "demo-r1",
+      "question": "Which tools help analyze TikTok Shop?",
+      "record_id": "demo-record-1",
+      "collected_at": "2026-11-01T12:00:00+00:00",
+      "status": "valid",
+      "answer": "SYNTHETIC_ANSWER_SENTINEL Kalodata is an example.",
+      "citations": [
+        "https://www.kalodata.com/"
+      ]
+    },
+    {
+      "question_id": "DEMO-01-US",
+      "language": "en",
+      "platform": "ChatGPT",
+      "round": "demo-r1",
+      "question": "Which tools help analyze TikTok Shop?",
+      "record_id": "demo-record-1",
+      "collected_at": "2026-11-01T12:00:00+00:00",
+      "status": "valid",
+      "answer": "SYNTHETIC_ANSWER_SENTINEL Kalodata is an example.",
+      "citations": [
+        "https://www.kalodata.com/"
+      ]
+    },
+    {
+      "question_id": "DEMO-02-US",
+      "language": "en",
+      "platform": "ChatGPT",
+      "round": "demo-r1",
+      "question": "Which tools track TikTok Shop trends?",
+      "record_id": "demo-record-2",
+      "collected_at": "2026-11-01T12:00:00+00:00",
+      "status": "valid",
+      "answer": "SYNTHETIC_ANSWER_SENTINEL https://kalodata.com/",
+      "citations": []
+    },
+    {
+      "question_id": "DEMO-03-DE",
+      "language": "de",
+      "platform": "Claude",
+      "round": "demo-r1",
+      "question": "Welche Tools analysieren TikTok Shop?",
+      "record_id": "demo-record-3",
+      "collected_at": "2026-11-01T12:00:00+00:00",
+      "status": "valid",
+      "answer": "SYNTHETIC_ANSWER_SENTINEL Kalo Data ist ein Beispiel.",
+      "citations": null
+    },
+    {
+      "question_id": "DEMO-04-DE",
+      "language": "de",
+      "platform": "Claude",
+      "round": "demo-r1",
+      "question": "Welche Quellen erklären TikTok Shop?",
+      "record_id": "demo-record-4",
+      "collected_at": "2026-11-01T12:00:00+00:00",
+      "status": "failed",
+      "answer": "",
+      "citations": null
+    }
+  ]
+}
