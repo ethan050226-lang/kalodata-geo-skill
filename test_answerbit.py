@@ -102,6 +102,7 @@ class AnswerbitTest(unittest.TestCase):
             report = answerbit.refresh(self.bank, self.output, "kalodata-test", self.day, self.day, call)
         self.assertEqual([path for path, _ in calls], [answerbit.LIST, answerbit.LIST, answerbit.DETAIL])
         self.assertTrue(calls[0][1]["include_unanalyzed"])
+        self.assertTrue(all(payload["mention_brand"] == -1 for path, payload in calls if path == answerbit.LIST))
         self.assertEqual(report["batch"]["question_version"], hashlib.sha256(self.bank.read_bytes()).hexdigest())
         self.assertIsNone(report["coverage"])
         self.assertEqual({issue["code"] for issue in report["issues"]},

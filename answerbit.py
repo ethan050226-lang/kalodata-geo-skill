@@ -124,7 +124,8 @@ def task_list(call, brand, begin, end):
     tasks, ids = [], set()
     page, expected = 1, None
     while expected is None or len(tasks) < expected:
-        data = call(LIST, dict(brand_id=brand, begin_date=begin, end_date=end, include_unanalyzed=True,
+        # Omitting mention_brand returns only unmentioned records on the live API.
+        data = call(LIST, dict(brand_id=brand, begin_date=begin, end_date=end, include_unanalyzed=True, mention_brand=-1,
                                page=page, page_size=PAGE_SIZE))
         total, records = data.get("total"), data.get("scores")
         require(type(total) is int and total >= 0 and isinstance(records, list)
