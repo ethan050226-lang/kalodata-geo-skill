@@ -21,3 +21,18 @@ python3 -m unittest -v
 参照 [合成批次](examples/demo-batch.json)。`batch` 固定批次编号、题库版本和带时区的采样时间窗（左闭右开）。`synthetic` 和 `retrieval_complete` 都必须为 `true`。前者隔离测试数据，后者表示输入已取全，仍可能存在平台漏采。独立的 `plan` 定义实际启用的题目、语言、平台和轮次。回答记录须有来源记录 ID、原题文、采集时间和状态。正式引用是 URL 数组，`[]` 代表明确无引用，缺字段或 `null` 代表未知。
 
 工具只将白名单字段写入快照。不保存题文、回答、原始引用 URL 或密钥。真实接入前还需验证 Answerbit 的只读品牌范围、分页、实际启用题单和引用字段，确认公司批准的共享位置。合成测试不调用外部服务。
+
+## 运行 Skill 时拉取 Answerbit
+
+真实读取入口与合成试跑隔离。先在获批的本地运行环境安装 `requirements.txt`，准备飞书《一期题库最终版_全部国家》的 XLSX 导出，并配置 `ANSWERBIT_API_KEY`（仅 Kalodata，只读）和 `ANSWERBIT_BRAND_ID`。真实导出、数据库和密钥均留在获批环境。
+
+```sh
+python3 answerbit.py refresh /path/to/question-bank.xlsx .trial/answerbit.sqlite --begin YYYY-MM-DD --end YYYY-MM-DD
+python3 answerbit.py query .trial/answerbit.sqlite
+```
+
+刷新使用官方的回答列表和详情查询，仅读取既有记录。列表分页须与接口总数闭合；已完成分析的匹配记录逐条取详情。用各市场页的「编号」「问题内容」「分类名称」对账，审阅页和说明页不参与。题文仅做 Unicode 规范化及空白归一。同一句题文对应多个市场时，只接受唯一可区分的市场标签。采样网络地区不用于推断题号所属市场。未匹配、歧义和引用缺失单列。Excel 导出变更后重新配置本地文件路径或替换批准的本地副本。
+
+本地库保存题号、市场、分类、采样日期、任务 ID 与指标判定。题库文件的 SHA-256 作为版本标识。只保存结构化字段，回答原文在计算后丢弃。没有独立的实际启用计划时，覆盖率不可计算。无可用记录、分页不全或详情核对失败均保留上一份本地库。真实租户凭证、字段与分页仍待首轮实测。
+
+参考 [Answerbit OpenAPI 接入](https://answerbit.qq.com/zh-CN/docs/external/4-openapi-getting-started) 和 [回答查询](https://answerbit.qq.com/zh-CN/docs/external/4-openapi-getting-started/answers)。

@@ -1,11 +1,13 @@
 ---
 name: kalodata-geo-baseline
-description: 用已验收的只读 GEO 快照计算和解释 Kalodata 样本覆盖、品牌提及与官网引用，提供分组比较和 Answerbit 回查线索。
+description: 读取 Answerbit 已有的 Kalodata 回答记录，对照飞书题号生成本地 GEO 快照，或分析已保存的快照与回查异常。
 ---
 
 # Kalodata GEO 基线
 
-先读[指标定义](references/metric-definitions.md)。确认本地快照及工具路径后，用归档工具的 `query` 命令读取 SQLite，或对快照执行只读查询。同步由配套工具执行。不要从本 Skill 取 Answerbit 密钥、归档或修改源平台。
+先读[指标定义](references/metric-definitions.md)。用户要求分析最新 Answerbit 数据时，在已配置的本机调用 `python3 answerbit.py refresh <飞书题库导出.xlsx> <本地库.sqlite> --begin YYYY-MM-DD --end YYYY-MM-DD`。使用用户要求的日期窗，未指定时用北京时间最近七个自然日（含今天）并标注。题库使用已配置的全国家飞书题库导出，缺题库或本机配置时列明缺项。命令从运行环境读取品牌级只读凭证，勿要求用户在对话中发送或在命令里拼接密钥。只读取现有记录，不触发采样或修改 Answerbit。真实输出使用独立路径，例如 `.trial/answerbit.sqlite`。
+
+优先分析 `refresh` 返回的摘要。若刷新失败，可在明确标注原因及旧时间窗后用 `answerbit.py query <本地库.sqlite>` 读取上次成功快照。仅有回答记录时覆盖率未知，不把已返回记录当计划分母。用户要求合成演示时使用 `archive.py query <测试库.sqlite>`，不要用测试结果替代真实记录。
 
 按运营问题分组展示分子、分母、批次、题库版本和采样时间窗。测试批次醒目标注「合成测试」，不用于正式基线。比较前核对点名题口径和采样条件。缺失与零分别处理。无可比批次时只展示当批对比，不画趋势。
 

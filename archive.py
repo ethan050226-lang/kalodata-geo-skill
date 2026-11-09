@@ -68,6 +68,14 @@ def host(url):
     return ""
 
 
+def answer_flags(body, sources):
+    mentioned = int(bool(BRAND.search(URL.sub(" ", body))))
+    hosts = [host(link) for link in sources] if isinstance(sources, list) else None
+    if hosts is None or not all(hosts):
+        return mentioned, None
+    return mentioned, int(any(h == "kalodata.com" or h.endswith(".kalodata.com") for h in hosts))
+
+
 def write_atomic(path, content):
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as temp:
@@ -159,11 +167,8 @@ def assess(data):
                 f"重复冲突 / {title} 有多个记录 ID，请在 Answerbit 确认有效样本")
         mentioned, official = None, None
         if status == "valid":
-            mentioned = int(bool(BRAND.search(URL.sub(" ", body))))
-            hosts = [host(link) for link in sources] if isinstance(sources, list) else None
-            if hosts is not None and all(hosts):
-                official = int(any(h == "kalodata.com" or h.endswith(".kalodata.com") for h in hosts))
-            else:
+            mentioned, official = answer_flags(body, sources)
+            if official is None:
                 issues.append(("citation_unknown", title, record_id, "Answerbit 引用字段"))
         else:
             issues.append(("failed", title, record_id, "Answerbit 回答记录"))
