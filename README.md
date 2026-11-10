@@ -1,6 +1,6 @@
 # GEO 采样 Skill / GEO Sampling Skill
 
-首版仅用于合成数据试跑。使用 Python 3.9+ 和 Python 内置的 SQLite（SQLite 3.30+）。
+支持 Answerbit 真实只读分析，也提供独立的合成数据试跑。使用 Python 3.9+ 和 Python 内置的 SQLite（SQLite 3.30+）。
 
 ## 试跑
 
@@ -36,6 +36,8 @@ python3 answerbit.py refresh /path/to/question-bank.xlsx .trial/answerbit.sqlite
 
 刷新使用官方的回答列表和详情查询，仅读取既有记录。列表分页须与接口总数闭合；已完成分析的匹配记录逐条取详情。用各市场页的「编号」「问题内容」「分类名称」对账，审阅页和说明页不参与。题文仅做 Unicode 规范化及空白归一。同一句题文对应多个市场时，只接受唯一可区分的市场标签。采样网络地区不用于推断题号所属市场。未匹配、歧义和引用缺失单列。Excel 导出变更后重新配置本地文件路径或替换批准的本地副本。
 
-本地库保存题号、市场、分类、采样日期、任务 ID 与指标判定。题库文件的 SHA-256 作为版本标识。只保存结构化字段，回答原文在计算后丢弃。没有独立的实际启用计划时，覆盖率不可计算。无可用记录、分页不全或详情核对失败均保留上一份本地库。真实租户凭证、字段与分页仍待首轮实测。
+本地库保存题号、市场、分类、采样日期、任务 ID 与指标判定。中立推荐仅额外保留对应提问，供运营回查。题库文件的 SHA-256 作为版本标识，回答原文在计算后丢弃。没有独立的实际启用计划时，覆盖率不可计算。无可用记录、分页不全或详情核对失败均保留上一份本地库。
+
+`answerbit-observed/3` 新增市场竞品对比、首次位置、推荐初判、中立推荐题单和平台情感对账。用独立的快照路径刷新。历史快照仍可查询原指标，新字段提示「需刷新」。详见[指标定义](skill/geo-sampling/references/metric-definitions.md)。
 
 参考 [Answerbit OpenAPI 接入](https://answerbit.qq.com/zh-CN/docs/external/4-openapi-getting-started) 和 [回答查询](https://answerbit.qq.com/zh-CN/docs/external/4-openapi-getting-started/answers)。

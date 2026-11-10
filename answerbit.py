@@ -20,6 +20,8 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 from zipfile import BadZipFile
 
 from archive import ArchiveError, BRAND, URL, citation_flag, domain_hit, host, identifier, read_json, require, write_atomic
+from content_metrics import (KALODATA, VERIFIED_REPUTATION, first_ranks, recommendation,
+                             strip_opening_echo, summarize_content)
 
 BASE = "https://answerbit.qq.com"
 LIST = "/geo/task/get"
@@ -29,7 +31,7 @@ MARKETS = dict(zip(
     ("美国", "英国", "德国", "法国", "中国", "泰国", "越南", "印尼", "马来西亚", "日本", "韩国"),
     ("US", "GB", "DE", "FR", "CN", "TH", "VN", "ID", "MY", "JP", "KR"),
 ))
-VERSION = "answerbit-observed/2"
+VERSION = "answerbit-observed/3"
 WEBSITES = (("Kalodata", "kalodata.com"), ("FastMoss", "fastmoss.com"))
 BODY_URL = re.compile(r"""(?:[a-z][a-z0-9+.-]*:)?//[^\s<>"'\x60\[\]）】，。；！？、]+""", re.I)
 BARE_URL = re.compile(
@@ -84,6 +86,15 @@ def website_flags(body, sources):
     for url in BARE_URL.findall(BODY_URL.sub(" ", body)):
         hosts.add(host("https://" + url.rstrip(".,;!?)]}")))
     return [(brand, domain_hit(hosts, domain), citation_flag(sources, domain)) for brand, domain in WEBSITES]
+
+
+def content_flags(body, prompt, market, reputation):
+    clean = BARE_URL.sub(" ", BODY_URL.sub(" ", strip_opening_echo(body, prompt)))
+    ranks = first_ranks(clean, market)
+    label = recommendation(clean, market, ranks)
+    code = reputation if type(reputation) is int else None
+    sentiment = VERIFIED_REPUTATION.get(code, "unknown")
+    return clean, ranks, label, code, sentiment
 
 
 def load_bank(path):
@@ -226,7 +237,7 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=()):
     version, questions, by_text = load_bank(bank)
     records = task_list(call, brand, begin, end)
     require(records, "取数 / 当前日期范围无 Answerbit 记录，请核对首轮采样状态；已有本地库保留")
-    samples, groups, tags, websites, issues = [], [], [], [], []
+    samples, groups, tags, websites, issues, content = [], [], [], [], [], []
     valid_count = 0
     for row in records:
         task = row["task_id"]
@@ -259,10 +270,14 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=()):
                 valid_count += 1
                 urls = [item.get("url") if isinstance(item, dict) else None
                         for item in links] if isinstance(links, list) else None
-                form = brand_form(body)
+                clean, ranks, label, code, sentiment = content_flags(
+                    body, detail_question, questions[number][0], detail.get("brand_reputation"))
+                form = brand_form(clean)
+                content.append((task, json.dumps(ranks), label, code, sentiment,
+                                detail_question if label == "neutral" else None))
                 flags = website_flags(body, urls)
                 websites.extend((task, *result) for result in flags)
-                mentioned, official = int(form != "none"), {name: formal for name, _, formal in flags}["Kalodata"]
+                mentioned, official = int(KALODATA in ranks), {name: formal for name, _, formal in flags}["Kalodata"]
                 if official is None:
                     issues.append((task, number, platform, day, "citation_unknown", "Answerbit 引用字段"))
         if status != "valid":
@@ -311,6 +326,11 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=()):
                     task_id TEXT REFERENCES sample(task_id), brand TEXT, body_hit INTEGER, formal_hit INTEGER,
                     PRIMARY KEY (task_id, brand)
                 );
+                CREATE TABLE sample_content (
+                    task_id TEXT PRIMARY KEY REFERENCES sample(task_id), ranks TEXT NOT NULL,
+                    recommendation TEXT NOT NULL, reputation_code INTEGER, sentiment TEXT NOT NULL,
+                    prompt TEXT
+                );
             """)
             db.execute("INSERT INTO batch VALUES (?, ?, ?, ?, ?, ?, ?)",
                        ("Answerbit", begin, end, datetime.now(timezone.utc).isoformat(), version, VERSION, len(records)))
@@ -319,6 +339,7 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=()):
             db.executemany("INSERT INTO sample_group VALUES (?, ?, ?, ?)", groups)
             db.executemany("INSERT INTO sample_tag VALUES (?, ?, ?, ?)", tags)
             db.executemany("INSERT INTO sample_website VALUES (?, ?, ?, ?)", websites)
+            db.executemany("INSERT INTO sample_content VALUES (?, ?, ?, ?, ?, ?)", content)
             db.executemany("INSERT INTO issue VALUES (?, ?, ?, ?, ?, ?)", issues)
         report = read_snapshot(db_path, group_id, tag_ids)
         write_atomic(output, db_path.read_bytes())
@@ -330,10 +351,12 @@ def read_snapshot(path, group_id=None, tag_ids=()):
         db.row_factory = sqlite3.Row
         batch = dict(db.execute("SELECT * FROM batch").fetchone())
         version = batch["metric_version"]
-        require(version in ("answerbit-observed/1", VERSION), "本地库 / 指标版本不受支持，请重新刷新")
-        form = "q.prompt_brand_form" if version == VERSION else "NULL"
-        latin_count = "COUNT(*) FILTER (WHERE s.answer_brand_form IN ('latin', 'both'))" if version == VERSION else "NULL"
-        ja_count = "COUNT(*) FILTER (WHERE s.answer_brand_form IN ('ja', 'both'))" if version == VERSION else "NULL"
+        require(version in ("answerbit-observed/1", "answerbit-observed/2", VERSION),
+                "本地库 / 指标版本不受支持，请重新刷新")
+        has_forms = version != "answerbit-observed/1"
+        form = "q.prompt_brand_form" if has_forms else "NULL"
+        latin_count = "COUNT(*) FILTER (WHERE s.answer_brand_form IN ('latin', 'both'))" if has_forms else "NULL"
+        ja_count = "COUNT(*) FILTER (WHERE s.answer_brand_form IN ('ja', 'both'))" if has_forms else "NULL"
         tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
         metadata_available = {"sample_group", "sample_tag"} <= tables
         require(metadata_available or (group_id is None and not tag_ids),
@@ -383,10 +406,26 @@ def read_snapshot(path, group_id=None, tag_ids=()):
             return results
 
         websites_available = "sample_website" in tables
+        content = None
+        if "sample_content" in tables:
+            content_rows = [dict(row) for row in db.execute(f"""
+                SELECT c.*, s.question_id, s.task_date, s.platform, q.market, q.named_prompt,
+                       g.group_id, g.group_name
+                FROM sample s JOIN sample_content c USING (task_id)
+                JOIN question q USING (question_id) LEFT JOIN sample_group g USING (task_id)
+                {where} ORDER BY s.task_date, s.platform, s.task_id
+            """, parameters)]
+            for row in content_rows:
+                row["ranks"] = json.loads(row["ranks"])
+            tags_by_task = defaultdict(list)
+            for row in db.execute("SELECT task_id, tag_id FROM sample_tag ORDER BY tag_id"):
+                tags_by_task[row["task_id"]].append(row["tag_id"])
+            content = summarize_content(content_rows, tags_by_task)
 
         return {
             "batch": batch, "coverage": None, "coverage_reason": "未取得独立的实际启用与采样计划",
             "filters": {"group_id": group_id, "tag_ids": list(tag_ids)},
+            "content": content, "content_status": "available" if content is not None else "需刷新",
             "groups": summarize(), "answerbit_metadata_available": metadata_available,
             "website_links": summarize_websites() if websites_available else None,
             "website_links_by_group": summarize_websites(("g.group_id", "g.group_name"),

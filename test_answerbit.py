@@ -109,7 +109,8 @@ class AnswerbitTest(unittest.TestCase):
                 return {"scores": records[offset:offset + payload["page_size"]], "total": len(records)}
             self.assertEqual(payload["task_id"], "mock-1")
             return dict(prompt="Shared question?", platform="test-engine", language="en", date=self.day,
-                        llm_output="RAW_ANSWER_SENTINEL Kalodata. See fastmoss.com.", analysis={"state": 2})
+                        llm_output="RAW_ANSWER_SENTINEL Kalodata. See fastmoss.com.", brand_reputation=4,
+                        analysis={"state": 2})
 
         with patch.object(answerbit, "PAGE_SIZE", 2):
             report = answerbit.refresh(self.bank, self.output, "kalodata-test", self.day, self.day, call)
@@ -130,6 +131,13 @@ class AnswerbitTest(unittest.TestCase):
                          "商品调研")
         self.assertEqual(len(answerbit.read_snapshot(self.output, "group-research", ["gb", "core"])["groups"]), 1)
         self.assertEqual(answerbit.read_snapshot(self.output, "group-research", ["gb", "missing"])["groups"], [])
+        content = answerbit.read_snapshot(self.output, "group-research", ["gb", "core"])["content"]
+        self.assertEqual(content["valid"], 1)
+        self.assertEqual(content["sentiment_raw_counts"], {"4": 1})
+        self.assertEqual(content["sentiment"]["unknown"], 1)
+        self.assertEqual(content["dimensions"]["market"][0]["first_rate"], 1)
+        self.assertEqual(content["dimensions"]["market"][0]["sov_denominator"], 1)
+        self.assertEqual(answerbit.read_snapshot(self.output, "group-research", ["gb", "missing"])["content"]["valid"], 0)
         links = {row["brand"]: row for row in answerbit.read_snapshot(self.output, "group-research", ["core"])["website_links"]}
         self.assertEqual(links["FastMoss"]["body_link_rate"], 1)
         self.assertEqual(links["Kalodata"]["body_link_rate"], 0)
@@ -146,6 +154,30 @@ class AnswerbitTest(unittest.TestCase):
                              ("TEST-01-GB", "US"))
             with self.assertRaises(sqlite3.OperationalError):
                 db.execute("DELETE FROM sample")
+
+    def test_neutral_snapshot_retains_prompt_but_not_answer_and_reads_old_version(self):
+        record = self.records()[0]
+
+        def call(path, payload):
+            if path == answerbit.LIST:
+                return {"scores": [record], "total": 1}
+            return dict(prompt=record["query_str"], platform=record["platform"],
+                        language=record["language"], date=self.day, links=[],
+                        llm_output="I recommend Kalodata. If you track weekly, I recommend Kalodata. PRIVATE_BODY")
+
+        report = answerbit.refresh(self.bank, self.output, "kalodata-test", self.day, self.day, call)
+        content = report["content"]
+        self.assertEqual(content["recommendation"]["neutral"], 1)
+        self.assertEqual(content["recommendation"]["explicit"], 0)
+        self.assertEqual(content["neutral_questions"][0]["answers"][0]["prompt"], record["query_str"])
+        self.assertNotIn(b"PRIVATE_BODY", self.output.read_bytes())
+        with contextlib.closing(sqlite3.connect(self.output)) as db, db:
+            db.execute("DROP TABLE sample_content")
+            db.execute("UPDATE batch SET metric_version = ?", ("answerbit-observed/2",))
+        old = answerbit.read_snapshot(self.output)
+        self.assertEqual(old["content_status"], "需刷新")
+        self.assertEqual(old["groups"][0]["mentioned_latin"], 1)
+        self.assertIsNotNone(old["website_links"])
 
     def test_unfinished_or_broken_refresh_preserves_previous_snapshot(self):
         self.output.write_bytes(b"previous")
