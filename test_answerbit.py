@@ -12,6 +12,7 @@ from zipfile import ZipFile
 
 import answerbit
 import dashboard
+import recommendation_review
 from archive import ArchiveError
 
 try:
@@ -21,6 +22,35 @@ except ImportError:
 
 
 class OperatorCredentialsTest(unittest.TestCase):
+    def test_review_requires_key_before_reading_snapshot(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "result.html"
+            output.write_bytes(b"previous dashboard")
+            args = ["dashboard.py","review","bank.xlsx","snapshot.sqlite",str(output)]
+            log = io.StringIO()
+            with patch("sys.argv",args), patch.object(answerbit,"operator_credentials",side_effect=ArchiveError("凭证未配置")), \
+                 patch.object(dashboard.sqlite3,"connect") as connect, contextlib.redirect_stderr(log):
+                self.assertEqual(dashboard.main(),1)
+            connect.assert_not_called()
+            self.assertEqual(output.read_bytes(),b"previous dashboard")
+            self.assertIn("3–8 分钟",log.getvalue())
+
+    def test_second_pass_classifies_clear_cases_and_keeps_ambiguity(self):
+        examples = (
+            ("Tool | Recommendation\n---|---\nKalodata | Yes\nFastMoss | No",("explicit",None,True)),
+            ("Tool | Price\n---|---\nKalodata | Paid\nFastMoss | Free",("unknown","description",True)),
+            ("I recommend FastMoss or Kalodata.",("unknown","target",False)),
+            ("I do not recommend Kalodata.",("negative",None,False)),
+            ("If you monitor competitors, choose Kalodata.",("conditional",None,False)),
+            ("I recommend Kalodata for mature teams. If you monitor competitors daily, I recommend Kalodata.",("neutral",None,False)),
+            ("I recommend Kalodata. If you monitor competitors daily, I recommend Kalodata.",("unknown","scope",False)),
+            ("Many sellers use Kalodata.",("unknown","description",False)),
+            ("Users say they recommend Kalodata.",("unknown","conflict",False)),
+        )
+        for body, expected in examples:
+            with self.subTest(body=body):
+                self.assertEqual(recommendation_review.classify(body,"Which tool?","US"),expected)
+
     def test_dashboard_reads_competitor_trends_with_platform_ids(self):
         day = "2026-11-09"
         calls = {}
@@ -229,6 +259,26 @@ class AnswerbitTest(unittest.TestCase):
         _, retained, _ = dashboard.retained_data(target)
         self.assertEqual(retained["batch"],data["batch"])
         self.assertEqual(retained["last_failure"]["last_success"],data["batch"]["fetched_at_utc"])
+
+    def test_recommendation_review_is_bound_to_batch_and_keeps_only_labels(self):
+        record = self.records()[0]
+
+        def call(path,payload):
+            if path==answerbit.LIST:
+                return {"scores":[record],"total":1}
+            return dict(prompt=record["query_str"],platform=record["platform"],language=record["language"],
+                        date=self.day,links=[],llm_output="I would choose Kalodata. RAW_ANSWER_TEST",
+                        brand_reputation="bad-format")
+
+        answerbit.refresh(self.bank,self.output,"test",self.day,self.day,call)
+        self.assertEqual(recommendation_review.run_review(self.bank,self.output,"test",call),{"ok":1})
+        data = dashboard.dashboard_data(self.output,self.bank,None)
+        self.assertEqual(data["rows"][0]["rec"],{"unknown":1})
+        self.assertEqual(data["rows"][0]["sent_issues"],{"format":1})
+        self.assertEqual(data["review"]["rows"][0]["label"],"explicit")
+        self.assertNotIn("RAW_ANSWER_TEST",recommendation_review.sidecar(self.output).read_text())
+        self.output.write_bytes(b"changed")
+        self.assertIsNone(recommendation_review.saved_review(self.output))
 
     def test_unfinished_or_broken_refresh_preserves_previous_snapshot(self):
         self.output.write_bytes(b"previous")

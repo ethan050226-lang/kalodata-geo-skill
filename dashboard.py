@@ -15,6 +15,7 @@ import time
 
 import answerbit as api
 from content_metrics import KALODATA, market_brands, reputation_label
+from recommendation_review import run_review, saved_review
 
 CHINA = timezone(timedelta(hours=8))
 ASSET = Path(__file__).resolve().parent / "skill/geo-sampling/assets/dashboard.html"
@@ -134,6 +135,8 @@ def platform_snapshot(call, brand, begin, end):
 def dashboard_data(snapshot, bank, native):
     sha, _, by_text = api.load_bank(bank)
     prompts = {qid: text for text, ids in by_text.items() for qid in ids}
+    review = saved_review(snapshot)
+    review_rows = []
     with closing(sqlite3.connect(snapshot.resolve().as_uri() + "?mode=ro", uri=True)) as db:
         db.row_factory = sqlite3.Row
         batch = dict(db.execute("SELECT * FROM batch").fetchone())
@@ -152,9 +155,11 @@ def dashboard_data(snapshot, bank, native):
         neutral = []
         valid = 0
         valid_tasks = set()
-        for row in db.execute("""
+        columns = {r["name"] for r in db.execute("PRAGMA table_info(sample_content)")}
+        reason_column = "c.reputation_issue" if "reputation_issue" in columns else "NULL"
+        for row in db.execute(f"""
             SELECT s.task_id,s.question_id,s.platform,s.task_date,q.market,q.named_prompt,g.group_id,g.group_name,
-                   c.ranks,c.recommendation,c.reputation_code
+                   c.ranks,c.recommendation,c.reputation_code,{reason_column} AS reputation_issue
             FROM sample s JOIN question q USING(question_id) LEFT JOIN sample_group g USING(task_id)
             JOIN sample_content c USING(task_id) WHERE s.status='valid' ORDER BY s.task_id
         """):
@@ -190,8 +195,15 @@ def dashboard_data(snapshot, bank, native):
             sentiment = reputation_label(row["reputation_code"])
             b["rec"][rec] += 1
             b["sent"][sentiment] += 1
+            if sentiment == "unknown":
+                reason = row["reputation_issue"] or ("enum" if row["reputation_code"] is not None else "unrecorded")
+                b.setdefault("sent_issues", Counter())[reason] += 1
             qid = row["question_id"]
             reference = {"q":qid, "text":prompts.get(qid), "d":dim}
+            if review and rec == "unknown":
+                result = review["records"].get(task)
+                api.require(result is not None, "推荐复检 / 任务未在复检记录中")
+                review_rows.append({**result, **reference, "task":task})
             if rec == "neutral":
                 neutral.append(reference)
             if reference["text"]:
@@ -213,9 +225,13 @@ def dashboard_data(snapshot, bank, native):
                 all(set(site) == {"Kalodata","FastMoss"} and
                     all(body in (0,1) and formal in (None,0,1) for body,formal in site.values())
                     for site in sites.values()), "快照校验 / 官网链接判定缺失或无效")
+    if review:
+        api.require(len(review_rows)==review["total"]==len(review["records"]),
+                    "推荐复检 / 任务总数未闭合")
     return {"batch":batch, "platform":native, "rows":list(buckets.values()), "issues":issues,
             "markets":{v:k for k,v in api.MARKETS.items()}, "competitors":{v:market_brands(v) for v in api.MARKETS.values()},
-            "tags":tag_names, "groups":groups, "neutral":neutral, "links":{"answerbit":SOURCE,"bank":QNA}}
+            "tags":tag_names, "groups":groups, "neutral":neutral, "links":{"answerbit":SOURCE,"bank":QNA},
+            "review":{"rows":review_rows,"version":review["version"],"checked_at":review["checked_at"]} if review else None}
 
 
 def render(data, output):
@@ -236,13 +252,14 @@ def retained_data(output):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("refresh","snapshot"))
+    parser.add_argument("mode", choices=("refresh","snapshot","review"))
     parser.add_argument("bank", type=Path)
     parser.add_argument("snapshot", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("--begin")
     parser.add_argument("--end")
     parser.add_argument("--fetch-platform", action="store_true")
+    parser.add_argument("--defer-unavailable", action="store_true", help="复检时暂缓上轮未读到的任务")
     args = parser.parse_args()
     stage = "配置"
     try:
@@ -254,13 +271,30 @@ def main():
         end = api.date_arg(args.end or str(today))
         api.require(begin <= end, "配置 / 起始日应早于或等于截止日")
         native = None
-        if args.mode == "snapshot":
-            with closing(sqlite3.connect(args.snapshot.resolve().as_uri()+"?mode=ro", uri=True)) as db:
-                begin,end = db.execute("SELECT begin_date,end_date FROM batch").fetchone()
-        if args.mode == "refresh" or args.fetch_platform:
+        if args.mode != "snapshot" or args.fetch_platform:
             stage = "只读凭证"
+            print("真实取数需要 Kalodata 品牌级只读 Key。常见一周窗口约 3–8 分钟，平台限流可能延长。"
+                  "凭证配置完成后才继续。", file=sys.stderr, flush=True)
             key,brand = api.operator_credentials()
             call = PacedRead(key)
+        if args.mode != "refresh":
+            with closing(sqlite3.connect(args.snapshot.resolve().as_uri()+"?mode=ro", uri=True)) as db:
+                db.row_factory = sqlite3.Row
+                old_batch = dict(db.execute("SELECT * FROM batch").fetchone())
+                begin,end = old_batch["begin_date"],old_batch["end_date"]
+            if args.output.is_file():
+                try:
+                    _, previous, _ = retained_data(args.output)
+                except (OSError, ValueError, IndexError):
+                    previous = {}
+                if previous.get("batch") == old_batch:
+                    native = previous.get("platform")
+        if args.mode != "snapshot":
+            if args.mode == "review":
+                stage = "Answerbit 推荐原文复检"
+                run_review(args.bank,args.snapshot,brand,call,
+                           lambda done,total: print(f"推荐复检已处理 {done}/{total}",file=sys.stderr,flush=True),
+                           defer_unavailable=args.defer_unavailable)
             if args.mode == "refresh":
                 stage = "Answerbit 回答取数与对账"
                 for attempt in range(2):
@@ -270,6 +304,7 @@ def main():
                     except api.ArchiveError as error:
                         if attempt or not str(error).startswith("分页 /"):
                             raise
+        if args.mode == "refresh" or args.fetch_platform:
             stage = "Answerbit 原生图表快照"
             native = platform_snapshot(call,brand,begin,end)
             if args.output.is_file() and native["issues"]:
@@ -289,14 +324,16 @@ def main():
         print(json.dumps({"dashboard":str(args.output.resolve()),"mode":args.mode,
                           "valid":sum(b["n"] for b in data["rows"]), "batch":data["batch"],
                           "native_available":list(native["data"]) if native else [],
-                          "native_issues":native["issues"] if native else {}},ensure_ascii=False))
+                          "native_issues":native["issues"] if native else {},
+                          "review_status":dict(Counter(r["status"] for r in data["review"]["rows"])) if data["review"] else {}},
+                         ensure_ascii=False))
         return 0
     except (api.ArchiveError, OSError, sqlite3.Error, ValueError, KeyError) as error:
         why = str(error) if isinstance(error, api.ArchiveError) else "文件、数据库或响应结构异常"
         status = {"stage":stage,"error":why,"attempt":datetime.now(CHINA).isoformat(timespec="seconds"),
                   "retained":str(args.output.resolve()) if args.output.is_file() else None,
                   "last_success":None}
-        if status["retained"]:
+        if status["retained"] and stage != "只读凭证":
             try:
                 before, old_data, after = retained_data(args.output)
                 status["last_success"] = old_data["batch"]["fetched_at_utc"]

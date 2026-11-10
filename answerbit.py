@@ -61,6 +61,8 @@ def request(path, payload, key):
     except (URLError, OSError, ValueError):
         raise ArchiveError(f"取数 / {path} 未获得可解析的响应，请核对网络或接口文档") from None
     code = body.get("code")
+    require(path != DETAIL or code != 106001,
+            "取数 / Answerbit 回答任务不存在（106001），请在大模型回答记录核对")
     shape = list if path in ("/geo/exposure/rank", "/geo/score/rank") else dict
     require(type(code) is int and code == 0 and isinstance(body.get("data"), shape),
             f"取数 / {path} 返回失败或响应结构变化，请核对 Answerbit")
@@ -273,11 +275,15 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
                 valid_count += 1
                 urls = [item.get("url") if isinstance(item, dict) else None
                         for item in links] if isinstance(links, list) else None
+                reputation = detail.get("brand_reputation")
                 clean, ranks, label, code, sentiment = content_flags(
-                    body, detail_question, questions[number][0], detail.get("brand_reputation"))
+                    body, detail_question, questions[number][0], reputation)
+                reputation_issue = (None if sentiment != "unknown" else
+                                    "missing" if reputation is None else
+                                    "format" if type(reputation) is not int else "enum")
                 form = brand_form(clean)
                 content.append((task, json.dumps(ranks), label, code, sentiment,
-                                detail_question if label == "neutral" else None))
+                                detail_question if label == "neutral" else None, reputation_issue))
                 flags = website_flags(body, urls)
                 websites.extend((task, *result) for result in flags)
                 mentioned, official = int(KALODATA in ranks), {name: formal for name, _, formal in flags}["Kalodata"]
@@ -332,7 +338,7 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
                 CREATE TABLE sample_content (
                     task_id TEXT PRIMARY KEY REFERENCES sample(task_id), ranks TEXT NOT NULL,
                     recommendation TEXT NOT NULL, reputation_code INTEGER, sentiment TEXT NOT NULL,
-                    prompt TEXT
+                    prompt TEXT, reputation_issue TEXT
                 );
             """)
             db.execute("INSERT INTO batch VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -342,7 +348,7 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
             db.executemany("INSERT INTO sample_group VALUES (?, ?, ?, ?)", groups)
             db.executemany("INSERT INTO sample_tag VALUES (?, ?, ?, ?)", tags)
             db.executemany("INSERT INTO sample_website VALUES (?, ?, ?, ?)", websites)
-            db.executemany("INSERT INTO sample_content VALUES (?, ?, ?, ?, ?, ?)", content)
+            db.executemany("INSERT INTO sample_content VALUES (?, ?, ?, ?, ?, ?, ?)", content)
             db.executemany("INSERT INTO issue VALUES (?, ?, ?, ?, ?, ?)", issues)
         report = read_snapshot(db_path, group_id, tag_ids)
         write_atomic(output, db_path.read_bytes())
