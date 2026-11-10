@@ -9,10 +9,14 @@
 Agent 启动真实取数前应告知所需 Key 和预计耗时，安全配置完成前暂停。约 1,000–3,000 条记录可先估 3–8 分钟，限流与采样窗口会影响时间。
 
 ```sh
-python3 dashboard.py refresh /path/to/question-bank.xlsx .trial/dashboard.sqlite .trial/GEO运营看板.html
+python3 dashboard.py refresh /path/to/question-bank.xlsx .trial/dashboard.sqlite .trial/GEO运营看板.html --excel .trial/GEO采样明细.xlsx
 ```
 
-刷新成功后，在同一台电脑运行 `python3 local_answers.py .trial/dashboard.sqlite .trial/GEO运营看板.html`，打开命令返回的本机地址。查询窗口保持运行时，「非明确推荐记录」的「查看原文」可按 Answerbit 任务定位对应题号、题文与原文。关掉查询窗口后可以用同一命令重开。直接打开 HTML 也能离线筛选和对照。默认读取北京时间最近七个自然日（含当天）的全范围，重复运行更新同一入口；也可附 `--begin` 与 `--end`。筛选在页面内进行，不重新请求 API。平台原生快照有独立范围与读取时间。刷新失败保留最后成功数据并显示失败阶段。使用 `snapshot` 代替 `refresh` 可从已保存的兼容 SQLite 离线生成；附 `--fetch-platform` 时仅补拉 Answerbit 原生快照。HTML 包含内部统计及部分题文定位，请留在获批的本地环境。
+默认交付同批简短报告、`GEO运营看板.html` 和 `GEO采样明细.xlsx`。报告写在对话内，标明时间、样本数、主要发现和回查建议。飞书会话支持附件且获准交付时，两个文件作为当前用户可下载的产物。HTML 在浏览器里离线筛选和对照。Excel 可按题号、日期、市场、平台、分组和标签筛选，并有单独的异常表。两份文件保留必要的回查字段，含原文的 SQLite 留在获批本机。
+
+在本机执行 `python3 answerbit.py query .trial/dashboard.sqlite` 可只读查询同批指标和异常。查具体回答时，执行 `python3 local_answers.py .trial/dashboard.sqlite .trial/GEO运营看板.html` 并打开返回的本机地址。在「非明确推荐记录」点击「查看原文」，可定位题号、题文和 Answerbit 回答。保持查询进程运行。这两种查询都无需 Answerbit Key。
+
+默认读取北京时间最近七个自然日（含当天）的全范围，也可附 `--begin` 与 `--end`。平台原生快照有独立范围与读取时间。刷新失败保留最后成功数据并显示失败阶段。使用 `snapshot` 代替 `refresh` 可从已保存的兼容 SQLite 离线生成；附 `--fetch-platform` 时仅补拉 Answerbit 原生快照。
 
 看板按总览、平台快照、品牌表现、官网引用、回答表现、运营行动和对照分析分页。同一窗口切页时保留主筛选和对照条件。平台快照页使用独立的全范围口径。
 
