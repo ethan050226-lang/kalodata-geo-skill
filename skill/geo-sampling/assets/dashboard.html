@@ -11,23 +11,38 @@
 @media(max-width:950px){.filter{grid-template-columns:repeat(4,minmax(0,1fr))}.filter button{justify-self:start}.wrap{padding:0 22px}}
 @media(max-width:650px){.wrap{padding:0 13px}.mast nav{gap:12px}.mast nav a{font-size:.76rem}.hero{grid-template-columns:1fr;margin-top:14px;padding:18px 16px}.filter{grid-template-columns:repeat(2,minmax(0,1fr));padding:10px}.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.card,.kpi{padding:12px}.native-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.native-cards .mini{padding:8px}.bar{grid-template-columns:minmax(75px,1.1fr) minmax(38px,1fr) minmax(106px,1.15fr);gap:5px}.bar-count{display:block;font-size:.75rem}.section{margin-top:20px}.mast .wrap{min-height:56px}.mark{width:27px;height:27px}}
 @media(max-width:360px){.mast nav{gap:7px}.brand{font-size:.85rem}.mast nav a{font-size:.71rem}.filter input[type=date]{font-size:.81rem;padding-inline:4px}.brief{display:block}.brief a{display:inline-block;margin-top:4px}.native-cards{grid-template-columns:1fr}}
+
+/* Overview and comparison */
+:root{--wash:#f2f5fb;--ink:#112546;--muted:#526680;--line:#dae4f2}
+.mast{background:#f9fbff}.hero{position:relative;isolation:isolate;overflow:hidden;min-height:154px;background:radial-gradient(ellipse at 90% 5%,#3267ac 0,transparent 53%),linear-gradient(120deg,#0c1b35,#193c73);padding:25px 28px;align-items:center}
+.hero::after{content:"";position:absolute;inset:0 0 0 50%;z-index:-1;background:repeating-linear-gradient(110deg,transparent 0 35px,#d8e9ff10 35px 36px);mask-image:linear-gradient(90deg,transparent,#000)}
+.hero-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:12px}.hero-actions a{white-space:nowrap}.hero-actions button{color:#0d3064;background:#eaf2ff;border:1px solid #d3e2fd;margin:0;padding:7px 12px}.hero-actions button[aria-expanded=true]{background:#cadfff}
+.filter-frame{border:1px solid var(--line);background:#fff;border-radius:16px;overflow:visible}.filter-frame .filter{border:0;background:none;padding:0 14px 12px}.filter-heading{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 14px 6px}.filter-heading b{font-size:.91rem}.filter-heading span{font-size:.76rem;color:var(--muted)}
+.pick-grid>div{min-width:0}.pick-grid{grid-template-columns:repeat(4,minmax(0,1fr)) repeat(2,minmax(0,.85fr)) auto}.picker{min-width:0;position:relative}.picker summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0;min-height:37px;margin-top:4px;padding:6px 9px;border:1px solid #c9d7eb;border-radius:8px;cursor:pointer;background:#f8faff;font-size:.86rem}.picker summary::-webkit-details-marker{display:none}.picker summary::after{content:"⌄";color:#3865a8}.picker summary span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.picker[open] summary,.picker.has-selection summary{border-color:#8db0ed;background:#edf4ff;color:#1c4388}
+.pick-menu{position:absolute;z-index:5;left:0;top:calc(100% + 3px);width:max(100%,190px);max-width:calc(100vw - 33px);padding:7px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px #112b4f26}.pick-list{max-height:196px;overflow:auto}.pick-list label{display:flex;align-items:center;gap:7px;padding:5px 4px;color:var(--ink);font-weight:500}.pick-list label:hover{background:#edf4ff}.pick-menu button{min-height:28px;padding:2px 7px;margin:0 0 5px;color:var(--blue);font-size:.75rem}.pick-menu .tag-rule{display:flex;justify-content:space-between;align-items:center;gap:4px;padding:0 3px 5px}.pick-menu .tag-rule select{width:auto;font-size:.75rem;min-height:26px;margin:0;padding:0 2px}
+.kpi{border-top:3px solid #b9d0f1;padding-top:11px}.kpi:nth-child(2){border-top-color:#3c6fcb}.scope{padding:9px 2px 5px}.compare{margin:18px 0 25px;border:1px solid #bfd1ee;background:#eaf1fc;padding:15px;border-radius:17px}.compare[hidden]{display:none}.compare-head{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;margin-bottom:10px}.compare-head p{color:var(--muted);font-size:.83rem}.compare-head button{margin:0;color:#204785}.compare .filter-frame{margin-bottom:10px}.compare-results{margin-top:10px}.cohorts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.cohort{background:white;border:1px solid var(--line);border-radius:11px;padding:9px 11px;min-width:0;overflow-wrap:anywhere}.cohort .tag{display:inline-grid;place-items:center;width:21px;height:21px;border-radius:6px;color:white;background:#2459c4;margin-right:5px;font-size:.76rem}.cohort.b .tag{background:#526888}.cohort small{display:block;margin-top:3px}.compare-chart{padding:10px 0}.compare-chart .bar:last-child .fill{background:#627b9f}.compare-results table td:not(:first-child){font-variant-numeric:tabular-nums}.delta{color:#244681;font-weight:670;white-space:nowrap}.compare .table-wrap{background:white}
+@media(max-width:950px){.pick-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:650px){.hero{min-height:0;padding:17px 14px}.hero-actions{justify-content:flex-start;gap:7px 10px}.hero-actions button{min-height:32px;padding:4px 8px;font-size:.83rem}.filter-frame .filter{padding:0 9px 9px}.filter-heading{padding:8px 9px 5px}.filter-heading span{font-size:.68rem}.pick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pick-grid>div:nth-child(even) .pick-menu{left:auto;right:0}.compare{padding:9px}.cohorts{grid-template-columns:1fr}}
+
+.native-cards{gap:12px}.native-cards .native-tab{text-align:left;width:100%;margin:0;border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:#f8faff;font-weight:500}.native-cards .native-tab[aria-pressed=true]{border-color:#779de0;background:#edf4ff;box-shadow:inset 0 3px #3466c8}.native-plot{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:14px}.native-plot>div{min-width:0;border:1px solid var(--line);border-radius:12px;padding:12px}.native-plot h3,.native-sources h3{margin-bottom:5px}.native-sources{margin-top:4px}.native-sources summary{color:var(--blue);font-size:.88rem;cursor:pointer}.native-ranking .own{color:#2256b0;font-weight:700}.native-plot .trend{margin-top:7px}.trend-legend{display:flex;flex-wrap:wrap;gap:4px 11px;font-size:.78rem;color:var(--muted)}.trend-legend i{display:inline-block;width:9px;height:9px;margin-right:4px;border-radius:3px}@media(max-width:650px){.native-plot{grid-template-columns:1fr}.native-plot>div{padding:8px}.native-cards .native-tab{padding:7px 8px}}
 </style>
 </head>
 <body>
 <header class="mast"><div class="wrap"><div class="brand"><span class="mark" aria-hidden="true">K</span><span>Kalodata GEO</span></div><nav aria-label="看板章节"><a href="#platform">平台快照</a><a href="#analysis">补充分析</a><a href="#action">运营行动</a></nav></div></header>
 <main class="wrap">
-<section class="hero"><div><div class="eyebrow">KALODATA · GEO MONITOR</div><h1>GEO 运营看板</h1><p id="batch"></p></div><a id="source" rel="noopener noreferrer" target="_blank">打开 Answerbit 工作台 ↗</a></section>
+<section class="hero"><div><div class="eyebrow">KALODATA · GEO MONITOR</div><h1>GEO 运营看板</h1><p id="batch"></p></div><div class="hero-actions"><a id="source" rel="noopener noreferrer" target="_blank">Answerbit 工作台 ↗</a><button id="compare-toggle" type="button" aria-expanded="false" aria-controls="compare">开启 A/B 对比</button></div></section>
 <div id="failure" class="warning" role="status" hidden></div>
-<form class="filter" aria-label="筛选看板">
-<label>市场<select id="market"></select></label><label>平台<select id="engine"></select></label>
-<label>Answerbit 分组<select id="group"></select></label>
-<div><div class="f-label">Answerbit 标签</div><details class="tagpick"><summary id="tag-label">全部标签</summary><div class="tag-options" id="tags"></div></details></div>
-<label>开始日期<input id="begin" type="date"></label><label>结束日期<input id="end" type="date"></label>
-<button id="reset" type="button">重置筛选</button>
-</form>
+<section class="filter-frame" aria-labelledby="filter-a-title">
+<div class="filter-heading"><b id="filter-a-title">查看范围</b><span>同维度可多选 · 跨维度同时生效</span></div>
+<form class="filter pick-grid" id="filter-a" aria-label="A 组筛选"></form></section>
 <div class="scope" id="scope" aria-live="polite"></div>
 <div id="kpis" class="kpis"></div>
 <div id="brief" class="brief"><span id="headline"></span><a href="#action">查看复测建议 ↓</a></div>
+<section id="compare" class="compare" aria-labelledby="compare-title" hidden>
+<div class="compare-head"><div><h2 id="compare-title">A/B 筛选对比</h2><p>A 组沿用主筛选，B 组在下方独立设置。两组读取同一快照。</p></div><button id="copy-a" type="button">复制 A 到 B</button></div>
+<div class="filter-frame"><div class="filter-heading"><b>B 组对照条件</b><span>空选项代表全部</span></div><form class="filter pick-grid" id="filter-b" aria-label="B 组筛选"></form></div>
+<div class="card compare-results" id="comparison"></div>
+</section>
 <section id="platform" class="section"><div class="section-head"><h2>01 Answerbit 平台快照</h2><span class="label">平台口径</span></div><div class="card native" id="native"></div></section>
 <section id="analysis" class="section">
 <div class="section-head"><h2>02 Skill 补充分析</h2><span class="label">按当前筛选重算</span></div>
@@ -55,18 +70,64 @@ const batch=D.batch, marketName=m=>D.markets[m]||m, groupName=g=>D.groups[g]||"�
 const groupPairs=Object.entries(D.groups).filter(([k])=>k).map(([k,v])=>[k,v]);
 const tagPairs=Object.entries(D.tags), ns=([,a],[,b])=>a.localeCompare(b,"zh-CN");
 const enginePairs=[...new Set(D.rows.map(r=>r.d[1]))].sort().map(x=>[x,x]);
-const setOptions=(el,opts,label)=>el.replaceChildren(new Option(label,""),...opts.map(([key,name])=>new Option(name,key)));
-setOptions($("market"),Object.entries(D.markets),"全部市场");
-setOptions($("engine"),enginePairs,"全部平台");
-setOptions($("group"),[...groupPairs.sort(ns),["__unknown","分组未知"]],"全部分组");
-for(const [k,name] of tagPairs.sort(ns)){
-  const l=document.createElement("label"),i=document.createElement("input");
-  i.type="checkbox";i.value=k;l.append(i,document.createTextNode(name+" · "+k));$("tags").append(l);
+const dimensions=[
+  ["m","市场",Object.entries(D.markets)],
+  ["e","平台",enginePairs],
+  ["g","Answerbit 分组",[...groupPairs.sort(ns),["__unknown","分组未知"]]],
+  ["tags","Answerbit 标签",tagPairs.sort(ns)]
+];
+function makeFilters(side){
+  const form=$("filter-"+side);
+  for(const [key,label,opts] of dimensions){
+    const pick=document.createElement("details");
+    pick.className="picker";
+    pick.dataset.key=key;
+    pick.innerHTML=`<div class="f-label">${label}</div><summary><span>全部</span></summary><div class="pick-menu"><button type="button">清空选择</button><div class="pick-list"></div></div>`;
+    const title=pick.querySelector(".f-label");
+    form.append(pick);
+    // Native details requires its summary to be first for keyboard activation.
+    const wrap=document.createElement("div");
+    pick.before(wrap);wrap.append(title,pick);
+    const summary=pick.querySelector("summary");
+    summary.setAttribute("aria-label",`${side.toUpperCase()} 组${label}多选`);
+    for(const [value,name] of opts){
+      const l=document.createElement("label"), i=document.createElement("input");
+      i.type="checkbox";i.value=value;
+      l.append(i,document.createTextNode(name+(opts.filter(([,v])=>v===name).length>1?" · "+value:"")));pick.querySelector(".pick-list").append(l);
+    }
+    if(!opts.length)pick.querySelector(".pick-list").textContent="本批暂无选项";
+    pick.querySelector("button").addEventListener("click",()=>{
+      for(const i of pick.querySelectorAll("input"))i.checked=false;
+      render();
+    });
+    if(key==="tags"){
+      const rule=document.createElement("label");
+      rule.className="tag-rule";
+      rule.innerHTML='匹配方式 <select name="tagMode"><option value="all">全部标签</option><option value="any">任一标签</option></select>';
+      pick.querySelector(".pick-menu").prepend(rule);
+    }
+  }
+  for(const [key,label,value] of [["from","开始日期",batch.begin_date],["to","结束日期",batch.end_date]]){
+    const l=document.createElement("label"),i=document.createElement("input");
+    i.type="date";i.name=key;i.min=batch.begin_date;i.max=batch.end_date;i.value=i.defaultValue=value;
+    l.append(document.createTextNode(label),i);form.append(l);
+  }
+  const reset=document.createElement("button");
+  reset.type="button";reset.textContent="重置";
+  reset.addEventListener("click",()=>{form.reset();render();});
+  form.append(reset);
+  form.addEventListener("change",render);
+  form.addEventListener("submit",e=>e.preventDefault());
 }
-if(!tagPairs.length) $("tags").textContent="本批没有标签";
-for(const [id,value] of [["begin",batch.begin_date],["end",batch.end_date]]){
-  const e=$(id);e.value=value;e.min=batch.begin_date;e.max=batch.end_date;
-}
+makeFilters("a");makeFilters("b");
+document.addEventListener("pointerdown",e=>{
+  for(const item of document.querySelectorAll(".picker[open]"))if(!item.contains(e.target))item.open=false;
+});
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape")return;
+  const pick=document.activeElement.closest(".picker[open]");
+  if(pick){pick.open=false;pick.querySelector("summary").focus();}
+});
 for(const id of ["source","answerbit-footer"]) $(id).href=D.links.answerbit;
 $("bank-link").href=D.links.bank;
 $("batch").textContent=`查询窗口 ${batch.begin_date} 至 ${batch.end_date} · 最后成功取数 ${fmtDate(batch.fetched_at_utc)}（北京时间）`;
@@ -79,15 +140,36 @@ function table(headers,rows){
   return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th scope="col">${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
 function kpi(title,value,detail){return `<div class="card kpi"><b>${esc(title)}</b><div class="value">${esc(value)}</div><small>${esc(detail)}</small></div>`;}
-function filters(){
-  return {m:$("market").value,e:$("engine").value,g:$("group").value,
-          from:$("begin").value||batch.begin_date,to:$("end").value||batch.end_date,
-          tags:[...$("tags").querySelectorAll(":checked")].map(x=>x.value)};
+function filters(side="a"){
+  const form=$("filter-"+side), result={from:form.elements.from.value||batch.begin_date,
+    to:form.elements.to.value||batch.end_date,tagMode:form.elements.tagMode.value};
+  for(const pick of form.querySelectorAll(".picker")){
+    const checked=[...pick.querySelectorAll("input:checked")];
+    result[pick.dataset.key]=checked.map(i=>i.value);
+    const text=checked.length===0?"全部":checked.length===1?checked[0].parentElement.textContent:`已选 ${checked.length} 项`;
+    pick.querySelector("summary span").textContent=text;
+    pick.classList.toggle("has-selection",checked.length>0);
+  }
+  return result;
 }
+function setFilters(side, f){
+  const form=$("filter-"+side);
+  form.elements.from.value=f.from;form.elements.to.value=f.to;form.elements.tagMode.value=f.tagMode;
+  for(const pick of form.querySelectorAll(".picker")){
+    for(const i of pick.querySelectorAll("input"))i.checked=f[pick.dataset.key].includes(i.value);
+  }
+}
+const includes=(values,v)=>!values.length||values.includes(v);
 function matches(d,f){
   const [m,e,day,g,,tags]=d;
-  return (!f.m||m===f.m)&&(!f.e||e===f.e)&&(!f.g||g===(f.g==="__unknown"?"":f.g))
-    &&day>=f.from&&day<=f.to&&f.tags.every(t=>tags.includes(t));
+  const tagMatch=!f.tags.length||(f.tagMode==="all"?f.tags.every(t=>tags.includes(t)):f.tags.some(t=>tags.includes(t)));
+  return includes(f.m,m)&&includes(f.e,e)&&includes(f.g,g||"__unknown")&&day>=f.from&&day<=f.to&&tagMatch;
+}
+function describe(f){
+  return [f.m.length?f.m.map(marketName).join("、"):"全部市场",f.e.length?f.e.join("、"):"全部平台",
+    f.g.length?f.g.map(groupName).join("、"):"全部分组",
+    f.tags.length?f.tags.map(t=>D.tags[t]).join(f.tagMode==="all"?" ∩ ":" ∪ "):"全部标签",
+    f.from+" 至 "+f.to].join(" · ");
 }
 function breakdown(rs){
   const b=new Map();
@@ -100,50 +182,68 @@ function breakdown(rs){
 }
 const bar=(label,n,d)=>`<div class="bar"><span>${esc(label)}</span><div class="track" aria-hidden="true"><div class="fill" style="width:${d?100*n/d:0}%"></div></div><span class="number">${esc(pct(n,d))}${d?`<span class="bar-count">（${num(n)}/${num(d)}）</span>`:""}</span></div>`;
 const scaleLabel='<div class="chart-label" aria-hidden="true"><span>0%</span><span>统一比例刻度</span><span>100%</span></div>';
-function sourceTrend(data,title,unit){
-  const pts=[...data].sort((a,b)=>a.date.localeCompare(b.date));
-  if(pts.length<2)return empty("有效日期不足，暂用平台概览值。");
+function sourceTrend(data,title,unit,competitors){
+  const colors=["#285fc4","#6b7f9d","#087b91","#7863ac","#9e6332","#446c85"];
+  const series=[{label:"Kalodata",points:data},...competitors.slice().sort((a,b)=>a.label.localeCompare(b.label,"zh-CN"))].filter(x=>x.points.length)
+    .map((x,i)=>({...x,color:colors[i%colors.length],points:[...x.points].sort((a,b)=>a.date.localeCompare(b.date))}));
+  const pts=series.flatMap(x=>x.points).sort((a,b)=>a.date.localeCompare(b.date));
+  if(pts.length<2||pts[0].date===pts.at(-1).date)return empty("有效日期不足，暂用平台概览值。");
   const width=540,left=46,right=510,top=15,bottom=124,span=Date.parse(pts.at(-1).date)-Date.parse(pts[0].date);
-  if(!span)return empty("有效日期不足。");
-  const max=unit==="%"?100:Math.max(1,Math.ceil(Math.max(...pts.map(x=>x.value))/10)*10);
+  const rank=unit==="名", min=rank?1:0;
+  const max=rank?Math.max(2,Math.ceil(Math.max(...pts.map(x=>x.value)))):unit==="%"?100:Math.max(1,Math.ceil(Math.max(...pts.map(x=>x.value))/10)*10);
   const xs=p=>left+(Date.parse(p.date)-Date.parse(pts[0].date))/span*(right-left);
-  const ys=p=>bottom-(bottom-top)*p.value/max;
-  const groups=[];
-  for(const p of pts){
-    if(!groups.length||Date.parse(p.date)-Date.parse(groups.at(-1).at(-1).date)>86400000)groups.push([]);
-    groups.at(-1).push(p);
-  }
-  return `<div class="trend"><svg viewBox="0 0 ${width} 155" role="img" aria-label="${esc(title)}">${[0,max/2,max].map(v=>`<line x1="${left}" x2="${right}" y1="${ys({value:v})}" y2="${ys({value:v})}"/><text x="2" y="${ys({value:v})+4}">${v}${unit}</text>`).join("")}${groups.map(g=>`<path d="${g.map((p,i)=>`${i?"L":"M"}${xs(p)} ${ys(p)}`).join(" ")}"/>`).join("")}${pts.map(p=>`<circle cx="${xs(p)}" cy="${ys(p)}" r="3.5"><title>${esc(p.date)} · ${p.value}${unit} · 平台监测回答 ${p.count??"未提供"}</title></circle>`).join("")}<text x="${left}" y="148">${esc(pts[0].date)}</text><text x="${right}" y="148" text-anchor="end">${esc(pts.at(-1).date)}</text></svg></div>`;
+  const ys=p=>rank?top+(bottom-top)*(p.value-min)/(max-min):bottom-(bottom-top)*p.value/max;
+  const marks=series.map(item=>{
+    const groups=[];
+    for(const p of item.points){
+      if(!groups.length||Date.parse(p.date)-Date.parse(groups.at(-1).at(-1).date)>86400000)groups.push([]);
+      groups.at(-1).push(p);
+    }
+    return groups.map(g=>`<path style="stroke:${item.color}" d="${g.map((p,i)=>`${i?"L":"M"}${xs(p)} ${ys(p)}`).join(" ")}"/>`).join("")+
+      item.points.map(p=>`<circle style="fill:${item.color}" cx="${xs(p)}" cy="${ys(p)}" r="3.5"><title>${esc(item.label)} · ${esc(p.date)} · ${p.value}${unit} · 平台监测回答 ${p.count??"未提供"}</title></circle>`).join("");
+  }).join("");
+  return `<div class="trend"><div class="trend-legend">${series.map(x=>`<span><i style="background:${x.color}"></i>${esc(x.label)}</span>`).join("")}</div><svg viewBox="0 0 ${width} 155" role="img" aria-label="${esc(title)}">${[...new Set([min,rank?Math.round((min+max)/2):max/2,max])].map(v=>`<line x1="${left}" x2="${right}" y1="${ys({value:v})}" y2="${ys({value:v})}"/><text x="2" y="${ys({value:v})+4}">${v}${unit}</text>`).join("")}${marks}<text x="${left}" y="148">${esc(pts[0].date)}</text><text x="${right}" y="148" text-anchor="end">${esc(pts.at(-1).date)}</text></svg></div>`;
 }
+let nativeMetric="exposure";
 function native(f){
   const p=D.platform;
   if(!p||!Object.keys(p.data).length){
     $("native").innerHTML=empty("本次没有可展示的原生平台快照。可通过上方 Answerbit 入口查看。");return;
   }
-  const a=p.data, cards=a["/geo/base/dashboard"]||{};
-  const headings={exposure:"平台品牌提及率",avg_rank:"平台平均排名",score:"平台曝光效果分数"};
-  const adjusted=f.m||f.e||f.g||f.tags.length||f.from!==batch.begin_date||f.to!==batch.end_date;
-  let view=`<p class="sub">范围 ${esc(p.begin)} 至 ${esc(p.end)} · 全部平台、分组和标签 · 读取 ${esc(fmtDate(p.fetched))}（北京时间）。${adjusted?" 当前筛选仅重算 Skill 补充分析，原生快照保持其读取范围。":""}</p>`;
-  view+=`<div class="native-cards">${Object.entries(cards).map(([k,v])=>`<div class="mini"><small>${headings[k]}</small><div class="value">${v.toFixed(2)}${k==="exposure"?"%":""}</div><small>平台 API 未返回该指标的分子和分母</small></div>`).join("")}</div>`;
-  view+='<div class="grid">';
-  for(const [key,title,unit] of [["/geo/exposure/trends","平台提及率趋势","%"],["/geo/score/trends","平台曝光分数趋势",""]]){
-    const rows=a[key]||[];
-    if(rows.length>1)view+=`<div><h3>${title}</h3>${sourceTrend(rows,title,unit)}<details class="definition"><summary>查看日值与样本量</summary>${table(["日期","平台数值","监测回答数"],rows.map(r=>[esc(r.date),r.value+unit,r.count??"未提供"]))}</details></div>`;
+  const data=p.data, cards=data["/geo/base/dashboard"]||{};
+  const metricNames={exposure:"品牌提及率",avg_rank:"平均排名",score:"曝光效果分数"};
+  const available=Object.keys(metricNames).filter(k=>Object.hasOwn(cards,k));
+  if(available.length&&!available.includes(nativeMetric))nativeMetric=available[0];
+  const adjusted=f.m.length||f.e.length||f.g.length||f.tags.length||f.from!==batch.begin_date||f.to!==batch.end_date;
+  const unit=nativeMetric==="exposure"?"%":nativeMetric==="avg_rank"?"名":"";
+  const display=(v,u)=>v===null||v===undefined?"—":v.toFixed(2)+u;
+  let view=`<p class="sub">范围 ${esc(p.begin)} 至 ${esc(p.end)} · 全部平台、分组和标签 · 读取 ${esc(fmtDate(p.fetched))}（北京时间）。${adjusted?" 当前筛选与 A/B 对比重算 Skill 指标，原生快照保持其读取范围。":""}</p>`;
+  view+=`<div class="native-cards" aria-label="切换 Answerbit 指标">${available.map(k=>`<button type="button" class="native-tab" data-metric="${k}" aria-pressed="${k===nativeMetric}"><small>${metricNames[k]}</small><div class="value">${display(cards[k],k==="exposure"?"%":"")}</div><small>平台概览口径</small></button>`).join("")}</div>`;
+  const trendPath=nativeMetric==="score"?"/geo/score/trends":"/geo/exposure/trends";
+  const metricPoints=rows=>nativeMetric==="avg_rank"?rows.filter(p=>p.rank>0).map(p=>({...p,value:p.rank})):rows;
+  const points=metricPoints(data[trendPath]||[]);
+  const competitorPoints=(p.competitor_trends?.[trendPath]||[]).map(x=>({...x,points:metricPoints(x.points)}));
+  const ranking=(data[nativeMetric==="score"?"/geo/score/rank":"/geo/exposure/rank"]||[])
+    .map(r=>({...r,current:nativeMetric==="avg_rank"?(r.rank>0?r.rank:null):r.value}))
+    .filter(r=>r.current!==null).sort((a,b)=>nativeMetric==="avg_rank"?a.current-b.current:b.current-a.current);
+  if(points.length||ranking.length){
+    view+=`<div class="native-plot"><div><h3>品牌趋势</h3><p class="sub">${metricNames[nativeMetric]} · 缺少日值的日期留空</p>${sourceTrend(points,metricNames[nativeMetric],unit,competitorPoints)}
+      ${points.length?`<details class="definition"><summary>查看平台日值与监测回答数</summary>${table(["日期","平台数值","监测回答数"],points.map(r=>[esc(r.date),display(r.value,unit),r.count??"未提供"]))}</details>`:""}</div>
+      ${ranking.length?`<div class="native-ranking"><h3>品牌及竞品排行</h3><p class="sub">按 Answerbit 配置的竞品及平台口径展示</p><div class="compact">${table(["排名","品牌","数值"],ranking.map((r,i)=>[i+1,r.own?`<span class="own">${esc(r.label)}</span>`:esc(r.label),display(r.current,unit)]))}</div></div>`:empty("本范围没有可展示的原生竞品排行。")}</div>`;
   }
-  for(const [key,title] of [["/geo/domain/rank","平台引用域名排行"],["/geo/article/rank","平台引用文章排行"]]){
-    const rows=a[key]||[];
-    if(rows.length)view+=`<div><h3>${title} · 前 ${rows.length} 项</h3><div class="compact">${table(["来源","平台引用次数"],rows.map(r=>[esc(r.label),num(r.count)]))}</div></div>`;
-  }
-  view+='</div>';
+  const sources=[["/geo/domain/rank","引用域名排行"],["/geo/article/rank","引用文章排行"]].filter(([k])=>data[k]?.length);
+  if(sources.length)view+=`<details class="native-sources"><summary>查看 Answerbit 引用排行</summary><div class="grid compact">${sources.map(([k,title])=>`<div><h3>${title}</h3>${table(["来源","平台引用次数"],data[k].map(r=>[esc(r.label),num(r.count)]))}</div>`).join("")}</div></details>`;
   if(Object.keys(p.issues).length)view+=`<details class="definition"><summary>原生快照缺项</summary>${table(["接口","状态"],Object.entries(p.issues).map(([k,v])=>[esc(k),esc(v)]))}</details>`;
   $("native").innerHTML=view;
+  $("native").querySelectorAll(".native-tab").forEach(tab=>tab.addEventListener("click",()=>{
+    nativeMetric=tab.dataset.metric;native(f);
+    $("native").querySelector('[aria-pressed="true"]')?.focus();
+  }));
 }
 function render(){
   const f=filters(), rs=D.rows.filter(r=>matches(r.d,f)), n=total(rs), selected=breakdown(rs);
-  const desc=[f.m?marketName(f.m):"全部市场",f.e||"全部平台",f.g?groupName(f.g):"全部分组",
-    f.tags.length?f.tags.map(t=>D.tags[t]).join(" ∩ "):"全部标签",f.from+" 至 "+f.to];
-  $("tag-label").textContent=f.tags.length?`已选 ${f.tags.length} 个标签`:"全部标签";
-  $("scope").textContent=desc.join(" · ")+` · ${num(n)} 条有效回答`+(f.from>f.to?" · 起始日应早于或等于结束日":"");
+  $("scope").textContent=describe(f)+` · ${num(n)} 条有效回答`+(f.from>f.to?" · 起始日应早于或等于结束日":"");
+  if(!$("compare").hidden)renderComparison(f,rs);
   const un=rs.filter(r=>!r.d[4]), unr=total(un), kh=sum(rs,r=>r.mentions.Kalodata||0);
   const namedCount=n-unr, nh=sum(un,r=>r.mentions.Kalodata||0), first=sum(rs,r=>r.first);
   const known=sum(rs,r=>r.links.Kalodata?.[3]||0), official=sum(rs,r=>r.links.Kalodata?.[2]||0);
@@ -162,7 +262,7 @@ function render(){
         rateList(count),rateList(sov),ratio(sum(rows,r=>r.first),count),rankCount?`${(rankSum/rankCount).toFixed(2)}（${rankSum}/${rankCount}）`:"不适用"];
     }))+ `<p class="definition">首次第一 = Kalodata 在配置品牌中最先出现 ÷ 有效回答（当前合计 ${ratio(first,n)}）。平均首次名次 = 名次总和 ÷ 有 Kalodata 名次的回答。</p>`:empty("当前筛选没有有效回答。");
   const chosen=selected.filter(x=>!x[0].d[4]).sort((a,b)=>total(b)-total(a))[0];
-  $("mention-chart").innerHTML=chosen?`<p class="sub">${esc(marketName(chosen[0].d[0]))} · ${num(total(chosen))} 条${f.m?"":" · 当前样本量最大的市场"}</p>${scaleLabel}<div class="bars">${D.competitors[chosen[0].d[0]].map(b=>bar(b,sum(chosen,r=>r.mentions[b]||0),total(chosen))).join("")}</div>`:empty("当前筛选没有未点名题样本。");
+  $("mention-chart").innerHTML=chosen?`<p class="sub">${esc(marketName(chosen[0].d[0]))} · ${num(total(chosen))} 条${f.m.length===1?"":" · 当前样本量最大的市场"}</p>${scaleLabel}<div class="bars">${D.competitors[chosen[0].d[0]].map(b=>bar(b,sum(chosen,r=>r.mentions[b]||0),total(chosen))).join("")}</div>`:empty("当前筛选没有未点名题样本。");
   const byBrand=(brand,i)=>sum(rs,r=>r.links[brand]?.[i]||0);
   $("website").innerHTML=n?scaleLabel+[[0,1,"正文链接"],[2,3,"正式来源"]].map(([a,b,name])=>`<div class="chart-group"><strong>${name}</strong><div class="bars">${["Kalodata","FastMoss"].map(x=>bar(x,byBrand(x,a),byBrand(x,b))).join("")}</div></div>`).join("")+
     `<p class="definition">正式来源字段覆盖 ${ratio(known,n)}。</p>`:empty("当前筛选没有有效回答。");
@@ -201,14 +301,68 @@ function render(){
     <p class="definition">本批接口返回 ${num(batch.returned_records)} 条，题库未匹配 ${num(D.issues.unmatched_question||0)} 条，题文或市场歧义 ${num((D.issues.ambiguous_question||0)+(D.issues.market_tag_conflict||0))} 条，回答待确认 ${num(D.issues.answer_unconfirmed||0)} 条。此为全批数据，未匹配项未进入市场筛选。</p>
     <p class="sub">实际启用题单与采样计划未取得，样本覆盖率无法计算。题库版本 ${esc(batch.question_version.slice(0,12))} · ${esc(batch.metric_version)}</p>`;
 }
-$("reset").addEventListener("click",()=>{
-  for(const id of ["market","engine","group"])$(id).value="";
-  $("begin").value=batch.begin_date;$("end").value=batch.end_date;
-  for(const t of $("tags").querySelectorAll("input"))t.checked=false;
+let comparisonOpened=false;
+$("compare-toggle").addEventListener("click",()=>{
+  const panel=$("compare"), open=panel.hidden;
+  panel.hidden=!open;
+  $("compare-toggle").setAttribute("aria-expanded",String(open));
+  $("compare-toggle").textContent=open?"收起 A/B 对比":"开启 A/B 对比";
+  if(open&&!comparisonOpened){setFilters("b",filters());comparisonOpened=true;}
   render();
+  if(open)panel.scrollIntoView({block:"nearest"});
 });
-document.querySelector("form").addEventListener("change",render);
-document.querySelector("form").addEventListener("submit",event=>event.preventDefault());
+$("copy-a").addEventListener("click",()=>{setFilters("b",filters());render();});
+function comparableSet(rows){
+  const sets=new Set(rows.map(r=>JSON.stringify(D.competitors[r.d[0]].slice().sort())));
+  return sets.size===1?[...sets][0]:null;
+}
+function compareStats(rows){
+  const un=rows.filter(r=>!r.d[4]), n=total(rows);
+  return {
+    n, unnamed:total(un),
+    mention:[sum(rows,r=>r.mentions.Kalodata||0),n],
+    unmentioned:[sum(un,r=>r.mentions.Kalodata||0),total(un)],
+    first:[sum(rows,r=>r.first),n],
+    rank:[sum(rows,r=>r.rank[0]),sum(rows,r=>r.rank[1])],
+    body:[sum(rows,r=>r.links.Kalodata?.[0]||0),n],
+    formal:[sum(rows,r=>r.links.Kalodata?.[2]||0),sum(rows,r=>r.links.Kalodata?.[3]||0)],
+    recommendation:[sum(rows,r=>r.rec.explicit||0),n],
+    coverage:[n-sum(rows,r=>r.rec.unknown||0),n],
+    sentiment:[sum(rows,r=>r.sent.positive||0),n-sum(rows,r=>(r.sent.not_mentioned||0)+(r.sent.unknown||0))],
+    sov:[sum(rows,r=>r.mentions.Kalodata||0),sum(rows,r=>Object.values(r.mentions).reduce((a,b)=>a+b,0))]
+  };
+}
+function renderComparison(f,aRows){
+  const f2=filters("b"), bRows=D.rows.filter(r=>matches(r.d,f2)), a=compareStats(aRows),b=compareStats(bRows);
+  const sameSet=comparableSet(aRows)!==null&&comparableSet(aRows)===comparableSet(bRows);
+  const overlap=sum(aRows,r=>matches(r.d,f2)?r.n:0);
+  const score=(x,rank)=>!x[1]?"不适用":rank?`${(x[0]/x[1]).toFixed(2)}（${num(x[0])}/${num(x[1])}）`:ratio(...x);
+  function diff(x,y,rank){
+    if(!x[1]||!y[1])return "—";
+    const raw=(x[0]/x[1]-y[0]/y[1])*(rank?1:100), v=Number(raw.toFixed(2));
+    return `<span class="delta">${v>0?"+":""}${v.toFixed(2)} ${rank?"名":"个百分点"}</span>`;
+  }
+  const comparisons=[
+    ["Kalodata 提及率","mention"],["未点名题提及率","unmentioned"],
+    ["Kalodata 首次出现第一","first"],["平均首次名次","rank"],
+    ["Kalodata 正文官网链接","body"],["Kalodata 官网正式来源命中","formal"],
+    ["明确推荐率（初判）","recommendation"],["推荐可判定覆盖率","coverage"],["平台已提及的正面率","sentiment"]
+  ];
+  if(sameSet)comparisons.splice(2,0,["Kalodata 提及份额","sov"]);
+  const heading=(label,x,scope)=>`<div class="cohort ${label.toLowerCase()}"><b><span class="tag">${label}</span>${num(x.n)} 条有效回答</b><small>${esc(describe(scope))}</small><small>点名 ${num(x.n-x.unnamed)} · 未点名 ${num(x.unnamed)}</small></div>`;
+  let view=`<div class="cohorts">${heading("A",a,f)}${heading("B",b,f2)}</div>`;
+  if(a.n&&b.n)view+=`<div class="compare-chart"><h3>未点名题提及率</h3>${scaleLabel}<div class="bars">${bar("A 组",...a.unmentioned)}${bar("B 组",...b.unmentioned)}</div></div>`;
+  if(a.unnamed&&b.unnamed){
+    const gap=100*(a.unmentioned[0]/a.unnamed-b.unmentioned[0]/b.unnamed);
+    if(Math.abs(gap)>=.005)view+=`<p class="definition"><b>对比线索</b> · ${gap>0?"A":"B"} 组未点名题提及率高 ${Math.abs(gap).toFixed(2)} 个百分点，可用相同平台和题类再对照。</p>`;
+  }
+  view+=`<p class="definition">差值为 A − B；平均首次名次以名为单位，其余为百分点。重叠样本 ${num(overlap)} 条。两组样本构成可能不同，优先核对未点名题及平台、题类是否一致。</p>`;
+  if(!sameSet)view+=`<p class="definition">两组没有共同的单一竞品集合，份额差值仅在主看板按市场查看。</p>`;
+  if(f2.from>f2.to)view+=empty("B 组起始日应早于或等于结束日。");
+  view+=table(["指标","A 组","B 组","A − B"],comparisons.map(([title,k])=>[
+    esc(title),score(a[k],k==="rank"),score(b[k],k==="rank"),diff(a[k],b[k],k==="rank")]));
+  $("comparison").innerHTML=view;
+}
 render();
 </script>
 </body>

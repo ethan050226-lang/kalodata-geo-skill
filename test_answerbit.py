@@ -21,6 +21,25 @@ except ImportError:
 
 
 class OperatorCredentialsTest(unittest.TestCase):
+    def test_dashboard_reads_competitor_trends_with_platform_ids(self):
+        day = "2026-11-09"
+        calls = {}
+
+        def call(path, payload):
+            calls[path] = payload
+            if path == "/geo/exposure/rank":
+                return [{"competitor_id":"0","competitor_name":"Kalodata","exposure":60},
+                        {"competitor_id":"123","competitor_name":"FastMoss","exposure":30}]
+            if path == "/geo/exposure/trends":
+                points = [{"date":day,"exposure":30,"avg_rank":2,"task_count":10}]
+                return {"brand_statistics":points,"competitor_statistics":[{"name":"FastMoss","statistics":points}]}
+            return [] if path == "/geo/score/rank" else {}
+
+        platform = dashboard.platform_snapshot(call,"test",day,day)
+        self.assertEqual(calls["/geo/exposure/trends"]["competitor_ids"],["123"])
+        self.assertEqual(platform["competitor_trends"]["/geo/exposure/trends"][0]["points"][0]["rank"],2)
+        self.assertEqual(platform["data"]["/geo/exposure/rank"][0]["own"],True)
+
     def test_missing_key_blocks_noninteractive_refresh(self):
         args = ["answerbit.py", "refresh", "bank.xlsx", "local.sqlite", "--begin", "2026-11-01",
                 "--end", "2026-11-01"]

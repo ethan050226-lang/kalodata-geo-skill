@@ -80,26 +80,47 @@ def number(value):
 
 
 def platform_snapshot(call, brand, begin, end):
-    results, issues = {}, {}
+    results, issues, competitors = {}, {}, {}
+    competitor_ids = []
     payload = dict(brand_id=brand, begin_date=begin, end_date=end)
+    def trend_points(rows, field):
+        return [{"date": r["date"], "value": number(r.get(field)), "count": number(r.get("task_count")),
+                 "rank": number(r.get("avg_rank"))}
+                for r in rows if isinstance(r, dict) and isinstance(r.get("date"), str)
+                and begin <= r["date"] <= end and number(r.get(field)) is not None]
     for path in api.PLATFORM_READS:
         try:
-            data = call(path, {**payload, **({"page":1, "page_size":5} if path.endswith("/rank") else {})})
+            paged = path in ("/geo/domain/rank", "/geo/article/rank")
+            options = {"page":1, "page_size":5} if paged else {}
+            if path.endswith("/trends") and competitor_ids:
+                options["competitor_ids"] = competitor_ids
+            data = call(path, {**payload, **options})
             if path.endswith("/dashboard"):
                 values = {k: number(data[k].get("value")) for k in ("exposure","avg_rank","score")
                           if isinstance(data.get(k), dict)}
                 values = {k:v for k,v in values.items() if v is not None}
             elif path.endswith("/trends"):
                 field = "exposure" if "exposure" in path else "score"
-                values = [{"date": r["date"], "value": number(r.get(field)), "count": number(r.get("task_count"))}
-                          for r in data.get("brand_statistics", []) if isinstance(r, dict)
-                          and isinstance(r.get("date"), str) and begin <= r["date"] <= end
-                          and number(r.get(field)) is not None]
-            else:
+                values = trend_points(data.get("brand_statistics", []),field)
+                competitors[path] = [{"label": r["name"], "points": trend_points(r.get("statistics",[]),field)}
+                                     for r in data.get("competitor_statistics",[]) if isinstance(r,dict)
+                                     and isinstance(r.get("name"),str)]
+            elif paged:
                 field = "domain" if "/domain/" in path else "article"
                 values = [{"label": r[field], "count": r["count"]} for r in data.get("reference_count", [])[:5]
                           if isinstance(r, dict) and isinstance(r.get(field), str)
                           and type(r.get("count")) is int and r["count"] >= 0]
+            else:
+                field = "exposure" if "/exposure/" in path else "score"
+                if field == "exposure":
+                    competitor_ids = list(dict.fromkeys(str(r["competitor_id"]) for r in data
+                        if isinstance(r,dict) and str(r.get("competitor_id","")).isdigit()
+                        and str(r["competitor_id"]) != "0"))[:10]
+                values = [{"label": r["competitor_name"], "value": number(r.get(field)),
+                           "rank": number(r["avg_rank"].get("value")) if isinstance(r.get("avg_rank"), dict) else None,
+                           "own": str(r.get("competitor_id")) == "0"}
+                          for r in data if isinstance(r, dict) and isinstance(r.get("competitor_name"), str)
+                          and number(r.get(field)) is not None]
             if values:
                 results[path] = values
             else:
@@ -107,7 +128,7 @@ def platform_snapshot(call, brand, begin, end):
         except (api.ArchiveError, TypeError, KeyError) as error:
             issues[path] = str(error) if isinstance(error, api.ArchiveError) else "响应结构待核对"
     return {"fetched": datetime.now(CHINA).isoformat(timespec="seconds"), "begin":begin, "end":end,
-            "data":results, "issues":issues}
+            "data":results, "issues":issues, "competitor_trends":competitors}
 
 
 def dashboard_data(snapshot, bank, native):

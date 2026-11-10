@@ -26,8 +26,8 @@ from content_metrics import (KALODATA, first_ranks, recommendation, reputation_l
 BASE = "https://answerbit.qq.com"
 LIST = "/geo/task/get"
 DETAIL = "/geo/task/detail/get"
-PLATFORM_READS = ("/geo/base/dashboard", "/geo/exposure/trends", "/geo/score/trends",
-                  "/geo/domain/rank", "/geo/article/rank")
+PLATFORM_READS = ("/geo/base/dashboard", "/geo/exposure/rank", "/geo/score/rank", "/geo/exposure/trends",
+                  "/geo/score/trends", "/geo/domain/rank", "/geo/article/rank")
 PAGE_SIZE = 50
 MARKETS = dict(zip(
     ("美国", "英国", "德国", "法国", "中国", "泰国", "越南", "印尼", "马来西亚", "日本", "韩国"),
@@ -61,7 +61,8 @@ def request(path, payload, key):
     except (URLError, OSError, ValueError):
         raise ArchiveError(f"取数 / {path} 未获得可解析的响应，请核对网络或接口文档") from None
     code = body.get("code")
-    require(type(code) is int and code == 0 and isinstance(body.get("data"), dict),
+    shape = list if path in ("/geo/exposure/rank", "/geo/score/rank") else dict
+    require(type(code) is int and code == 0 and isinstance(body.get("data"), shape),
             f"取数 / {path} 返回失败或响应结构变化，请核对 Answerbit")
     return body["data"]
 
