@@ -26,6 +26,8 @@ from content_metrics import (KALODATA, first_ranks, recommendation, reputation_l
 BASE = "https://answerbit.qq.com"
 LIST = "/geo/task/get"
 DETAIL = "/geo/task/detail/get"
+PLATFORM_READS = ("/geo/base/dashboard", "/geo/exposure/trends", "/geo/score/trends",
+                  "/geo/domain/rank", "/geo/article/rank")
 PAGE_SIZE = 50
 MARKETS = dict(zip(
     ("美国", "英国", "德国", "法国", "中国", "泰国", "越南", "印尼", "马来西亚", "日本", "韩国"),
@@ -47,7 +49,7 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 def request(path, payload, key):
-    require(path in (LIST, DETAIL), "取数 / 接口不在只读允许列表")
+    require(path in (LIST, DETAIL, *PLATFORM_READS), "取数 / 接口不在只读允许列表")
     req = Request(BASE + path, method="POST", data=json.dumps(payload).encode(),
                   headers={"Content-Type": "application/json", "X-API-Key": key})
     try:
@@ -150,13 +152,13 @@ def load_bank(path):
     return hashlib.sha256(content).hexdigest(), rows, by_text
 
 
-def task_list(call, brand, begin, end):
+def task_list(call, brand, begin, end, page_size=None):
     tasks, ids = [], set()
     page, expected = 1, None
     while expected is None or len(tasks) < expected:
         # Omitting mention_brand returns only unmentioned records on the live API.
         data = call(LIST, dict(brand_id=brand, begin_date=begin, end_date=end, include_unanalyzed=True, mention_brand=-1,
-                               page=page, page_size=PAGE_SIZE))
+                               page=page, page_size=page_size or PAGE_SIZE))
         total, records = data.get("total"), data.get("scores")
         require(type(total) is int and total >= 0 and isinstance(records, list)
                 and (expected is None or total == expected) and len(tasks) + len(records) <= total
@@ -229,13 +231,13 @@ def date_arg(value):
         raise ArchiveError("日期 / 需要 YYYY-MM-DD") from None
 
 
-def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=()):
+def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *, page_size=None):
     begin, end = date_arg(begin), date_arg(end)
     require(begin <= end and identifier(brand), "取数 / 日期范围或 Kalodata 品牌 ID 无效")
     require(output.suffix == ".sqlite" and bank.resolve() != output.resolve(),
             "本地库 / 请选择独立的 .sqlite 输出文件")
     version, questions, by_text = load_bank(bank)
-    records = task_list(call, brand, begin, end)
+    records = task_list(call, brand, begin, end, page_size)
     require(records, "取数 / 当前日期范围无 Answerbit 记录，请核对首轮采样状态；已有本地库保留")
     samples, groups, tags, websites, issues, content = [], [], [], [], [], []
     valid_count = 0

@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Kalodata GEO 运营看板</title>
+<style>
+:root{color-scheme:light;--ink:#142745;--muted:#536580;--blue:#2459c4;--deep:#101f3a;--line:#dde5f0;--paper:#fff;--wash:#f3f6fb;--soft:#eaf1ff;--radius:16px;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;font-size:15px}
+*{box-sizing:border-box}body{margin:0;color:var(--ink);background:var(--wash);line-height:1.55}a{color:var(--blue);text-underline-offset:3px}button,input,select{font:inherit}h1,h2,h3,p{margin:0}h2{font-size:1.55rem;letter-spacing:-.025em}h3{font-size:1.03rem}small,.sub,.definition{color:var(--muted);font-size:.86rem}.definition{margin:.45rem 0 .9rem}.wrap{max-width:1280px;margin:auto;padding:0 30px}.mast{background:#fff;border-bottom:1px solid var(--line)}.mast .wrap{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:64px}.brand{display:flex;gap:11px;align-items:center;font-weight:750}.mark{display:grid;place-items:center;background:#1e4db1;color:white;border-radius:9px;width:32px;height:32px;font-size:17px}.mast nav{display:flex;gap:22px;flex-wrap:wrap}.mast nav a{text-decoration:none;color:var(--muted);font-weight:600;font-size:.87rem}.hero{background:linear-gradient(112deg,#10203b,#173b72);color:#fff;border-radius:21px;margin:24px 0 16px;padding:27px 30px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:end}.eyebrow{font-size:.78rem;color:#bcd3fb;letter-spacing:.08em;font-weight:680}.hero h1{font-size:clamp(1.7rem,3.4vw,2.6rem);letter-spacing:-.04em}.hero p{color:#d4e2fa;margin-top:6px;font-size:.89rem}.hero a{color:#fff;font-size:.88rem}.filter,.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius)}.filter{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) repeat(2,minmax(0,.86fr)) auto;gap:10px;padding:13px 16px;align-items:end}.filter label,.f-label{display:block;color:var(--muted);font-size:.78rem;font-weight:650}.filter select,.filter input[type=date],.tagpick summary,button{min-height:37px;border:1px solid #cbd7e7;border-radius:8px;background:white;color:var(--ink);padding:6px 8px;width:100%;margin-top:4px}.filter select,.filter input{min-width:0}.tagpick{position:relative}.tagpick summary{display:block;cursor:pointer;font-size:.9rem;font-weight:500}.tagpick summary::after{content:" ▾";color:var(--blue)}.tag-options{position:absolute;z-index:4;top:100%;right:0;width:min(245px,80vw);max-height:245px;overflow:auto;border:1px solid var(--line);background:white;border-radius:10px;box-shadow:0 8px 24px #13254724;padding:9px}.tag-options label{display:flex;align-items:flex-start;gap:6px;padding:4px;font-weight:500}.tag-options input{margin-top:3px}button{cursor:pointer;width:auto;font-weight:650}.filter button{white-space:nowrap}button:hover,select:hover,.tagpick summary:hover{background:#f5f8ff}a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid #3262d6;outline-offset:2px}.scope{padding:8px 2px;color:var(--muted);font-size:.83rem}.warning{background:#eaf1ff;color:#254779;border-left:3px solid #4b70bf;border-radius:8px;padding:9px 12px;font-size:.87rem;margin:8px 0}.warning[hidden]{display:none}.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:5px 0 22px}.kpi{padding:14px 16px}.value{font-size:clamp(1.27rem,2.55vw,1.95rem);font-variant-numeric:tabular-nums;line-height:1.18;font-weight:750;color:#163c82;margin:5px 0 3px}.kpi b{font-size:.86rem}.kpi small{display:block}.section{margin:24px 0 0;scroll-margin-top:18px}.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 10px}.label{color:#32568a;background:#e9effa;border-radius:99px;font-size:.74rem;font-weight:650;padding:4px 9px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{min-width:0;padding:16px 18px}.wide{grid-column:1/-1}.native{display:grid;gap:10px}.native-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.native-cards .mini{background:#f1f5fc;border-radius:11px;padding:11px 13px}.native-cards .value{font-size:1.36rem}.mini small{display:block}.table-wrap{overflow:auto;width:100%;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;font-size:.87rem}th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#edf3fd;color:#294672;white-space:nowrap}tr:last-child td{border-bottom:0}td.num{white-space:nowrap;font-variant-numeric:tabular-nums}.brandlist{line-height:1.7}.empty{color:var(--muted);font-size:.88rem;padding:9px 0}.bars{display:grid;gap:8px}.bar{display:grid;grid-template-columns:minmax(90px,1.05fr) minmax(65px,2fr) minmax(112px,1.1fr);align-items:center;gap:8px;font-size:.83rem}.track{height:11px;background:#e9eff8;border-radius:3px;overflow:hidden}.fill{height:100%;background:#3162c5}.bar .number{text-align:right;font-variant-numeric:tabular-nums}.chart-label{display:flex;justify-content:space-between;color:var(--muted);font-size:.75rem;margin:.55rem 0 .2rem}.chart-group{margin:10px 0 0}.chart-group strong{font-size:.85rem}.trend svg{display:block;width:100%;height:auto;min-height:100px}.trend circle{fill:#2459c4}.trend text{font-size:12px;fill:#536580}.trend path{fill:none;stroke:#2459c4;stroke-width:2.4}.trend line{stroke:#dbe4f3}.action{border-left:4px solid #3063c8}.action strong{display:block;color:#214a91;margin:3px 0}.action p+p{margin-top:8px}.question{padding:8px 0;border-top:1px solid var(--line);margin-top:6px}.foot{padding:21px 0 36px;color:var(--muted);font-size:.83rem}.foot a+a{margin-left:12px}.compact{margin-top:10px}.brief{margin:-9px 0 19px;padding:11px 14px;display:flex;align-items:baseline;justify-content:space-between;gap:8px;background:#e8effd;color:#24436c;border-radius:10px;font-size:.85rem}.brief a{white-space:nowrap}.brief strong{color:#173a73}.native{grid-template-columns:minmax(0,1fr)}.definition details{padding-top:4px}.summary-link{font-size:.84rem}.pillnum{font-variant-numeric:tabular-nums}.soft{color:var(--muted)}.chart-mode{margin:5px 0 10px}.chart-mode select{padding:5px 8px;border:1px solid var(--line);border-radius:6px;color:var(--ink);background:white}
+@media(max-width:950px){.filter{grid-template-columns:repeat(4,minmax(0,1fr))}.filter button{justify-self:start}.wrap{padding:0 22px}}
+@media(max-width:650px){.wrap{padding:0 13px}.mast nav{gap:12px}.mast nav a{font-size:.76rem}.hero{grid-template-columns:1fr;margin-top:14px;padding:18px 16px}.filter{grid-template-columns:repeat(2,minmax(0,1fr));padding:10px}.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.card,.kpi{padding:12px}.native-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.native-cards .mini{padding:8px}.bar{grid-template-columns:minmax(75px,1.1fr) minmax(38px,1fr) minmax(106px,1.15fr);gap:5px}.bar-count{display:block;font-size:.75rem}.section{margin-top:20px}.mast .wrap{min-height:56px}.mark{width:27px;height:27px}}
+@media(max-width:360px){.mast nav{gap:7px}.brand{font-size:.85rem}.mast nav a{font-size:.71rem}.filter input[type=date]{font-size:.81rem;padding-inline:4px}.brief{display:block}.brief a{display:inline-block;margin-top:4px}.native-cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="mast"><div class="wrap"><div class="brand"><span class="mark" aria-hidden="true">K</span><span>Kalodata GEO</span></div><nav aria-label="看板章节"><a href="#platform">平台快照</a><a href="#analysis">补充分析</a><a href="#action">运营行动</a></nav></div></header>
+<main class="wrap">
+<section class="hero"><div><div class="eyebrow">KALODATA · GEO MONITOR</div><h1>GEO 运营看板</h1><p id="batch"></p></div><a id="source" rel="noopener noreferrer" target="_blank">打开 Answerbit 工作台 ↗</a></section>
+<div id="failure" class="warning" role="status" hidden></div>
+<form class="filter" aria-label="筛选看板">
+<label>市场<select id="market"></select></label><label>平台<select id="engine"></select></label>
+<label>Answerbit 分组<select id="group"></select></label>
+<div><div class="f-label">Answerbit 标签</div><details class="tagpick"><summary id="tag-label">全部标签</summary><div class="tag-options" id="tags"></div></details></div>
+<label>开始日期<input id="begin" type="date"></label><label>结束日期<input id="end" type="date"></label>
+<button id="reset" type="button">重置筛选</button>
+</form>
+<div class="scope" id="scope" aria-live="polite"></div>
+<div id="kpis" class="kpis"></div>
+<div id="brief" class="brief"><span id="headline"></span><a href="#action">查看复测建议 ↓</a></div>
+<section id="platform" class="section"><div class="section-head"><h2>01 Answerbit 平台快照</h2><span class="label">平台口径</span></div><div class="card native" id="native"></div></section>
+<section id="analysis" class="section">
+<div class="section-head"><h2>02 Skill 补充分析</h2><span class="label">按当前筛选重算</span></div>
+<div class="grid">
+<article class="card"><h3>未点名题品牌提及率</h3><p class="definition">同一市场、同一题型比较。每条回答对每个品牌最多计一次。</p><div id="mention-chart"></div></article>
+<article class="card"><h3>官网链接出现率</h3><p class="definition">正文链接以全部有效回答为分母；正式来源以字段可判定的有效回答为分母。两项独立计数。</p><div id="website"></div></article>
+<article class="card wide"><h3>市场与竞品表现</h3><p class="definition">点名与未点名分别统计。提及率 = 品牌命中回答 ÷ 有效回答；份额 = 品牌命中回答 ÷ 本市场配置品牌提及数之和。各市场竞品集合不同，份额按市场分别解释。</p><div id="markets"></div></article>
+<article class="card"><h3>Kalodata 推荐初判</h3><p class="definition">各类回答 ÷ 全部有效回答。中立推荐指同一条回答对不同场景既明确推荐又附条件推荐。初判待语义抽查。</p><div id="recommendation"></div></article>
+<article class="card"><h3>Kalodata 平台口碑</h3><p class="definition">平台口碑字段只评价 Kalodata。全样本以有效回答为分母；已提及分母为平台口碑码 1–4 的回答。</p><div id="sentiment"></div></article>
+<article class="card wide"><h3>中立推荐题单</h3><p class="definition">按飞书题号归并，保留每次命中的平台、日期和 Answerbit 分组。</p><div id="neutral"></div></article>
+</div></section>
+<section id="action" class="section"><div class="section-head"><h2>03 运营行动</h2><span class="label">随筛选更新</span></div><div class="grid"><article class="card action"><h3>优先核查与复测</h3><div id="next" class="compact"></div></article><article class="card"><h3>数据完整性</h3><div id="quality" class="compact"></div></article></div></section>
+<footer class="foot"><a id="answerbit-footer" rel="noopener noreferrer" target="_blank">Answerbit 大模型回答记录入口</a><a id="bank-link" rel="noopener noreferrer" target="_blank">飞书一期题库</a></footer>
+</main>
+<script id="geo-data" type="application/json">__GEO_PAYLOAD__</script>
+<script>
+"use strict";
+const D=JSON.parse(document.querySelector("#geo-data").textContent), $=id=>document.getElementById(id);
+const N=new Intl.NumberFormat("zh-CN"), pct=(n,d)=>d?(100*n/d).toFixed(2)+"%":"不适用", num=n=>N.format(n);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+const ratio=(n,d)=>d?`${pct(n,d)}（${num(n)}/${num(d)}）`:"不适用";
+const empty=s=>`<p class="empty">${esc(s)}</p>`;
+const fmtDate=s=>new Date(s).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai",hour12:false});
+const batch=D.batch, marketName=m=>D.markets[m]||m, groupName=g=>D.groups[g]||"分组未知";
+const groupPairs=Object.entries(D.groups).filter(([k])=>k).map(([k,v])=>[k,v]);
+const tagPairs=Object.entries(D.tags), ns=([,a],[,b])=>a.localeCompare(b,"zh-CN");
+const enginePairs=[...new Set(D.rows.map(r=>r.d[1]))].sort().map(x=>[x,x]);
+const setOptions=(el,opts,label)=>el.replaceChildren(new Option(label,""),...opts.map(([key,name])=>new Option(name,key)));
+setOptions($("market"),Object.entries(D.markets),"全部市场");
+setOptions($("engine"),enginePairs,"全部平台");
+setOptions($("group"),[...groupPairs.sort(ns),["__unknown","分组未知"]],"全部分组");
+for(const [k,name] of tagPairs.sort(ns)){
+  const l=document.createElement("label"),i=document.createElement("input");
+  i.type="checkbox";i.value=k;l.append(i,document.createTextNode(name+" · "+k));$("tags").append(l);
+}
+if(!tagPairs.length) $("tags").textContent="本批没有标签";
+for(const [id,value] of [["begin",batch.begin_date],["end",batch.end_date]]){
+  const e=$(id);e.value=value;e.min=batch.begin_date;e.max=batch.end_date;
+}
+for(const id of ["source","answerbit-footer"]) $(id).href=D.links.answerbit;
+$("bank-link").href=D.links.bank;
+$("batch").textContent=`查询窗口 ${batch.begin_date} 至 ${batch.end_date} · 最后成功取数 ${fmtDate(batch.fetched_at_utc)}（北京时间）`;
+if(D.last_failure){
+  $("failure").hidden=false;
+  $("failure").textContent=`上次刷新失败 · ${D.last_failure.stage} · ${D.last_failure.error}。当前保留最后成功数据。`;
+}
+const sum=(rs,fn)=>rs.reduce((x,r)=>x+fn(r),0), total=rs=>sum(rs,r=>r.n);
+function table(headers,rows){
+  return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th scope="col">${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+function kpi(title,value,detail){return `<div class="card kpi"><b>${esc(title)}</b><div class="value">${esc(value)}</div><small>${esc(detail)}</small></div>`;}
+function filters(){
+  return {m:$("market").value,e:$("engine").value,g:$("group").value,
+          from:$("begin").value||batch.begin_date,to:$("end").value||batch.end_date,
+          tags:[...$("tags").querySelectorAll(":checked")].map(x=>x.value)};
+}
+function matches(d,f){
+  const [m,e,day,g,,tags]=d;
+  return (!f.m||m===f.m)&&(!f.e||e===f.e)&&(!f.g||g===(f.g==="__unknown"?"":f.g))
+    &&day>=f.from&&day<=f.to&&f.tags.every(t=>tags.includes(t));
+}
+function breakdown(rs){
+  const b=new Map();
+  for(const r of rs){
+    const k=JSON.stringify([r.d[0],r.d[4]]);
+    if(!b.has(k))b.set(k,[]);
+    b.get(k).push(r);
+  }
+  return [...b.values()].sort((a,b)=>a[0].d[0].localeCompare(b[0].d[0])||a[0].d[4]-b[0].d[4]);
+}
+const bar=(label,n,d)=>`<div class="bar"><span>${esc(label)}</span><div class="track" aria-hidden="true"><div class="fill" style="width:${d?100*n/d:0}%"></div></div><span class="number">${esc(pct(n,d))}${d?`<span class="bar-count">（${num(n)}/${num(d)}）</span>`:""}</span></div>`;
+const scaleLabel='<div class="chart-label" aria-hidden="true"><span>0%</span><span>统一比例刻度</span><span>100%</span></div>';
+function sourceTrend(data,title,unit){
+  const pts=[...data].sort((a,b)=>a.date.localeCompare(b.date));
+  if(pts.length<2)return empty("有效日期不足，暂用平台概览值。");
+  const width=540,left=46,right=510,top=15,bottom=124,span=Date.parse(pts.at(-1).date)-Date.parse(pts[0].date);
+  if(!span)return empty("有效日期不足。");
+  const max=unit==="%"?100:Math.max(1,Math.ceil(Math.max(...pts.map(x=>x.value))/10)*10);
+  const xs=p=>left+(Date.parse(p.date)-Date.parse(pts[0].date))/span*(right-left);
+  const ys=p=>bottom-(bottom-top)*p.value/max;
+  const groups=[];
+  for(const p of pts){
+    if(!groups.length||Date.parse(p.date)-Date.parse(groups.at(-1).at(-1).date)>86400000)groups.push([]);
+    groups.at(-1).push(p);
+  }
+  return `<div class="trend"><svg viewBox="0 0 ${width} 155" role="img" aria-label="${esc(title)}">${[0,max/2,max].map(v=>`<line x1="${left}" x2="${right}" y1="${ys({value:v})}" y2="${ys({value:v})}"/><text x="2" y="${ys({value:v})+4}">${v}${unit}</text>`).join("")}${groups.map(g=>`<path d="${g.map((p,i)=>`${i?"L":"M"}${xs(p)} ${ys(p)}`).join(" ")}"/>`).join("")}${pts.map(p=>`<circle cx="${xs(p)}" cy="${ys(p)}" r="3.5"><title>${esc(p.date)} · ${p.value}${unit} · 平台监测回答 ${p.count??"未提供"}</title></circle>`).join("")}<text x="${left}" y="148">${esc(pts[0].date)}</text><text x="${right}" y="148" text-anchor="end">${esc(pts.at(-1).date)}</text></svg></div>`;
+}
+function native(f){
+  const p=D.platform;
+  if(!p||!Object.keys(p.data).length){
+    $("native").innerHTML=empty("本次没有可展示的原生平台快照。可通过上方 Answerbit 入口查看。");return;
+  }
+  const a=p.data, cards=a["/geo/base/dashboard"]||{};
+  const headings={exposure:"平台品牌提及率",avg_rank:"平台平均排名",score:"平台曝光效果分数"};
+  const adjusted=f.m||f.e||f.g||f.tags.length||f.from!==batch.begin_date||f.to!==batch.end_date;
+  let view=`<p class="sub">范围 ${esc(p.begin)} 至 ${esc(p.end)} · 全部平台、分组和标签 · 读取 ${esc(fmtDate(p.fetched))}（北京时间）。${adjusted?" 当前筛选仅重算 Skill 补充分析，原生快照保持其读取范围。":""}</p>`;
+  view+=`<div class="native-cards">${Object.entries(cards).map(([k,v])=>`<div class="mini"><small>${headings[k]}</small><div class="value">${v.toFixed(2)}${k==="exposure"?"%":""}</div><small>平台 API 未返回该指标的分子和分母</small></div>`).join("")}</div>`;
+  view+='<div class="grid">';
+  for(const [key,title,unit] of [["/geo/exposure/trends","平台提及率趋势","%"],["/geo/score/trends","平台曝光分数趋势",""]]){
+    const rows=a[key]||[];
+    if(rows.length>1)view+=`<div><h3>${title}</h3>${sourceTrend(rows,title,unit)}<details class="definition"><summary>查看日值与样本量</summary>${table(["日期","平台数值","监测回答数"],rows.map(r=>[esc(r.date),r.value+unit,r.count??"未提供"]))}</details></div>`;
+  }
+  for(const [key,title] of [["/geo/domain/rank","平台引用域名排行"],["/geo/article/rank","平台引用文章排行"]]){
+    const rows=a[key]||[];
+    if(rows.length)view+=`<div><h3>${title} · 前 ${rows.length} 项</h3><div class="compact">${table(["来源","平台引用次数"],rows.map(r=>[esc(r.label),num(r.count)]))}</div></div>`;
+  }
+  view+='</div>';
+  if(Object.keys(p.issues).length)view+=`<details class="definition"><summary>原生快照缺项</summary>${table(["接口","状态"],Object.entries(p.issues).map(([k,v])=>[esc(k),esc(v)]))}</details>`;
+  $("native").innerHTML=view;
+}
+function render(){
+  const f=filters(), rs=D.rows.filter(r=>matches(r.d,f)), n=total(rs), selected=breakdown(rs);
+  const desc=[f.m?marketName(f.m):"全部市场",f.e||"全部平台",f.g?groupName(f.g):"全部分组",
+    f.tags.length?f.tags.map(t=>D.tags[t]).join(" ∩ "):"全部标签",f.from+" 至 "+f.to];
+  $("tag-label").textContent=f.tags.length?`已选 ${f.tags.length} 个标签`:"全部标签";
+  $("scope").textContent=desc.join(" · ")+` · ${num(n)} 条有效回答`+(f.from>f.to?" · 起始日应早于或等于结束日":"");
+  const un=rs.filter(r=>!r.d[4]), unr=total(un), kh=sum(rs,r=>r.mentions.Kalodata||0);
+  const namedCount=n-unr, nh=sum(un,r=>r.mentions.Kalodata||0), first=sum(rs,r=>r.first);
+  const known=sum(rs,r=>r.links.Kalodata?.[3]||0), official=sum(rs,r=>r.links.Kalodata?.[2]||0);
+  $("kpis").innerHTML=kpi("有效回答",num(n),`点名 ${num(namedCount)} · 未点名 ${num(unr)}`)+
+    kpi("Kalodata 提及率",pct(kh,n),`${num(kh)} / ${num(n)} 有效回答`)+
+    kpi("未点名题提及率",pct(nh,unr),`${num(nh)} / ${num(unr)} 未点名有效回答`)+
+    kpi("官网正式来源命中",pct(official,known),`${num(official)} / ${num(known)} 正式来源可判定`);
+  native(f);
+  $("markets").innerHTML=selected.length?table(["市场 / 点名状态","有效回答","各品牌提及率","各品牌提及份额","首次出现第一","平均首次名次"],
+    selected.map(rows=>{
+      const [m,,,,named]=rows[0].d, count=total(rows), brands=D.competitors[m];
+      const hits=brands.map(b=>sum(rows,r=>r.mentions[b]||0)), sov=hits.reduce((a,b)=>a+b,0);
+      const rankCount=sum(rows,r=>r.rank[1]), rankSum=sum(rows,r=>r.rank[0]);
+      const rateList=d=>`<div class="brandlist">${brands.map((b,i)=>`${esc(b)} ${ratio(hits[i],d)}`).join("<br>")}</div>`;
+      return [`<strong>${esc(marketName(m))}</strong><br><span class="soft">${named?"点名":"未点名"}</span>`,num(count),
+        rateList(count),rateList(sov),ratio(sum(rows,r=>r.first),count),rankCount?`${(rankSum/rankCount).toFixed(2)}（${rankSum}/${rankCount}）`:"不适用"];
+    }))+ `<p class="definition">首次第一 = Kalodata 在配置品牌中最先出现 ÷ 有效回答（当前合计 ${ratio(first,n)}）。平均首次名次 = 名次总和 ÷ 有 Kalodata 名次的回答。</p>`:empty("当前筛选没有有效回答。");
+  const chosen=selected.filter(x=>!x[0].d[4]).sort((a,b)=>total(b)-total(a))[0];
+  $("mention-chart").innerHTML=chosen?`<p class="sub">${esc(marketName(chosen[0].d[0]))} · ${num(total(chosen))} 条${f.m?"":" · 当前样本量最大的市场"}</p>${scaleLabel}<div class="bars">${D.competitors[chosen[0].d[0]].map(b=>bar(b,sum(chosen,r=>r.mentions[b]||0),total(chosen))).join("")}</div>`:empty("当前筛选没有未点名题样本。");
+  const byBrand=(brand,i)=>sum(rs,r=>r.links[brand]?.[i]||0);
+  $("website").innerHTML=n?scaleLabel+[[0,1,"正文链接"],[2,3,"正式来源"]].map(([a,b,name])=>`<div class="chart-group"><strong>${name}</strong><div class="bars">${["Kalodata","FastMoss"].map(x=>bar(x,byBrand(x,a),byBrand(x,b))).join("")}</div></div>`).join("")+
+    `<p class="definition">正式来源字段覆盖 ${ratio(known,n)}。</p>`:empty("当前筛选没有有效回答。");
+  const recs=[["explicit","明确推荐"],["conditional","条件推荐"],["neutral","中立推荐"],["no_recommendation","未推荐"],["unknown","未知"]];
+  const unknown=sum(rs,r=>r.rec.unknown||0);
+  $("recommendation").innerHTML=n?table(["分类","比例与计数"],recs.map(([k,label])=>[label,ratio(sum(rs,r=>r.rec[k]||0),n)]))+`<p class="definition">可判定覆盖 ${ratio(n-unknown,n)}。</p>`:empty("当前筛选没有有效回答。");
+  const sent=[["not_mentioned","未提及"],["positive","正面"],["neutral","中性"],["negative","负面"],["mixed","褒贬并存"],["unknown","未知"]];
+  const sn=n-sum(rs,r=>(r.sent.not_mentioned||0)+(r.sent.unknown||0));
+  $("sentiment").innerHTML=n?table(["平台状态","占全部有效回答","占平台已提及"],sent.map(([k,label])=>{
+    const hits=sum(rs,r=>r.sent[k]||0);return [label,ratio(hits,n),["unknown","not_mentioned"].includes(k)?"—":ratio(hits,sn)];
+  })):empty("当前筛选没有有效回答。");
+  const neutral=new Map();
+  for(const q of D.neutral.filter(q=>matches(q.d,f))){
+    if(!neutral.has(q.q))neutral.set(q.q,[]);neutral.get(q.q).push(q);
+  }
+  $("neutral").innerHTML=neutral.size?table(["题号与提问","命中回答","分组、平台、日期"],[...neutral.entries()].map(([qid,qs])=>[
+    `<strong>${esc(qid)}</strong><br>${esc(qs[0].text||"题文待核对")}`,num(qs.length),
+    qs.map(x=>esc([groupName(x.d[3]),x.d[1],x.d[2]].join(" / "))).join("<br>")])):
+    empty(n?"本范围未检出中立推荐。推荐未知样本仍可回平台复核。":"当前筛选没有有效回答。");
+  const cuts=new Map();
+  for(const r of un){
+    const key=JSON.stringify([r.d[0],r.d[1],r.d[3]]);
+    if(!cuts.has(key))cuts.set(key,[]);cuts.get(key).push(r);
+  }
+  const priorities=[...cuts.values()].filter(x=>x.some(r=>r.evidence))
+    .sort((a,b)=>(total(b)>=20)-(total(a)>=20)||sum(a,r=>r.mentions.Kalodata||0)/total(a)-sum(b,r=>r.mentions.Kalodata||0)/total(b)||total(b)-total(a));
+  const top=priorities[0], lead=top?.find(r=>r.evidence), e=lead?.evidence;
+  $("headline").textContent=top?`优先核查 ${marketName(lead.d[0])} · ${lead.d[1]} · ${groupName(lead.d[3])}。未点名题提及率 ${ratio(sum(top,r=>r.mentions.Kalodata||0),total(top))}。`:"当前筛选没有可供举例的未点名缺席记录。";
+  $("next").innerHTML=top?`<strong>${esc(marketName(lead.d[0]))} · ${esc(lead.d[1])} · ${esc(groupName(lead.d[3]))}</strong>
+    <p>未点名题提及率 ${ratio(sum(top,r=>r.mentions.Kalodata||0),total(top))}。${total(top)<20?" 样本少，先核对个例。":""} 检查这类问题是否有能直接回答的官网内容。</p>
+    <div class="question"><b>${esc(e.q)}</b> · ${esc(e.text||"题文待核对")}<br><small>${esc(lead.d[2])} · ${esc(lead.d[1])} · ${esc(groupName(lead.d[3]))}</small></div>
+    <p>回 <a target="_blank" rel="noopener noreferrer" href="${esc(D.links.answerbit)}">Answerbit 大模型回答记录</a>按题文、日期和平台核实。下一轮固定题文、平台及采样条件，复测提及率和正式来源命中率。</p>`:
+    empty("当前筛选没有可供举例的未点名缺席记录。");
+  const missing=n-known;
+  $("quality").innerHTML=`<p>当前范围正式来源字段待核对 <b>${num(missing)}</b> 条，推荐未知 <b>${num(unknown)}</b> 条。</p>
+    <p class="definition">本批接口返回 ${num(batch.returned_records)} 条，题库未匹配 ${num(D.issues.unmatched_question||0)} 条，题文或市场歧义 ${num((D.issues.ambiguous_question||0)+(D.issues.market_tag_conflict||0))} 条，回答待确认 ${num(D.issues.answer_unconfirmed||0)} 条。此为全批数据，未匹配项未进入市场筛选。</p>
+    <p class="sub">实际启用题单与采样计划未取得，样本覆盖率无法计算。题库版本 ${esc(batch.question_version.slice(0,12))} · ${esc(batch.metric_version)}</p>`;
+}
+$("reset").addEventListener("click",()=>{
+  for(const id of ["market","engine","group"])$(id).value="";
+  $("begin").value=batch.begin_date;$("end").value=batch.end_date;
+  for(const t of $("tags").querySelectorAll("input"))t.checked=false;
+  render();
+});
+document.querySelector("form").addEventListener("change",render);
+document.querySelector("form").addEventListener("submit",event=>event.preventDefault());
+render();
+</script>
+</body>
+</html>

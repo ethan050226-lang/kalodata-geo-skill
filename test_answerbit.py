@@ -11,6 +11,7 @@ from unittest.mock import patch
 from zipfile import ZipFile
 
 import answerbit
+import dashboard
 from archive import ArchiveError
 
 try:
@@ -179,6 +180,34 @@ class AnswerbitTest(unittest.TestCase):
         self.assertEqual(old["content_status"], "需刷新")
         self.assertEqual(old["groups"][0]["mentioned_latin"], 1)
         self.assertIsNotNone(old["website_links"])
+
+    def test_dashboard_refresh_counts_and_failed_update_preserves_batch(self):
+        record = self.records()[0]
+
+        def call(path, payload):
+            if path == answerbit.LIST:
+                return {"scores":[record], "total":1}
+            return dict(prompt=record["query_str"], platform=record["platform"],
+                        language=record["language"], date=self.day, links=[], brand_reputation=1,
+                        llm_output="Kalodata compared with FastMoss. PRIVATE_ANSWER")
+
+        dashboard.refresh_answers(self.bank,self.output,"test",self.day,self.day,call)
+        data = dashboard.dashboard_data(self.output,self.bank,None)
+        self.assertEqual(sum(row["n"] for row in data["rows"]),1)
+        self.assertEqual(data["rows"][0]["d"][-1],("core","gb","model"))
+        self.assertEqual(data["rows"][0]["mentions"],{"Kalodata":1,"FastMoss":1})
+        self.assertEqual(data["rows"][0]["sent"],{"positive":1})
+        self.assertEqual(data["rows"][0]["links"]["Kalodata"],[0,1,0,1])
+        target = self.output.with_suffix(".html")
+        dashboard.render(data,target)
+        self.assertNotIn("PRIVATE_ANSWER",target.read_text())
+        self.assertNotIn("</script>",dashboard.encode({"unsafe":"</script>"}))
+        with patch("sys.argv",["dashboard.py","snapshot",str(self.bank),str(self.output.with_name("missing.sqlite")),str(target)]):
+            with contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(dashboard.main(),1)
+        _, retained, _ = dashboard.retained_data(target)
+        self.assertEqual(retained["batch"],data["batch"])
+        self.assertEqual(retained["last_failure"]["last_success"],data["batch"]["fetched_at_utc"])
 
     def test_unfinished_or_broken_refresh_preserves_previous_snapshot(self):
         self.output.write_bytes(b"previous")

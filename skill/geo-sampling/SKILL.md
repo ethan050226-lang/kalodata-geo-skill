@@ -5,6 +5,12 @@ description: 读取 Answerbit 已有的 Kalodata 回答记录，对照飞书题�
 
 # GEO 采样 Skill / GEO Sampling Skill
 
+## 默认输出看板
+
+运行者提供品牌级只读 Key 后，从仓库根目录运行 `python3 dashboard.py refresh <飞书题库导出.xlsx> <私有目录/dashboard.sqlite> <私有目录/GEO运营看板.html>`。默认读取北京时间最近七个自然日的全部范围；指定日期时加 `--begin YYYY-MM-DD --end YYYY-MM-DD`。看板内再筛选市场、平台、日期、分组、标签。完成取数与校验后返回本次生成的 HTML 路径，标明最后成功取数时间。每位运行者在本机独立刷新，打开 HTML 只切换已取数据。
+
+回答原文仅在本地内存计算。页面内嵌分组计数和必要的题库回查定位，可离线使用，保存于获批的本地目录。Answerbit 原生概览、趋势和引用排行使用各自的全范围快照，单独标明读取时间与范围；看板筛选重算 Skill 分析。刷新失败时保留最后成功数据，并在结果及旧看板顶部标明失败阶段。用户明确要离线复盘时可运行 `dashboard.py snapshot` 读取已有 SQLite，标注批次时间。
+
 ## 运行前
 
 先读[指标定义](references/metric-definitions.md)。每次真实分析前确认凭证，并按用户需求确定分析范围。已提供的内容无需重复询问。
@@ -12,7 +18,7 @@ description: 读取 Answerbit 已有的 Kalodata 回答记录，对照飞书题�
 - 当前运行者在本机提供仅覆盖目标品牌的 Answerbit 只读 Key。交互终端支持隐藏输入，Agent 和其他非交互环境从当前用户的 `ANSWERBIT_API_KEY` 读取。品牌 ID 通过 `ANSWERBIT_BRAND_ID` 配置。密钥只通过本机的隐藏输入或环境配置提供，勿在对话、命令或报告中显示。缺少凭证或认证失败时停止真实分析。
 - 用户未指定分组或标签时，相应维度按全部计算。指定一项时只筛该项，两项都指定时取交集。名称能从本地已核实的元数据唯一对应 ID 时直接使用；用户指定的名称有歧义或无法确认时，请用户提供 ID 或到 Answerbit「用户提问」核对。单个命令支持一个分组，选择多个分组时分开报告。
 
-调用 `python3 answerbit.py refresh <飞书题库导出.xlsx> <本地库.sqlite> --begin YYYY-MM-DD --end YYYY-MM-DD`。使用用户要求的日期窗，未指定时用北京时间最近七个自然日（含今天）并标注。题库使用已配置的全国家飞书题库导出。只读取现有记录，不触发采样或修改 Answerbit。真实输出使用独立路径，例如 `.trial/answerbit.sqlite`。
+用户明确要求命令行指标或简报时，可调用 `python3 answerbit.py refresh <飞书题库导出.xlsx> <本地库.sqlite> --begin YYYY-MM-DD --end YYYY-MM-DD`。使用用户要求的日期窗，未指定时用北京时间最近七个自然日（含今天）并标注。题库使用已配置的全国家飞书题库导出。只读取现有记录，不触发采样或修改 Answerbit。真实输出使用独立路径，例如 `.trial/answerbit.sqlite`。
 
 分析 `refresh` 返回的摘要。仅有回答记录时覆盖率未知，不把已返回记录当计划分母。合成试跑由独立的 `archive.py` 工具执行，与本 Skill 的真实取数入口分开。
 

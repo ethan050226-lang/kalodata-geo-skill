@@ -2,6 +2,16 @@
 
 支持 Answerbit 真实只读分析，也提供独立的合成数据试跑。使用 Python 3.9+ 和 Python 内置的 SQLite（SQLite 3.30+）。
 
+## 生成运营看板
+
+准备当前飞书题库导出，安装 `requirements.txt`。在获批的本机环境设置 `ANSWERBIT_BRAND_ID`。运行时隐藏输入只覆盖 Kalodata 的只读 Key，或在当前运行环境配置 `ANSWERBIT_API_KEY`。
+
+```sh
+python3 dashboard.py refresh /path/to/question-bank.xlsx .trial/dashboard.sqlite .trial/GEO运营看板.html
+```
+
+在浏览器打开命令返回的 HTML。默认读取北京时间最近七个自然日（含当天）的全范围，重复运行更新同一入口；也可附 `--begin` 与 `--end`。筛选在页面内进行，不重新请求 API。平台原生快照有独立范围与读取时间。刷新失败保留最后成功数据并显示失败阶段。使用 `snapshot` 代替 `refresh` 可从已保存的兼容 SQLite 离线生成；附 `--fetch-platform` 时仅补拉 Answerbit 原生快照。HTML 包含内部统计及部分题文定位，请留在获批的本地环境。
+
 ## 试跑
 
 在仓库目录运行。预检和发布由 GEO 负责人操作。运营只运行同步和查询。
