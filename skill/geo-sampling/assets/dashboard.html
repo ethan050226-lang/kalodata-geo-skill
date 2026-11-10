@@ -26,39 +26,64 @@
 
 .native-cards{gap:12px}.native-cards .native-tab{text-align:left;width:100%;margin:0;border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:#f8faff;font-weight:500}.native-cards .native-tab[aria-pressed=true]{border-color:#779de0;background:#edf4ff;box-shadow:inset 0 3px #3466c8}.native-plot{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:14px}.native-plot>div{min-width:0;border:1px solid var(--line);border-radius:12px;padding:12px}.native-plot h3,.native-sources h3{margin-bottom:5px}.native-sources{margin-top:4px}.native-sources summary{color:var(--blue);font-size:.88rem;cursor:pointer}.native-ranking .own{color:#2256b0;font-weight:700}.native-plot .trend{margin-top:7px}.trend-legend{display:flex;flex-wrap:wrap;gap:4px 11px;font-size:.78rem;color:var(--muted)}.trend-legend i{display:inline-block;width:9px;height:9px;margin-right:4px;border-radius:3px}@media(max-width:650px){.native-plot{grid-template-columns:1fr}.native-plot>div{padding:8px}.native-cards .native-tab{padding:7px 8px}}
 .brand-logo{object-fit:contain;flex:0 0 auto}.compare{background:#f8fbff;border-color:#cdddf5;padding:16px 18px}.reference-editor{margin:7px 0 12px}.reference-editor>summary,.compare-detail>summary,.action-quality>summary{cursor:pointer;font-weight:650;color:#244d92;font-size:.87rem}.reference-editor .filter-frame{margin:7px 0 0}.reference-editor .filter-heading button{font-size:.76rem;min-height:29px;margin:0}.cohorts{margin-bottom:10px}.cohort .tag{display:inline-flex;width:auto;padding:0 6px;font-weight:600}.compare-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:10px 0}.compare-metric{padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:white;min-width:0}.compare-metric h3{font-size:.87rem}.compare-metric .delta{display:block;font-size:1.22rem;margin:2px 0 4px}.compare-points{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0;font-size:.79rem;color:var(--muted)}.compare-points span{min-width:0;overflow-wrap:anywhere}.compare-points b{display:block;color:#173c77;font-size:.92rem}.metric-track{height:20px;margin:6px 7px 0;position:relative;background:linear-gradient(#e2eaf8,#e2eaf8) center/100% 2px no-repeat}.metric-segment{position:absolute;top:9px;height:2px;background:#a4b9dc}.metric-dot{position:absolute;top:5px;border-radius:50%;width:10px;height:10px;transform:translateX(-50%);background:#2459c4;z-index:1}.metric-dot.reference{border:2px solid #657c9c;background:#fff;width:12px;height:12px;top:4px;z-index:0}.axis-caption{display:flex;justify-content:space-between;color:var(--muted);font-size:.71rem}.compare-detail{border-top:1px solid var(--line);padding-top:7px;margin-top:6px}.compare-detail .table-wrap{margin-top:8px}.compare-detail td:not(:first-child){font-variant-numeric:tabular-nums}.action-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.action-item{padding:14px 16px}.action-item .action-heading{display:flex;align-items:baseline;justify-content:space-between;gap:7px;flex-wrap:wrap}.action-item .action-heading span{color:#2459a9;font-weight:700;font-variant-numeric:tabular-nums}.action-item .action-scope{margin:4px 0 7px}.action-item dl{display:grid;grid-template-columns:4em minmax(0,1fr);gap:5px 7px;margin:8px 0;font-size:.86rem}.action-item dt{font-weight:650;color:#284a7d}.action-item dd{margin:0}.action-item .question{font-size:.82rem}.action-item .question small{display:block}.action-quality{margin-top:11px}.action-quality .definition{margin:.4rem 0}.action-item .sample-note{margin-top:5px}.action-module .section-head p{margin-top:2px}@media(max-width:650px){.compare{padding:11px}.compare-kpis,.action-list{grid-template-columns:1fr}.compare-metric{padding:8px 10px}.action-item{padding:11px}.brand-logo{width:25px;height:25px}}
+/* One analysis view per tab. */
+[data-page][hidden],#global-filters[hidden],.scope[hidden]{display:none}
+.mast-context{color:var(--muted);font-size:.79rem;font-weight:600}
+.page-tabs{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:0 0 12px;padding:4px;background:#e6eefb;border:1px solid #d8e4f5;border-radius:12px}
+.page-tabs a{text-align:center;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:8px 4px;border-radius:8px;text-decoration:none;color:#445e82;font-size:.87rem;font-weight:650}
+.page-tabs a:hover{background:#f4f8ff}.page-tabs a[aria-current=page]{background:#fff;color:#204d9d;box-shadow:0 1px 4px #142a5520}
+body:not([data-active-view=overview]) .hero{min-height:0;padding-block:16px}body:not([data-active-view=overview]) .hero h1{font-size:clamp(1.25rem,2vw,1.7rem)}body:not([data-active-view=overview]) .hero .eyebrow,body:not([data-active-view=overview]) .hero-shortcut{display:none}
+.hero-actions .hero-shortcut{color:#173b75;background:#eaf2ff;padding:6px 10px;border-radius:8px;font-weight:650;text-decoration:none}
+#overview{margin-top:6px}#overview .kpis{margin-bottom:22px}#sources .bars,#sources .chart-label{max-width:760px}.chart-label{display:grid;grid-template-columns:minmax(90px,1.05fr) minmax(65px,2fr) minmax(112px,1.1fr);gap:8px}.chart-label>div{grid-column:2;display:flex;justify-content:space-between}
+@media(max-width:650px){.chart-label{grid-template-columns:minmax(75px,1.1fr) minmax(38px,1fr) minmax(106px,1.15fr);gap:5px}.page-tabs{grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;padding:3px}.page-tabs a{font-size:.79rem;padding:6px 2px}.mast-context{font-size:.71rem}body:not([data-active-view=overview]) .hero{padding-block:12px}}
 </style>
 </head>
 <body>
-<header class="mast"><div class="wrap"><div class="brand"><img class="brand-logo" alt="" width="28" height="28" src="data:image/png;base64,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"><span>Kalodata GEO</span></div><nav aria-label="看板章节"><a href="#platform">平台快照</a><a href="#analysis">补充分析</a><a href="#action">运营行动</a></nav></div></header>
+<header class="mast"><div class="wrap"><div class="brand"><img class="brand-logo" alt="" width="28" height="28" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABQCAYAAAC6aDOxAAAR3klEQVR42s1cbXBcV3l+3nPO3Xvv7molyw62ZCeGUkoTE2DAhSkktjZfZID4A5ACpQWapE2YBseOP5LQGWR1WkpwcOy4QJM0YJgmQ9Yp2CkxARJW/iCZgiklkGFKGoidWCsnlqWV9uvee+55++PuSnJkx5a0u/GZ0Xg0mvFKz30/nvd5n3Op88DgLtjuhcHYyMpXLl/8PDIs0UMhzpnDBAawEzaNevdDWe+F9g0AUeePIRCHYIQAGFaMoP0f0sKnTzA5Lkyl/GsUSumBKxcNgVmAyJwT+PSyQB8ZfJ0XksFLIADGACTq/SAA0MS3AoDvgzr3DxqAQ5Gao8LS2FMxr3D54f6dPrAZ6DvHQNpa2kBJdwvKng+wAk/+i+p0CAxQhJVhLUBEIKHM6LCWidb3BbHkQ+jrM1gCAjOdEwD1kUEvC9wavwvFyleQsGMAhdHvXuevKDRF9d9JcUpCmfxwIFraVnfuz/0reihEP+S5AxIYvVnF69wNKHrfQsK2wEY3+mOp88AxflUuatHarsL8cF/u0vmbwaxApM+Nes2EHghgF+iSax5F3PkgimUNEqr+yBBgTCBOUauUGR3RMtna25kd+CyINO49ZJ0TABExLgIj023YH+lB2X8acVeBWTcxggAwM6Q0FLNlWMx/dLDr/O8iywrpcySSakX7Lp5HdnAQMeutKJcNSIjGR1D0Q4LWgoPACLflwY4nDl+KNGlks+rcqEdk0M0SG+g4+8HlCILnoCwCuO5d9/SIC0HQPojZEcnU9xY88cJFSKc1MizPCZAuqrZ4X1hghKDG9JLXDkkSgv1KCCnninjLY+f/6HAneigEs3idU0yhjzTuLr6XWtR/QVl/isBHA9jjWdB1EpJLxVA47hvDZPLRubt/2wICo7dXvK7gbC1eQzH7SZB8A7yyAQlqfgRNpJs0hbwW8eS77fPmPbI82y+xZEmTiSQTMizRRxrbyzeQbe+B4QSCSn2L84wAqhHJ0RNatLRe9Zxa8k309ITo728OkWQm9ILQQ6HYXvl7cpz7EYYMoxsKDgBMryuRUGZkOBBt7X/ZsS93LLe8YwOyrADoBqZUbXBm7PB2sBO7GSUvrA7UDX8400efYJn8CS1b29d3Zgc2IN1AItnNEn1ksJ1t2uFlyI3djFJFAyybAc7MAIpCXpriqKZU65aF2YG/wo1Lg2ok1e9kWGIXhfhifi5J/3G4sW4UyhogBTSv9M0MICJCqCV75RCJxDc69h29KiKSdQKplxV6KMTW8h9RayKLWKwLhUpjZq6GABTVI4LWhFBLchKPdPzk8LuRJg2eJZGcaONLyVb7IOXFKFU0iF4XFj+7DkAk2PeZQC0UTz06f1/uTSAKZ8y2a+BsL19NduxJkFyESjl8vcCZPUARRxLslUJSVqe0Yo8teupIO3ooRO902DbTODjbSp8my/pPMFLwKwYkXtfRpj4cgoTkUkELN36hYXfP4uwfHGAzzooj1ThOH2lsq2wix90JHUqEjec4M5c7ZkzojBatc5UZy3934JLzPjoeHSA+LcfZDAYR047yVjjOuojjGNGo0WGKrHM6uvCacsfMI6nKtlMf6Thw7OuLs39wTiusd2cijnMfFG2vPATXWYeSpyMC2ARwYAxUjMDMjU+xkz6XhSmMski03OSRfTGIzJTpP8MSu3pC3D3cRkGwFwn7EyhWNADVFALIHMJ2BXQwGOlIMM0BiE1ItiOgrIopjK4e7Or8+ZQdW43jbCtdQLFkFjHrChQqVQLYlKFXI+lIeP5eJv/t0P6/IWmL08m2oo5PRVM8KUH0MpfzH8gtW7B70hwVnWxNxym8k6zYfkj1zqZxHGYGQSPhKJS8b/DBPStwS+oV7nRvQsF/FElHnWpLIupWnJMpxVo/F5aHu3Jdiw9UwTg5ctKksXXsCorZWZBc3DSOw4YhiOHYiov+F3mNcz0uepaRYYluGNaxj6Ps//SkBQAzQJCqLuCk2pUpF38mx8ZWD1z1pgFks5MEfib0ItJx7vE+QVJ8C0wWgkrYFI7DbCCVgFLE5coa3OLuqAEDqi4k+6jMO/IryaN9cJwl0YMTErPnGaxF2zxlSmOPeceOXfHiVYsHkGGJdFqPc5wMBPpIi3sq68iKPYTQKOjAgEg2pRhbloAgj/3gWtzi7hivgVSlHrUFwOdah7hQ/DC0fhExR8KYEGAjZpPPorVdhYWRbwz8cMeKoVUXjoFZjDtDaky6h0La4d3Jjr0VgRdGxgMSTUirELYjAR5iX1+NW+zMOFt/9dlVHY/umPMCe9414HAEjiuhnBlMx2wYQrBItiozlv/n3PvP+3zEmDdPFOTa3moJS/oX/wE41qdR9KJBtjltXMN1FQL9e/Yqq7C+5denBad2ovFIYT39ireUVlKSHobWv5sek2ZjIBVRzCFUimuPXrpg+6R85nGO00Mheo+naF7qYbjW1ZFU0aQ2zhx1Kk8f4oK/GrcnXjojOK9m931k8KUTrSjPKarp5DPFbMkkfC4VPjWwvOPhKdvWKL81vlJcSLbaDdtaikIlAJHVNHCSjkLZf5yPj12Lvnmj1Qd29pJwzUlyO+XPfhZjE5KTkGzMMHljHzu6/PyfTDE1jOs43hKyxR4o9WaUm8lxKETCVih73+bjT1+PvrRGd1WVnNn/SaCzEe3ZaJFIKRN4L1ChuPLoFec/g+yrwKlF0vbSclLyEQg5D6VyCCGaxHFExHHK/pfxOee2qCayQN8srITVkiHOFLIiNUeZwPtvjAwti8DJTk2rNGlsK3WTsh4HaB68SgjRDB2HDYQEYrbgkncrPmffNi7W1ckdp16T47S2K1MY+3G5NNI9fPVb8tUuNMFxdkGghzS2lW8mO7YDgQZMYJpEAEMoJQEEXCl/BmvjD0U1EOFp5ZW6CGY1jpNqV6Yw+u8D/jMfHL7yzXlkMhI0ieNsjhZ52Fb+R4o7OxAEBibkpohcxoSIORJAnn39wXFw+kjXE5ypEcSGIaQRyVYVFkfvyr1/3sZI8XsVAewjAzDRDv8+uNbfoFgJwWiWyBVxnFAf4cBbiVuT/zOtNj5jgJgNhCJyXGnGRjbmLp1/VzWfzXg+1zjOllyC7OAhuNaKSTpOc9p43FHwgme4oldgY/JwI8GZAMgYQzFbsJRBWBi9YbCr89tRZ5qUzzWOs43nk9Lfg63+vOkEMOkolIMnuZDrxh2Lh6fNcWYEkDEhuXHJzHkuF64d7Fr4w1MSwD7SuDv/VlL6UVjqTxpmnjwFMgCFSDoKJe87/JvffAr3LQ3QnWnKjQAlWlqlCbyXuDi6KnfZ4l/g3kMW0hScguO8j5T1XUg1PyKAolkE0CBuK5T8bbzGWVddEc2O40wHoNCv/FKWCz0vXbb4/6pgBFM4zvbKSlLqIYDiqFSatMhjA0EE25ZcLN+BtfEvVbVtbuY1CeUPHls+tOrCsUjHmSRyZaocZ3v5b0mpe2EMqruqJnAcY6AsAULInn8D1sZ3opcVqL4c56wI9cmtu0oAN4PQR0ZsL32BHbcPnm9gQmpOG69yHA7HOAg/jrXO3kZ3qtcu0sx0ko5TNSvRPZWvcdz+LIo1s1KTOI7jKoR6gCv+aqxP/GxKw5hIM24OQFN0nD84NK/zQbixj1Q5TpNELqMRdxUC/SwXiyuxqe358Ro4oW1PPMzqtN3olBMngfNPo+fReYt+BCf2ERS8oGpWak7kJF0FT+/ncrkLm9qeHzdsjmvbuwT6yHTuH+ztOPjyThAxMhCN9kiqCZFr5I/Jdvcgpi5CsaKbI3IxANQI4CP8+8FP4e4LyifdeuytplRPT7jwqeNb4MQ3CCuGjv2DL+eW0aZGeyQj9LcV/4ys2B5I1YFKU0Uug7gtuex/FWvsm0/RMKKamM2qTrVkp0jN+aQZPaEBsEi1WeHwidtyXR1fbuQ9EoFtldWkYk+AVEfTOM6EyCW56H0Ba+yb0ctRukye+4hM+97fpTrtdzwmWts+afJDutpYlCmMaplqvbOz/6XrGmkkJbrHZwiB6q6qGeuYaJEniNnXN2Kde/8U4b8aEZ2PP3c+tc3dTU78XWZ0+GT2zsyQypCyhCkWVucuW7inEZEkwAbQATdtV2XZAlIU2fdXYZ17/5RFXvWPfMMTL74dbXP3k+W8y4yOTB1tIiMpcaiZEonvdGSPXlJXI+mkLsZNaePGhHBcCfAge/6VWJd4dAoBrIKz8GAurZIt/STVG00xf/q0JxK1G0kUj++Znz3yNqSprjeSBJphOmajkXAltP5fLuvlWBd/+lXg0Hha7ctdy5b7OMHM4XLpzPt7EoJ9LySS7cJO7u348dEL0EMhMhlZL4CaAY6Cp5/icmUZNji/OwkcZkKGBdKkO/a/vIbiye9ABxb7/tnv74kkV4qhsO3zKek+tujxI+3o6anLta0GAsSIzEquQiXYw8dfvhIbW14+iQD29gps3kzooXDBT1/5J5lKbedKySDU09/fk5BcHNPCcd9mWuJVIyl4em7bM2nSdeU4MEg4ikvBfVgTu2n8l60RwBrHyWRkx1NDD8hk6jozeqK6v5/h3EekzFhei9Y5l/gF8zCAVeP3/2c4u4kGpFRkVnIdiZL/D1gTuxG9TKfiOHN3/7alc9Fle2Sy5TqTH9LgOngUiZTJn9CyZc6KjoOvPDDb+/9E2yt1tAGzgZQCUoH98t9hbeJr0dgAMz5UVp/mvB+80BFrS+0W8cR7TP5EAxRK1qJ1rgpHhrbkli3YVG0CYW2+aX4EMYewYgKCKuz7H8PaxNfGOc6E8C8AoOPAK++OtbceoJj9HpMfbpB8S8qMntAyNWdjR39uU5UjydcnxcbNSuY4l8ofwFrnP04pci3ZRSBi4rCNQG/kSikEGniL2kTXtkSq9c6OfUevn8lIIuoQORquKxHq59mrdGFjav9pFcCenhCZjBxYtuBJLhVWkRUjKMucycw9i3oUXduqlELhJO/v+MnRldO92yZmDU7CUfD1z7noL8OtLc+e2cnVEyLLaiC96PtcHLuBHFdCyrBxIEXXtthUR5L+o5dOZyQRsymCSDoKlWAvl0Yux22JgZM4zmudNGkcOmQNpBd9k8dGN4lESlX3/o2KJIGgOpK48d2L+o9cfLYjiZhB1DBQNWSXg528f/cK3Hbe2Ekc52zO0qUB7j1kDSzv2BKODm8Rre2NvRw8aSRhO/nYgicHFp/NSDK9Nj+h4wiu+HdijX375C3IjAS7bFYindYd+489INvarzMjQ40V7NiElEhJ9r3foFDqOtMrycQ0IicyK1m24LK3Dmvs29E9a7MSo6srRIZlbtn8601+eI9obVcNfXESCcnFUS0c922IO3sWPXXEjVj+qd8kIc4SnBDKElAy4Ir/F7jF2YZeVtg1SeSaeX1gdMOgl4Wlix83hfwB0TKn0SApMzaiRTL1/pDjDwOg071J4swpxiZEzJUwepi17sZa98mGLPKqYX7B9w/P0XMT+0TMvdgURxt7XYE5EG1zrXB06Fu5SxZ8BtmsQldXOPmhizNKFa4rwcFh9rx0w8CJHpVBJiOPfHjxMPLDH+LAP0xuQoK5cSYFIsvkh7RMzf30woODW5BOa/RDRrckzwQQc22R90se08uwPvmrhq+Ae3pCZFgOXP2WF3Vx9EMc6hMUsyXYNNCsQMrkhwNqad/Q0Z+7LWLbv1CvDVDNrOQHP+ZXCpfh9viRs+Y4swaJQmSz6tjli5/lUnkFAxUoi2BM4zaobJQpjGiZav1Sx76j1+PGiIJMrUGRjhMi4SguBw/i18/8dWRWmoUhe6anJsH2v3QNuck9rLVBqBv3QpPae9usmDTFwupceuFuZFlNAHTSIq+yFWvc9bPkOPUDaV/uMyLZ+k1TKWqEYeO8AsYwrBhDqoBLhSty6YUHibaVDQiRfdeOgUveJqxztqCbJTJ1aOOzPYcOWVi6NOjcl9so5sz9shkd1jAsI8sA171qj99JMeY4jL6S6Ku13NYea74et9gPRsW4+WalM0bS/sEvitScO0whX/VUNCCQCIDWEKk2hIX8swra+z7s2Du46N+E9cm9uJct3DjJhncunDRCMMsBos93Hjg2F7bbjUqZQSzqDxIDRMxeJQT4B/8PUaAZVnHRhEwAAAAASUVORK5CYII="><span>Kalodata GEO</span></div><span class="mast-context">运营分析 · 本地快照</span></div></header>
 <main class="wrap">
-<section class="hero"><div><div class="eyebrow">KALODATA · GEO MONITOR</div><h1>GEO 运营看板</h1><p id="batch"></p></div><div class="hero-actions"><a id="source" rel="noopener noreferrer" target="_blank">Answerbit 工作台 ↗</a><button id="compare-toggle" type="button" aria-expanded="false" aria-controls="compare">打开对照分析</button></div></section>
+<section class="hero"><div><div class="eyebrow">KALODATA · GEO MONITOR</div><h1>GEO 运营看板</h1><p id="batch"></p></div><div class="hero-actions"><a id="source" rel="noopener noreferrer" target="_blank">Answerbit 工作台 ↗</a><a class="hero-shortcut" href="#compare">进入对照分析 ↗</a></div></section>
+<nav class="page-tabs" aria-label="看板分页">
+<a href="#overview" aria-current="page">总览</a><a href="#platform">平台快照</a>
+<a href="#brand">品牌表现</a><a href="#sources">官网引用</a><a href="#answers">回答表现</a>
+<a href="#action">运营行动</a><a href="#compare">对照分析</a>
+</nav>
 <div id="failure" class="warning" role="status" hidden></div>
-<section class="filter-frame" aria-labelledby="filter-a-title">
+<section id="global-filters" class="filter-frame" aria-labelledby="filter-a-title">
 <div class="filter-heading"><b id="filter-a-title">查看范围</b><span>同维度可多选 · 跨维度同时生效</span></div>
 <form class="filter pick-grid" id="filter-a" aria-label="当前范围筛选"></form></section>
 <div class="scope" id="scope" aria-live="polite"></div>
+<section id="overview" class="section" data-page aria-label="总览">
 <div id="kpis" class="kpis"></div>
-<div id="brief" class="brief"><span id="headline"></span><a href="#action">查看行动清单 ↓</a></div>
-<section id="compare" class="compare" aria-labelledby="compare-title" hidden>
+<div id="brief" class="brief"><span id="headline"></span><a href="#action">查看行动清单 ↗</a></div>
+</section>
+<section id="compare" class="compare" data-page aria-labelledby="compare-title" hidden>
 <div class="compare-head"><div><h2 id="compare-title">对照分析</h2><p>用同一批回答，比较两个范围的表现。</p></div></div>
 <details id="reference-editor" class="reference-editor"><summary>设置对照条件</summary>
 <div class="filter-frame"><div class="filter-heading"><b>对照范围</b><button id="copy-a" type="button">复制当前筛选</button></div><form class="filter pick-grid" id="filter-b" aria-label="对照范围筛选"></form></div>
 </details>
 <div class="compare-results" id="comparison"></div>
 </section>
-<section id="platform" class="section"><div class="section-head"><h2>01 Answerbit 平台快照</h2><span class="label">平台口径</span></div><div class="card native" id="native"></div></section>
-<section id="analysis" class="section">
-<div class="section-head"><h2>02 Skill 补充分析</h2><span class="label">按当前筛选重算</span></div>
+<section id="platform" class="section" data-page hidden><div class="section-head"><h2>Answerbit 平台快照</h2><span class="label">平台口径</span></div><div class="card native" id="native"></div></section>
+<section id="brand" class="section" data-page hidden>
+<div class="section-head"><h2>品牌表现</h2><span class="label">按市场与题型拆分</span></div>
 <div class="grid">
-<article class="card"><h3>未点名题品牌提及率</h3><p class="definition">同一市场、同一题型比较。每条回答对每个品牌最多计一次。</p><div id="mention-chart"></div></article>
-<article class="card"><h3>官网链接出现率</h3><p class="definition">正文链接以全部有效回答为分母；正式来源以字段可判定的有效回答为分母。两项独立计数。</p><div id="website"></div></article>
+<article class="card wide"><h3>未点名题品牌提及率</h3><p class="definition">同一市场、同一题型比较。每条回答对每个品牌最多计一次。</p><div id="mention-chart"></div></article>
 <article class="card wide"><h3>市场与竞品表现</h3><p class="definition">点名与未点名分别统计。提及率 = 品牌命中回答 ÷ 有效回答；份额 = 品牌命中回答 ÷ 本市场配置品牌提及数之和。各市场竞品集合不同，份额按市场分别解释。</p><div id="markets"></div></article>
+</div></section>
+<section id="sources" class="section" data-page hidden>
+<div class="section-head"><h2>官网引用</h2><span class="label">正文链接与正式来源</span></div>
+<div class="grid">
+<article class="card wide"><h3>官网链接出现率</h3><p class="definition">正文链接以全部有效回答为分母；正式来源以字段可判定的有效回答为分母。两项独立计数。</p><div id="website"></div></article>
+</div></section>
+<section id="answers" class="section" data-page hidden>
+<div class="section-head"><h2>回答表现</h2><span class="label">推荐初判与平台口碑</span></div>
+<div class="grid">
 <article class="card"><h3>Kalodata 推荐初判</h3><p class="definition">各类回答 ÷ 全部有效回答。中立推荐指同一条回答对不同场景既明确推荐又附条件推荐。初判待语义抽查。</p><div id="recommendation"></div></article>
 <article class="card"><h3>Kalodata 平台口碑</h3><p class="definition">平台口碑字段只评价 Kalodata。全样本以有效回答为分母；已提及分母为平台口碑码 1–4 的回答。</p><div id="sentiment"></div></article>
 <article class="card wide"><h3>中立推荐题单</h3><p class="definition">按飞书题号归并，保留每次命中的平台、日期和 Answerbit 分组。</p><div id="neutral"></div></article>
 </div></section>
-<section id="action" class="section action-module">
-<div class="section-head"><div><h2>03 运营行动清单</h2><p class="sub">从当前样本挑选可回查的线索，每项给出优化和复测步骤。</p></div><span id="action-count" class="label">随筛选更新</span></div>
+<section id="action" class="section action-module" data-page hidden>
+<div class="section-head"><div><h2>运营行动清单</h2><p class="sub">从当前样本挑选可回查的线索，每项给出优化和复测步骤。</p></div><span id="action-count" class="label">随筛选更新</span></div>
 <div class="action-list" id="next"></div>
 <details class="card action-quality"><summary>数据完整性与口径限制</summary><div id="quality" class="compact"></div></details>
 </section>
@@ -188,7 +213,7 @@ function breakdown(rs){
   return [...b.values()].sort((a,b)=>a[0].d[0].localeCompare(b[0].d[0])||a[0].d[4]-b[0].d[4]);
 }
 const bar=(label,n,d)=>`<div class="bar"><span>${esc(label)}</span><div class="track" aria-hidden="true"><div class="fill" style="width:${d?100*n/d:0}%"></div></div><span class="number">${esc(pct(n,d))}${d?`<span class="bar-count">（${num(n)}/${num(d)}）</span>`:""}</span></div>`;
-const scaleLabel='<div class="chart-label" aria-hidden="true"><span>0%</span><span>统一比例刻度</span><span>100%</span></div>';
+const scaleLabel='<div class="chart-label" aria-hidden="true"><div><span>0%</span><span>100%</span></div></div>';
 function sourceTrend(data,title,unit,competitors){
   const colors=["#285fc4","#6b7f9d","#087b91","#7863ac","#9e6332","#446c85"];
   const series=[{label:"Kalodata",points:data},...competitors.slice().sort((a,b)=>a.label.localeCompare(b.label,"zh-CN"))].filter(x=>x.points.length)
@@ -250,7 +275,7 @@ function native(f){
 function render(){
   const f=filters(), rs=D.rows.filter(r=>matches(r.d,f)), n=total(rs), selected=breakdown(rs);
   $("scope").textContent=describe(f)+` · ${num(n)} 条有效回答`+(f.from>f.to?" · 起始日应早于或等于结束日":"");
-  if(!$("compare").hidden)renderComparison(f,rs);
+  if(activePage==="compare")renderComparison(f,rs);
   const un=rs.filter(r=>!r.d[4]), unr=total(un), kh=sum(rs,r=>r.mentions.Kalodata||0);
   const namedCount=n-unr, nh=sum(un,r=>r.mentions.Kalodata||0), first=sum(rs,r=>r.first);
   const known=sum(rs,r=>r.links.Kalodata?.[3]||0), official=sum(rs,r=>r.links.Kalodata?.[2]||0);
@@ -258,7 +283,7 @@ function render(){
     kpi("Kalodata 提及率",pct(kh,n),`${num(kh)} / ${num(n)} 有效回答`)+
     kpi("未点名题提及率",pct(nh,unr),`${num(nh)} / ${num(unr)} 未点名有效回答`)+
     kpi("官网正式来源命中",pct(official,known),`${num(official)} / ${num(known)} 正式来源可判定`);
-  native(f);
+  if(activePage==="platform")native(f);
   $("markets").innerHTML=selected.length?table(["市场 / 点名状态","有效回答","各品牌提及率","各品牌提及份额","首次出现第一","平均首次名次"],
     selected.map(rows=>{
       const [m,,,,named]=rows[0].d, count=total(rows), brands=D.competitors[m];
@@ -349,15 +374,30 @@ function renderActions(rows){
   }).join(""):empty("当前筛选没有可回查的行动样本。");
 }
 let comparisonOpened=false;
-$("compare-toggle").addEventListener("click",()=>{
-  const panel=$("compare"), open=panel.hidden;
-  panel.hidden=!open;
-  $("compare-toggle").setAttribute("aria-expanded",String(open));
-  $("compare-toggle").textContent=open?"收起对照分析":"打开对照分析";
-  if(open&&!comparisonOpened){setFilters("b",filters());$("reference-editor").open=true;comparisonOpened=true;}
+let activePage="overview";
+const pages=[...document.querySelectorAll("[data-page]")];
+const navLinks=[...document.querySelectorAll(".page-tabs a")];
+function showPage(resetScroll=false){
+  const hash=location.hash.slice(1), requested=hash==="analysis"?"brand":hash;
+  activePage=pages.some(page=>page.id===requested)?requested:"overview";
+  for(const page of pages)page.hidden=page.id!==activePage;
+  for(const link of navLinks){
+    if(link.hash==="#"+activePage)link.setAttribute("aria-current","page");
+    else link.removeAttribute("aria-current");
+  }
+  document.body.dataset.activeView=activePage;
+  const platform=activePage==="platform";
+  $("global-filters").hidden=platform;
+  $("scope").hidden=platform;
+  if(activePage==="compare"&&!comparisonOpened){
+    setFilters("b",filters());
+    $("reference-editor").open=true;
+    comparisonOpened=true;
+  }
   render();
-  if(open)panel.scrollIntoView({block:"nearest"});
-});
+  if(resetScroll)window.scrollTo(0,0);
+}
+window.addEventListener("hashchange",()=>showPage(true));
 $("copy-a").addEventListener("click",()=>{setFilters("b",filters());render();});
 function comparableSet(rows){
   const sets=new Set(rows.map(r=>JSON.stringify(D.competitors[r.d[0]].slice().sort())));
@@ -419,7 +459,7 @@ function renderComparison(f,aRows){
     table(["指标","当前","对照","差值"],comparisons.map(([title,k])=>[esc(title),score(a[k],k==="rank"),score(b[k],k==="rank"),diff(a[k],b[k],k==="rank")]))}</details>`;
   $("comparison").innerHTML=view;
 }
-render();
+showPage();
 </script>
 </body>
 </html>
