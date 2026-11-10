@@ -51,16 +51,16 @@ body:not([data-active-view=overview]) .hero{min-height:0;padding-block:16px}body
 <div id="failure" class="warning" role="status" hidden></div>
 <section id="global-filters" class="filter-frame" aria-labelledby="filter-a-title">
 <div class="filter-heading"><b id="filter-a-title">查看范围</b><span>同维度可多选 · 跨维度同时生效</span></div>
-<form class="filter pick-grid" id="filter-a" aria-label="主项筛选"></form></section>
+<form class="filter pick-grid" id="filter-a" aria-label="当前范围筛选"></form></section>
 <div class="scope" id="scope" aria-live="polite"></div>
 <section id="overview" class="section" data-page aria-label="总览">
 <div id="kpis" class="kpis"></div>
 <div id="brief" class="brief"><span id="headline"></span><a href="#action">查看行动清单 ↗</a></div>
 </section>
 <section id="compare" class="compare" data-page aria-labelledby="compare-title" hidden>
-<div class="compare-head"><div><h2 id="compare-title">对照分析</h2><p>主项沿用顶部筛选；比较项在本页独立设置。两项来自同一批回答。</p></div></div>
-<details id="reference-editor" class="reference-editor"><summary>设置比较项条件</summary>
-<div class="filter-frame"><div class="filter-heading"><b>比较项筛选</b><button id="copy-a" type="button">复制主项条件</button></div><form class="filter pick-grid" id="filter-b" aria-label="比较项筛选"></form></div>
+<div class="compare-head"><div><h2 id="compare-title">对照分析</h2><p>当前范围沿用顶部筛选，对照范围在本页独立设置。两组来自同一批回答。</p></div></div>
+<details id="reference-editor" class="reference-editor"><summary>设置对照范围条件</summary>
+<div class="filter-frame"><div class="filter-heading"><b>对照范围筛选</b><button id="copy-a" type="button">复制当前范围条件</button></div><form class="filter pick-grid" id="filter-b" aria-label="对照范围筛选"></form></div>
 </details>
 <div class="compare-results" id="comparison"></div>
 </section>
@@ -77,20 +77,21 @@ body:not([data-active-view=overview]) .hero{min-height:0;padding-block:16px}body
 <article class="card wide"><h3>官网链接出现率</h3><p class="definition">正文链接以全部有效回答为分母；正式来源以字段可判定的有效回答为分母。两项独立计数。</p><div id="website"></div></article>
 </div></section>
 <section id="answers" class="section" data-page hidden>
-<div class="section-head"><h2>回答表现</h2><span class="label">推荐初判与平台口碑</span></div>
+<div class="section-head"><h2>回答表现</h2><span class="label">推荐判断与平台口碑</span></div>
+<div class="filter-frame"><div class="filter-heading"><b>推荐记录筛选</b><span>与顶部查看范围同步 · 同维度可多选</span></div>
+<form class="filter pick-grid" id="filter-review" aria-label="推荐记录筛选"></form></div>
 <div class="grid">
-<article class="card"><h3>Kalodata 推荐初判</h3><p class="definition">各类回答 ÷ 全部有效回答。中立推荐指同一条回答对不同场景既明确推荐又附条件推荐。初判待语义抽查。</p><div id="recommendation"></div></article>
+<article class="card"><h3>Kalodata 推荐判断</h3><p class="definition">各类回答 ÷ 全部有效回答。中立推荐指同一条回答对不同场景既明确推荐又附条件推荐。分类来自规则判断。</p><div id="recommendation"></div></article>
 <article class="card"><h3>Kalodata 平台口碑</h3><p class="definition">平台口碑字段只评价 Kalodata。全样本以有效回答为分母；已提及分母为平台口碑码 1–4 的回答。</p><div id="sentiment"></div></article>
-<article class="card wide"><h3>中立推荐题单</h3><p class="definition">首轮规则结果，按飞书题号归并。</p><div id="neutral"></div></article>
-<article class="card wide"><h3>原文复检</h3><p class="definition">仅复检首轮推荐未知。规则补判与首轮统计分别展示。</p><div id="review-summary"></div></article>
-<article class="card wide"><h3>仍待复核的推荐记录</h3><p class="definition">按题文、日期、平台和分组回 Answerbit 定位。题号用于飞书题库。</p><div id="review-pending"></div></article>
+<article class="card wide"><h3>中立推荐题单</h3><p class="definition">按飞书题号归并，保留逐条回答的定位信息。</p><div id="neutral"></div></article>
+<article class="card wide"><h3>推荐待确认记录</h3><p class="definition">在 <a id="review-workbench" target="_blank" rel="noopener noreferrer">Answerbit 工作台</a>进入「大模型回答记录」，按表中的题文、日期、平台和分组查找。题号用于飞书题库。</p><div id="review-pending"></div></article>
 </div></section>
 <section id="action" class="section action-module" data-page hidden>
 <div class="section-head"><div><h2>运营行动清单</h2><p class="sub">从当前样本挑选可回查的线索，每项给出优化和复测步骤。</p></div><span id="action-count" class="label">随筛选更新</span></div>
 <div class="action-list" id="next"></div>
 <details class="card action-quality"><summary>数据完整性与口径限制</summary><div id="quality" class="compact"></div></details>
 </section>
-<footer class="foot"><a id="answerbit-footer" rel="noopener noreferrer" target="_blank">Answerbit 大模型回答记录入口</a><a id="bank-link" rel="noopener noreferrer" target="_blank">飞书一期题库</a></footer>
+<footer class="foot"><a id="answerbit-footer" rel="noopener noreferrer" target="_blank">Answerbit 工作台</a><a id="bank-link" rel="noopener noreferrer" target="_blank">飞书一期题库</a></footer>
 </main>
 <script id="geo-data" type="application/json">__GEO_PAYLOAD__</script>
 <script>
@@ -102,6 +103,22 @@ const ratio=(n,d)=>d?`${pct(n,d)}（${num(n)}/${num(d)}）`:"不适用";
 const empty=s=>`<p class="empty">${esc(s)}</p>`;
 const fmtDate=s=>new Date(s).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai",hour12:false});
 const batch=D.batch, marketName=m=>D.markets[m]||m, groupName=g=>D.groups[g]||"分组未知";
+// The review data contains only answers whose original recommendation was unknown.
+if(D.review){
+  const byDimensions=new Map(D.rows.map(r=>[JSON.stringify(r.d),r]));
+  for(const entry of D.review.rows){
+    const row=byDimensions.get(JSON.stringify(entry.d));
+    if(!row)continue;
+    if(entry.status!=="ok"||entry.label==="unknown"){
+      if(entry.text)(row.evidence??={}).recommendation=entry;
+      continue;
+    }
+    const label=entry.label==="negative"?"no_recommendation":entry.label;
+    row.rec.unknown--;
+    row.rec[label]=(row.rec[label]||0)+1;
+    if(label==="neutral")D.neutral.push(entry);
+  }
+}
 const groupPairs=Object.entries(D.groups).filter(([k])=>k).map(([k,v])=>[k,v]);
 const tagPairs=Object.entries(D.tags), ns=([,a],[,b])=>a.localeCompare(b,"zh-CN");
 const enginePairs=[...new Set(D.rows.map(r=>r.d[1]))].sort().map(x=>[x,x]);
@@ -113,6 +130,15 @@ const dimensions=[
 ];
 function makeFilters(side){
   const form=$("filter-"+side);
+  const scopeLabel={a:"当前范围",b:"对照范围",review:"推荐记录"}[side];
+  const update=()=>{
+    if(side!=="b"){
+      const other=side==="a"?"review":"a";
+      setFilters(other,filters(side));
+      filters(other);
+    }
+    render();
+  };
   for(const [key,label,opts] of dimensions){
     const pick=document.createElement("details");
     pick.className="picker";
@@ -124,7 +150,7 @@ function makeFilters(side){
     const wrap=document.createElement("div");
     pick.before(wrap);wrap.append(title,pick);
     const summary=pick.querySelector("summary");
-    summary.setAttribute("aria-label",`${side==="a"?"主项":"比较项"}范围${label}多选`);
+    summary.setAttribute("aria-label",`${scopeLabel}范围${label}多选`);
     for(const [value,name] of opts){
       const l=document.createElement("label"), i=document.createElement("input");
       i.type="checkbox";i.value=value;
@@ -133,7 +159,7 @@ function makeFilters(side){
     if(!opts.length)pick.querySelector(".pick-list").textContent="本批暂无选项";
     pick.querySelector("button").addEventListener("click",()=>{
       for(const i of pick.querySelectorAll("input"))i.checked=false;
-      render();
+      update();
     });
     if(key==="tags"){
       const rule=document.createElement("label");
@@ -149,12 +175,12 @@ function makeFilters(side){
   }
   const reset=document.createElement("button");
   reset.type="button";reset.textContent="重置";
-  reset.addEventListener("click",()=>{form.reset();render();});
+  reset.addEventListener("click",()=>{form.reset();update();});
   form.append(reset);
-  form.addEventListener("change",render);
+  form.addEventListener("change",update);
   form.addEventListener("submit",e=>e.preventDefault());
 }
-makeFilters("a");makeFilters("b");
+makeFilters("a");makeFilters("b");makeFilters("review");
 document.addEventListener("pointerdown",e=>{
   for(const item of document.querySelectorAll(".picker[open]"))if(!item.contains(e.target))item.open=false;
 });
@@ -163,7 +189,7 @@ document.addEventListener("keydown",e=>{
   const pick=document.activeElement.closest(".picker[open]");
   if(pick){pick.open=false;pick.querySelector("summary").focus();}
 });
-for(const id of ["source","answerbit-footer"]) $(id).href=D.links.answerbit;
+for(const id of ["source","answerbit-footer","review-workbench"]) $(id).href=D.links.answerbit;
 $("bank-link").href=D.links.bank;
 $("batch").textContent=`查询窗口 ${batch.begin_date} 至 ${batch.end_date} · 最后成功取数 ${fmtDate(batch.fetched_at_utc)}（北京时间）`;
 if(D.last_failure){
@@ -320,58 +346,34 @@ function render(){
   $("neutral").innerHTML=neutral.size?table(["题号与提问","命中回答","分组、平台、日期"],[...neutral.entries()].map(([qid,qs])=>[
     `<strong>${esc(qid)}</strong><br>${esc(qs[0].text||"题文待核对")}`,num(qs.length),
     qs.map(x=>esc([groupName(x.d[3]),x.d[1],x.d[2]].join(" / "))).join("<br>")])):
-    empty(n?`规则未检出中立推荐。当前范围首轮推荐未知 ${num(unknown)} 条。`:"当前筛选没有有效回答。");
-  if(activePage==="answers")renderReview(f,n,unknown);
+    empty(n?`规则未检出中立推荐。当前范围推荐未知 ${num(unknown)} 条。`:"当前筛选没有有效回答。");
+  if(activePage==="answers")renderReview(f,unknown);
   renderActions(rs);
   const missing=n-known;
   $("quality").innerHTML=`<p>当前范围正式来源字段待核对 <b>${num(missing)}</b> 条，推荐未知 <b>${num(unknown)}</b> 条。</p>
     <p class="definition">本批接口返回 ${num(batch.returned_records)} 条，题库未匹配 ${num(D.issues.unmatched_question||0)} 条，题文或市场歧义 ${num((D.issues.ambiguous_question||0)+(D.issues.market_tag_conflict||0))} 条，回答待确认 ${num(D.issues.answer_unconfirmed||0)} 条。此为全批数据，未匹配项未进入市场筛选。</p>
     <p class="sub">实际启用题单与采样计划未取得，样本覆盖率无法计算。题库版本 ${esc(batch.question_version.slice(0,12))} · ${esc(batch.metric_version)}</p>`;
 }
-const reviewLabels={explicit:"补判明确推荐",conditional:"补判条件推荐",neutral:"补判中立推荐",negative:"补判明确不推荐",unknown:"仍无法补判"};
 const reviewReasons={description:"仅介绍或列举",target:"推荐对象不清",scope:"条件或否定范围不清",conflict:"转述或语义冲突",uncovered:"规则未覆盖",
   read_failed:"详情读取失败",mismatch:"详情或首轮判定与快照不符",task_missing:"平台返回任务不存在",deferred:"旧任务暂缓核查"};
 let pendingPage=0, pendingScope="", pendingReason="";
 function reviewTable(records, pageIndex){
   const values=pageIndex===undefined?records:records.slice(pageIndex*20,(pageIndex+1)*20);
-  return table(["飞书题号","题文","市场","平台","回答日期","Answerbit 分组","复检状态 / 原因","对比表标签","回查"],values.map(r=>[
+  return table(["飞书题号","题文","市场","平台","回答日期","Answerbit 分组","待确认原因","对比表标签"],values.map(r=>[
     esc(r.q),esc(r.text||"题文待核对"),esc(marketName(r.d[0])),esc(r.d[1]),esc(r.d[2]),esc(groupName(r.d[3])),
-    esc(reviewReasons[r.reason||r.status]||reviewLabels[r.label]||"待复检"),
-    r.status==="ok"?(r.table?"对比表提及":"—"):"未判定",
-    `<a href="${esc(D.links.answerbit)}" target="_blank" rel="noopener noreferrer" title="按该行题文、日期、平台与分组查找">Answerbit ↗</a>`
+    esc(reviewReasons[r.reason||r.status]||"待确认"),
+    r.status==="ok"?(r.table?"对比表提及":"—"):"未判定"
   ]));
 }
-function renderReview(f,n,unknown){
+function renderReview(f,unknown){
   const key=JSON.stringify(f);
   if(key!==pendingScope){pendingScope=key;pendingPage=0;pendingReason="";}
-  if(!n||!D.review){
-    $("review-summary").innerHTML=empty(n?(unknown?"当前快照尚未进行原文复检。":"当前范围无首轮推荐未知。"):"当前筛选没有有效回答。");
-    $("review-pending").innerHTML=empty(n&&unknown?"完成原文复检后，此处列出仍待核实的任务。":"当前没有待复核记录。");
-    return;
-  }
-  const rows=D.review.rows.filter(r=>matches(r.d,f));
-  const ok=rows.filter(r=>r.status==="ok"), neutral=ok.filter(r=>r.label==="neutral");
-  const failed=rows.length-ok.length;
-  const pending=rows.filter(r=>r.status!=="ok"||r.label==="unknown")
+  const pending=(D.review?.rows||[]).filter(r=>matches(r.d,f)&&(r.status!=="ok"||r.label==="unknown"))
     .sort((a,b)=>(a.status!=="ok")-(b.status!=="ok"));
-  const checked=rows.length===unknown&&ok.length===unknown;
-  let summary=`<p class="sub">${checked?(unknown?"当前范围全量复检完成":"当前范围无首轮推荐未知"):"当前范围尚未完成全量复检"} · 成功读取且对账 ${num(ok.length)}/${num(unknown)} 条 · ${esc(fmtDate(D.review.checked_at))}（北京时间）</p>`;
-  if(unknown){
-    summary+=`<div class="compact">${table(["复检结果","数量与占比"],Object.entries(reviewLabels).map(([k,label])=>[
-      label,ratio(ok.filter(r=>r.label===k).length,ok.length)
-    ]))}</div><p class="definition">占比以成功读取且对账的回答为分母。对比表提及 ${num(ok.filter(r=>r.table).length)} 条，可与任一分类同时出现。</p>`;
-    if(failed){
-      const failures=["deferred","task_missing","read_failed","mismatch"].map(k=>[reviewReasons[k],rows.filter(r=>r.status===k).length])
-        .filter(([,count])=>count).map(([label,count])=>`${label} ${num(count)} 条`).join("、");
-      summary+=`<p class="warning">${failures}。这些记录未计入复检分类。</p>`;
-    }
-    if(neutral.length)summary+=`<details><summary>第二轮补判中立推荐题单 · ${num(neutral.length)} 条</summary>${reviewTable(neutral)}</details>`;
-  }
-  $("review-summary").innerHTML=summary;
   const subset=pendingReason?pending.filter(r=>(r.reason||r.status)===pendingReason):pending;
   const pages=Math.ceil(subset.length/20);
   pendingPage=Math.min(pendingPage,Math.max(0,pages-1));
-  if(!pages){$("review-pending").innerHTML=empty("当前没有待复核记录。");return;}
+  if(!pages){$("review-pending").innerHTML=empty(!D.review&&unknown?`推荐未知 ${num(unknown)} 条，当前快照没有待确认明细。`:"当前没有待确认记录。");return;}
   const reasons=Object.entries(reviewReasons).map(([code,label])=>[code,label,pending.filter(r=>(r.reason||r.status)===code).length]).filter(([, ,count])=>count);
   $("review-pending").innerHTML=`<p class="sub">${num(pending.length)} 条 · ${reasons.map(([,label,count])=>`${label} ${num(count)} 条`).join(" · ")}</p>
     <label class="review-reason">按原因查看 <select id="review-reason"><option value="">全部待复核</option>${reasons.map(([code,label,count])=>`<option value="${code}"${code===pendingReason?" selected":""}>${label}（${num(count)}）</option>`).join("")}</select></label>
@@ -382,13 +384,12 @@ function renderReview(f,n,unknown){
 }
 $("review-pending").addEventListener("click",e=>{
   const b=e.target.closest("button[data-step]");
-  if(b){pendingPage+=Number(b.dataset.step);const f=filters(),rows=D.rows.filter(r=>matches(r.d,f));renderReview(f,total(rows),sum(rows,r=>r.rec.unknown||0));}
+  if(b){pendingPage+=Number(b.dataset.step);renderReview(filters());}
 });
 $("review-pending").addEventListener("change",e=>{
   if(e.target.id!=="review-reason")return;
   pendingReason=e.target.value;pendingPage=0;
-  const f=filters(),rows=D.rows.filter(r=>matches(r.d,f));
-  renderReview(f,total(rows),sum(rows,r=>r.rec.unknown||0));
+  renderReview(filters());
   $("review-reason")?.focus();
 });
 function renderActions(rows){
@@ -418,18 +419,18 @@ function renderActions(rows){
      check:"回平台读具体评价，区分价格、产品功能限制和信息过时，再与当前产品资料对照。",
      change:"若说法已过时，更新对应帮助文档或 FAQ；若确有使用限制，补清限制和可行的替代流程。",
      retest:"按相同市场、题类与平台复测负面和褒贬并存数量，并人工回查同类说法。"},
-    {key:"recommendation",title:"拆清推荐未知的原因",metric:"推荐初判未知率",low:false,
+    {key:"recommendation",title:"拆清推荐未知的原因",metric:"推荐判断未知率",low:false,
      counts:r=>[r.rec.unknown||0,r.n],
      check:"在代表回答中区分三种情况：只列工具对比、条件描述不清、规则漏掉了明确建议。",
      change:"把复核结果按这三类记录。条件说明不清时，在官网补上适合谁、需要满足什么条件。",
-     retest:"固定同类题和模型，复测可判定覆盖率，并用人工抽样检查推荐初判。"}
+     retest:"固定同类题和模型，复测可判定覆盖率，并用人工抽样检查推荐判断。"}
   ];
   const chosen=rules.flatMap(rule=>{
     const candidates=[...cuts.values()].flatMap(rs=>{
       const lead=rs.find(r=>r.evidence?.[rule.key]);
       if(!lead)return [];
       const [hits,den]=rs.reduce(([a,b],r)=>{const [x,y]=rule.counts(r);return [a+x,b+y];},[0,0]);
-      return den?[{lead,hits,den,rate:hits/den}]:[];
+      return den&&(rule.key!=="recommendation"||hits)?[{lead,hits,den,rate:hits/den}]:[];
     }).sort((a,b)=>(b.den>=20)-(a.den>=20)||(rule.low?a.rate-b.rate:b.rate-a.rate)||b.den-a.den);
     return candidates.length?[{...rule,...candidates[0]}]:[];
   });
@@ -459,7 +460,7 @@ function showPage(resetScroll=false){
   document.body.dataset.activeView=activePage;
   const platform=activePage==="platform";
   $("global-filters").hidden=platform;
-  $("filter-a-title").textContent=activePage==="compare"?"主项筛选":"查看范围";
+  $("filter-a-title").textContent=activePage==="compare"?"当前范围筛选":"查看范围";
   $("scope").hidden=platform;
   if(activePage==="compare"&&!comparisonOpened){
     setFilters("b",filters());
@@ -499,7 +500,7 @@ function renderComparison(f,aRows){
   function diff(x,y,rank){
     if(!x[1]||!y[1])return "差值不适用";
     const raw=(x[0]/x[1]-y[0]/y[1])*(rank?1:100), v=Number(raw.toFixed(2));
-    return `<span class="delta">${v===0?"主项与比较项持平":`主项比比较项${v>0?"高":"低"} ${Math.abs(v).toFixed(2)} ${rank?"名":"个百分点"}`}</span>`;
+    return `<span class="delta">${v===0?"与对照持平":`较对照${v>0?"高":"低"} ${Math.abs(v).toFixed(2)} ${rank?"名":"个百分点"}`}</span>`;
   }
   const comparisons=[
     ["Kalodata 提及率","mention"],["未点名题提及率","unmentioned"],
@@ -509,7 +510,7 @@ function renderComparison(f,aRows){
   ];
   if(sameSet)comparisons.splice(2,0,["Kalodata 提及份额","sov"]);
   const heading=(label,x,scope,side)=>`<div class="cohort ${side}"><b><span class="tag">${label}</span>${num(x.n)} 条有效回答</b><small>${esc(describe(scope))}</small><small>点名 ${num(x.n-x.unnamed)} · 未点名 ${num(x.unnamed)}</small></div>`;
-  let view=`<div class="cohorts">${heading("主项",a,f,"a")}${heading("比较项",b,f2,"b")}</div>`;
+  let view=`<div class="cohorts">${heading("当前范围",a,f,"a")}${heading("对照范围",b,f2,"b")}</div>`;
   const summaryMetrics=[["未点名题提及率","unmentioned"],["首次出现第一比例","first"],["官网正式来源命中率","formal"]];
   view+=`<div class="compare-kpis">${summaryMetrics.map(([title,key])=>{
     const x=a[key], y=b[key], xx=x[1]?100*x[0]/x[1]:null, yy=y[1]?100*y[0]/y[1]:null;
@@ -518,17 +519,17 @@ function renderComparison(f,aRows){
       <span class="metric-dot reference" style="left:${yy}%"></span><span class="metric-dot" style="left:${xx}%"></span>
       </div><div class="axis-caption" aria-hidden="true"><span>0%</span><span>100%</span></div>`:"";
     return `<article class="compare-metric"><h3>${title}</h3>${x[1]&&y[1]?diff(x,y,false):'<span class="delta">差值不适用</span>'}${track}
-      <div class="compare-points"><span>● 主项<b>${score(x,false)}</b></span><span>○ 比较项<b>${score(y,false)}</b></span></div></article>`;
+      <div class="compare-points"><span>● 当前范围<b>${score(x,false)}</b></span><span>○ 对照范围<b>${score(y,false)}</b></span></div></article>`;
   }).join("")}</div>`;
   if(a.unnamed&&b.unnamed){
     const gap=100*(a.unmentioned[0]/a.unnamed-b.unmentioned[0]/b.unnamed);
-    if(Math.abs(gap)>=.005)view+=`<p class="definition"><b>对照线索</b> · ${gap>0?"主项":"比较项"}的未点名题提及率高 ${Math.abs(gap).toFixed(2)} 个百分点，可固定平台和题类再核对。</p>`;
+    if(Math.abs(gap)>=.005)view+=`<p class="definition"><b>对照线索</b> · ${gap>0?"当前范围":"对照范围"}的未点名题提及率高 ${Math.abs(gap).toFixed(2)} 个百分点，可固定平台和题类再核对。</p>`;
   }
-  view+=`<p class="definition">差值 = 主项 − 比较项 · 重叠样本 ${num(overlap)} 条。两组样本构成可能不同。</p>`;
-  if(f2.from>f2.to)view+=empty("比较项起始日应早于或等于结束日。");
+  view+=`<p class="definition">差值 = 当前范围 − 对照范围 · 重叠样本 ${num(overlap)} 条。两组样本构成可能不同。</p>`;
+  if(f2.from>f2.to)view+=empty("对照范围起始日应早于或等于结束日。");
   const detailsOpen=$("comparison").querySelector(".compare-detail")?.open;
   view+=`<details class="compare-detail"${detailsOpen?" open":""}><summary>展开指标明细</summary>${!sameSet?'<p class="definition">两组没有共同的单一竞品集合，提及份额在主看板按市场查看。</p>':""}${
-    table(["指标","主项","比较项","主项 − 比较项"],comparisons.map(([title,k])=>[esc(title),score(a[k],k==="rank"),score(b[k],k==="rank"),diff(a[k],b[k],k==="rank")]))}</details>`;
+    table(["指标","当前范围","对照范围","当前范围 − 对照范围"],comparisons.map(([title,k])=>[esc(title),score(a[k],k==="rank"),score(b[k],k==="rank"),diff(a[k],b[k],k==="rank")]))}</details>`;
   $("comparison").innerHTML=view;
 }
 showPage();
