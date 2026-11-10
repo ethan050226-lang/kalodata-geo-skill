@@ -6,8 +6,30 @@ from io import BytesIO
 import json
 import sqlite3
 
-from archive import require
+from archive import require, write_atomic
 from content_metrics import reputation_label
+
+
+def write_question_check(path, issues):
+    from openpyxl import Workbook
+    from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
+
+    book = Workbook()
+    sheet = book.active
+    sheet.title = "题号待核对"
+    sheet.append(("任务 ID","回答日期","平台","异常代码","Answerbit 题文","候选飞书题号","回查入口"))
+    for task, _, platform, day, code, check_at, prompt, candidates, _ in issues:
+        sheet.append([ILLEGAL_CHARACTERS_RE.sub("",value or "")
+                      for value in (task,day,platform,code,prompt,candidates,check_at)])
+        for cell in sheet[sheet.max_row]:
+            cell.data_type = "s"
+    sheet.freeze_panes = "A2"
+    sheet.auto_filter.ref = sheet.dimensions
+    for column, width in zip("ABCDEFG",(25,15,18,25,55,35,32)):
+        sheet.column_dimensions[column].width = width
+    output = BytesIO()
+    book.save(output)
+    write_atomic(path,output.getvalue())
 
 
 def export_workbook(snapshot, data):
