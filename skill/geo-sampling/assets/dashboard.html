@@ -364,7 +364,7 @@ const localViewer=hasOriginals&&location.protocol==="http:"&&location.hostname==
 if(hasOriginals)$("review-heading").textContent="非明确推荐记录";
 $("local-answer-note").hidden=false;
 $("local-answer-note").textContent=localViewer?"点「查看原文」可打开该题号下的这条 Answerbit 回答。":
-  hasOriginals?"从本地查询入口打开看板，即可逐条查看原文。":"本批是历史快照，重新取数后可逐条查看本地原文。";
+  hasOriginals?"当前 HTML 可直接筛选和对照。查原文时，用同批 SQLite 启动本机查询，再从返回的地址打开看板。":"本批是历史快照，重新取数后可逐条查看本地原文。";
 let pendingPage=0, pendingScope="", pendingReason="", pendingLabel="";
 function reviewTable(records){
   const headers=["飞书题号","题文","市场","平台","回答日期","Answerbit 分组","待确认原因","对比表标签"];
