@@ -274,6 +274,27 @@ class AnswerbitTest(unittest.TestCase):
             self.assertEqual(rows["conflicting"][:3],(None,"候选待核对","TEST-01-US、TEST-01-GB"))
             self.assertEqual(rows["missing"][:4],(None,"未匹配",None,"Unmatched text"))
 
+        target = self.output.with_suffix(".html")
+        target.write_text("previous dashboard")
+        previous_db = self.output.read_bytes()
+        args = ["dashboard.py","refresh",str(self.bank),str(self.output),str(target),
+                "--begin",self.day,"--end",self.day]
+
+        def list_only(path,payload):
+            self.assertEqual(path,answerbit.LIST)
+            return call(path,payload)
+
+        log = io.StringIO()
+        with patch("sys.argv",args), patch.object(answerbit,"operator_credentials",return_value=("test","brand")), \
+             patch.object(dashboard,"PacedRead",return_value=list_only), contextlib.redirect_stderr(log):
+            self.assertEqual(dashboard.main(),1)
+        self.assertIn("4 条异常记录缺少已确认题号",log.getvalue())
+        self.assertEqual(previous_db,self.output.read_bytes())
+        self.assertEqual("previous dashboard",target.read_text())
+        with contextlib.closing(load_workbook(target.with_suffix(".question-check.xlsx"))) as book:
+            self.assertEqual({r[0] for r in list(book.active.values)[1:]},
+                             {"mock-2","conflicting","wrong-market","missing"})
+
     def test_dashboard_refresh_counts_and_failed_update_preserves_batch(self):
         record = self.records()[0]
         calls = []
