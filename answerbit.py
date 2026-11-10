@@ -234,7 +234,8 @@ def date_arg(value):
         raise ArchiveError("日期 / 需要 YYYY-MM-DD") from None
 
 
-def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *, page_size=None, review_unknown=None):
+def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *, page_size=None,
+            review_unknown=None, store_answers=False):
     begin, end = date_arg(begin), date_arg(end)
     require(begin <= end and identifier(brand), "取数 / 日期范围或 Kalodata 品牌 ID 无效")
     require(output.suffix == ".sqlite" and bank.resolve() != output.resolve(),
@@ -243,6 +244,7 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
     records = task_list(call, brand, begin, end, page_size)
     require(records, "取数 / 当前日期范围无 Answerbit 记录，请核对首轮采样状态；已有本地库保留")
     samples, groups, tags, websites, issues, content = [], [], [], [], [], []
+    originals = []
     valid_count = 0
     for row in records:
         task = row["task_id"]
@@ -263,8 +265,10 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
             detail_question = detail.get("query") or detail.get("prompt")
             list_prompt_id = row.get("query_id") or row.get("prompt_id")
             detail_prompt_id = detail.get("query_id") or detail.get("prompt_id")
+            detail_task = detail.get("task_id")
             detail_state = analysis_state(detail)
-            require(question_text(detail_question) == question_text(row.get("query_str"))
+            require((detail_task is None or str(detail_task) == task)
+                    and question_text(detail_question) == question_text(row.get("query_str"))
                     and detail.get("platform") == platform and detail.get("language") == language
                     and detail.get("date") == day
                     and (not list_prompt_id or not detail_prompt_id or list_prompt_id == detail_prompt_id)
@@ -273,6 +277,8 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
             if isinstance(body, str) and body.strip():
                 status = "valid"
                 valid_count += 1
+                if store_answers:
+                    originals.append((task, detail_question, body))
                 urls = [item.get("url") if isinstance(item, dict) else None
                         for item in links] if isinstance(links, list) else None
                 reputation = detail.get("brand_reputation")
@@ -352,6 +358,11 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
             db.executemany("INSERT INTO sample_website VALUES (?, ?, ?, ?)", websites)
             db.executemany("INSERT INTO sample_content VALUES (?, ?, ?, ?, ?, ?, ?)", content)
             db.executemany("INSERT INTO issue VALUES (?, ?, ?, ?, ?, ?)", issues)
+            if store_answers:
+                db.execute("""CREATE TABLE sample_answer (
+                    task_id TEXT PRIMARY KEY REFERENCES sample(task_id), prompt TEXT NOT NULL, body TEXT NOT NULL
+                )""")
+                db.executemany("INSERT INTO sample_answer VALUES (?, ?, ?)", originals)
         report = read_snapshot(db_path, group_id, tag_ids)
         write_atomic(output, db_path.read_bytes())
     return report
