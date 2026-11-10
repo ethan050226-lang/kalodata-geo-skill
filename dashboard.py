@@ -17,7 +17,7 @@ import time
 import answerbit as api
 from content_metrics import KALODATA, market_brands, reputation_label
 from recommendation_review import identity, review_result, run_review, saved_review, sidecar, write_review
-from workbook_export import export_workbook
+from workbook_export import export_workbook, write_question_check
 
 CHINA = timezone(timedelta(hours=8))
 ASSET = Path(__file__).resolve().parent / "skill/geo-sampling/assets/dashboard.html"
@@ -82,7 +82,7 @@ def refresh_answers(bank, snapshot, brand, begin, end, call):
             return pending.pop(payload["task_id"]).result()
         staged = Path(directory) / "refresh.sqlite"
         report = api.refresh(bank,staged,brand,begin,end,fetch,page_size=500,
-                             review_unknown=review_unknown,store_answers=True)
+                             review_unknown=review_unknown,store_answers=True,require_issue_numbers=True)
         api.require(len(reviewed)==report["content"]["recommendation"]["unknown"],
                     "推荐复检 / 当次未知任务总数未闭合")
         write_review(staged,identity(staged),reviewed)
@@ -362,6 +362,9 @@ def main():
         excel = None
         if args.excel:
             stage = "Excel 记录导出"
+            with closing(sqlite3.connect(snapshot.resolve().as_uri()+"?mode=ro",uri=True)) as db:
+                missing = db.execute("SELECT count(*) FROM issue WHERE question_id IS NULL OR question_id=''").fetchone()[0]
+            api.require(not missing, f"题号对账 / 旧批有 {missing} 条异常缺题号，请用已核对的题库重新取数")
             excel = export_workbook(snapshot,data)
             stage = "看板校验与渲染"
         if staging:
@@ -391,6 +394,16 @@ def main():
         status = {"stage":stage,"error":why,"attempt":datetime.now(CHINA).isoformat(timespec="seconds"),
                   "retained":str(args.output.resolve()) if args.output.is_file() else None,
                   "last_success":None}
+        if isinstance(error,api.QuestionNumberError):
+            status["stage"] = "题号对账"
+            path = args.output.with_suffix(".question-check.xlsx")
+            try:
+                api.require(path.resolve() not in {p.resolve() for p in (args.bank,args.excel) if p},
+                            "核对清单与题库或 Excel 输出路径冲突")
+                write_question_check(path,error.issues)
+                status["question_check"] = str(path.resolve())
+            except (api.ArchiveError,OSError,ValueError):
+                status["question_check_error"] = "无法写入核对清单，请核对路径和权限"
         if status["retained"] and stage != "只读凭证":
             try:
                 before, old_data, after = retained_data(args.output)
