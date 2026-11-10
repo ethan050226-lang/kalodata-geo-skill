@@ -61,7 +61,7 @@ def export_workbook(snapshot, data):
     append(records, ("飞书题号","回答日期","市场","平台","Answerbit 分组","Answerbit 标签","任务 ID",
                      "样本状态","点名状态","推荐判断","平台口碑","品牌首次出现顺序",
                      "Kalodata 正文链接","Kalodata 正式来源","FastMoss 正文链接","FastMoss 正式来源"))
-    append(issues, ("飞书题号","回答日期","平台","任务 ID","异常代码","回查入口"))
+    append(issues, ("飞书题号","题号匹配状态","候选飞书题号","Answerbit 题文","回答日期","平台","任务 ID","异常代码","回查入口"))
     with closing(sqlite3.connect(snapshot.resolve().as_uri()+"?mode=ro",uri=True)) as db:
         db.row_factory = sqlite3.Row
         db.execute("BEGIN")
@@ -88,11 +88,24 @@ def export_workbook(snapshot, data):
                 sentiments[reputation_label(row["reputation_code"])] if valid else None,
                 " → ".join(sorted(ranks,key=ranks.get)),
                 *({0:"未命中",1:"命中"}.get(flag,"未知") if valid else None for flag in flags)))
-        for row in db.execute("SELECT question_id,task_date,platform,task_id,code,check_at FROM issue ORDER BY task_date,task_id"):
-            append(issues,(row[0],date.fromisoformat(row[1]),*row[2:]))
+        issue_columns = {r["name"] for r in db.execute("PRAGMA table_info(issue)")}
+        evidence_columns = ("question_text","candidate_question_ids","match_basis")
+        extra = ", ".join(name if name in issue_columns else f"NULL AS {name}" for name in evidence_columns)
+        for row in db.execute(f"""
+            SELECT question_id,task_date,platform,task_id,code,check_at,{extra}
+            FROM issue ORDER BY task_date,task_id,code
+        """):
+            if row["question_id"]:
+                status = f"已匹配（{row['match_basis']}）" if row["match_basis"] else "已匹配"
+            elif row["candidate_question_ids"]:
+                status = "候选待核对"
+            else:
+                status = "未匹配" if "question_text" in issue_columns else "旧批未记录匹配依据"
+            append(issues,(row["question_id"],status,row["candidate_question_ids"],row["question_text"],
+                           date.fromisoformat(row["task_date"]),row["platform"],row["task_id"],row["code"],row["check_at"]))
     style(summary,(26,82))
     style(records,(23,14,12,16,24,32,24,12,12,14,14,34,16,16,16,16),filters=True)
-    style(issues,(23,14,16,24,29,36),filters=True)
+    style(issues,(23,27,34,48,14,16,24,29,36),filters=True)
     output = BytesIO()
     book.save(output)
     return output.getvalue()
