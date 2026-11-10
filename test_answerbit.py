@@ -18,6 +18,7 @@ import dashboard
 from local_answers import make_server
 import recommendation_review
 from archive import ArchiveError
+from workbook_export import export_workbook
 
 try:
     from openpyxl import Workbook
@@ -203,8 +204,9 @@ class AnswerbitTest(unittest.TestCase):
         self.assertEqual({row["tag_id"] for row in report["website_links_by_tag"]}, {"gb", "core", "model"})
         self.assertTrue(all(row["valid"] == 1 for row in report["website_links_by_tag"]))
         self.assertNotIn(b"RAW_ANSWER_SENTINEL", self.output.read_bytes())
-        self.assertNotIn(b"Shared question?", self.output.read_bytes())
         with contextlib.closing(sqlite3.connect(self.output.as_uri() + "?mode=ro", uri=True)) as db:
+            self.assertEqual(db.execute("SELECT task_id,question_text FROM issue WHERE question_text IS NOT NULL").fetchall(),
+                             [("mock-2","Shared question?")])
             self.assertEqual(db.execute("SELECT question_id, zone FROM sample WHERE task_id = 'mock-1'").fetchone(),
                              ("TEST-01-GB", "US"))
             with self.assertRaises(sqlite3.OperationalError):
@@ -233,6 +235,44 @@ class AnswerbitTest(unittest.TestCase):
         self.assertEqual(old["content_status"], "需刷新")
         self.assertEqual(old["groups"][0]["mentioned_latin"], 1)
         self.assertIsNotNone(old["website_links"])
+
+    def test_issues_retain_confirmed_numbers_and_separate_candidates(self):
+        from openpyxl import load_workbook
+
+        matched, ambiguous, unfinished = self.records()
+        matched["query_id"] = "verified-prompt"
+        recovered = dict(ambiguous,task_id="recovered",query_id=matched["query_id"])
+        conflicting = dict(recovered,task_id="conflicting",tags=[{"tag_name":"美国"},{"tag_name":"英国"}])
+        wrong_market = dict(recovered,task_id="wrong-market",tags=[{"tag_name":"德国"}])
+        missing = dict(recovered,task_id="missing",query_str="Unmatched text")
+        records = [recovered,ambiguous,conflicting,wrong_market,missing,unfinished,matched]
+
+        def call(path,payload):
+            if path == answerbit.LIST:
+                return {"scores":records,"total":len(records)}
+            self.assertEqual(payload["task_id"],matched["task_id"])
+            return dict(prompt=matched["query_str"],query_id=matched["query_id"],platform=matched["platform"],
+                        language=matched["language"],date=self.day,llm_output="Kalodata. PRIVATE_ORIGINAL")
+
+        report = answerbit.refresh(self.bank,self.output,"test",self.day,self.day,call)
+        issues = {r["task_id"]:r for r in report["issues"]}
+        self.assertEqual(report["content"]["valid"],1)
+        self.assertEqual(issues["mock-1"]["question_id"],"TEST-01-GB")
+        self.assertEqual(issues["mock-3"]["question_id"],"TEST-01-DE")
+        self.assertEqual(issues["recovered"]["question_id"],"TEST-01-GB")
+        self.assertEqual(issues["recovered"]["match_basis"],"同批提问 ID 和题文")
+        for task in ("mock-2","conflicting","wrong-market"):
+            self.assertIsNone(issues[task]["question_id"])
+            self.assertEqual(issues[task]["candidate_question_ids"],"TEST-01-US、TEST-01-GB")
+        self.assertIsNone(issues["missing"]["candidate_question_ids"])
+        self.assertEqual(issues["missing"]["question_text"],"Unmatched text")
+
+        data = dashboard.dashboard_data(self.output,self.bank,None)
+        with contextlib.closing(load_workbook(io.BytesIO(export_workbook(self.output,data)))) as book:
+            rows = {r[6]:r for r in list(book["数据异常"].values)[1:]}
+            self.assertEqual(rows["recovered"][:3],("TEST-01-GB","已匹配（同批提问 ID 和题文）",None))
+            self.assertEqual(rows["conflicting"][:3],(None,"候选待核对","TEST-01-US、TEST-01-GB"))
+            self.assertEqual(rows["missing"][:4],(None,"未匹配",None,"Unmatched text"))
 
     def test_dashboard_refresh_counts_and_failed_update_preserves_batch(self):
         record = self.records()[0]
