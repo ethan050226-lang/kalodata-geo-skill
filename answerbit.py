@@ -22,6 +22,7 @@ from zipfile import BadZipFile
 from archive import ArchiveError, BRAND, URL, citation_flag, domain_hit, host, identifier, read_json, require, write_atomic
 from content_metrics import (KALODATA, first_ranks, recommendation, reputation_label,
                              strip_opening_echo, summarize_content)
+from workbook_export import write_question_check
 
 BASE = "https://answerbit.qq.com"
 LIST = "/geo/task/get"
@@ -46,6 +47,12 @@ BARE_URL = re.compile(
 class NoRedirect(HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):
         return None
+
+
+class QuestionNumberError(ArchiveError):
+    def __init__(self, issues):
+        self.issues = issues
+        super().__init__(f"题号对账 / {len(issues)} 条异常记录缺少已确认题号，请核对飞书题库和 Answerbit 题文、市场标签")
 
 
 def request(path, payload, key):
@@ -245,24 +252,14 @@ def date_arg(value):
         raise ArchiveError("日期 / 需要 YYYY-MM-DD") from None
 
 
-def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *, page_size=None,
-            review_unknown=None, store_answers=False):
-    begin, end = date_arg(begin), date_arg(end)
-    require(begin <= end and identifier(brand), "取数 / 日期范围或 Kalodata 品牌 ID 无效")
-    require(output.suffix == ".sqlite" and bank.resolve() != output.resolve(),
-            "本地库 / 请选择独立的 .sqlite 输出文件")
-    version, questions, by_text = load_bank(bank)
-    records = task_list(call, brand, begin, end, page_size)
-    require(records, "取数 / 当前日期范围无 Answerbit 记录，请核对首轮采样状态；已有本地库保留")
+def question_alignment(records, questions, by_text, begin, end):
     matches = [select_question(row, questions, by_text) for row in records]
     verified_numbers = defaultdict(set)
     for row, (number, _) in zip(records, matches):
         key = platform_question_key(row)
         if number and key:
             verified_numbers[key].add(number)
-    samples, groups, tags, websites, issues, content = [], [], [], [], [], []
-    originals = []
-    valid_count = 0
+    issues = []
     for row, (number, problem) in zip(records, matches):
         task = row["task_id"]
         platform, language, day = row.get("platform"), row.get("language"), row.get("date")
@@ -281,7 +278,31 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
             issues.append((task, number, platform, day, problem, "飞书题库与 Answerbit 回答记录",
                            prompt or None, "、".join(candidates) if candidates and not number else None,
                            "同批提问 ID 和题文" if number else None))
+    return matches, issues
+
+
+def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *, page_size=None,
+            review_unknown=None, store_answers=False, require_issue_numbers=False):
+    begin, end = date_arg(begin), date_arg(end)
+    require(begin <= end and identifier(brand), "取数 / 日期范围或 Kalodata 品牌 ID 无效")
+    require(output.suffix == ".sqlite" and bank.resolve() != output.resolve(),
+            "本地库 / 请选择独立的 .sqlite 输出文件")
+    version, questions, by_text = load_bank(bank)
+    records = task_list(call, brand, begin, end, page_size)
+    require(records, "取数 / 当前日期范围无 Answerbit 记录，请核对首轮采样状态；已有本地库保留")
+    matches, issues = question_alignment(records,questions,by_text,begin,end)
+    if require_issue_numbers:
+        missing = [row for row in issues if not row[1]]
+        if missing:
+            raise QuestionNumberError(missing)
+    samples, groups, tags, websites, content = [], [], [], [], []
+    originals = []
+    valid_count = 0
+    for row, (number, problem) in zip(records,matches):
+        if problem:
             continue
+        task = row["task_id"]
+        platform, language, day = row["platform"], row["language"], row["date"]
         state = analysis_state(row)
         status, mentioned, official, form = "unconfirmed", None, None, None
         detail = {}
@@ -527,9 +548,18 @@ def main():
         else:
             key, brand = operator_credentials()
             result = refresh(args.bank, args.output, brand, args.begin, args.end,
-                             lambda path, payload: request(path, payload, key), args.group_id, args.tag_id)
+                             lambda path, payload: request(path, payload, key), args.group_id, args.tag_id,
+                             require_issue_numbers=True)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
+    except QuestionNumberError as error:
+        path = args.output.with_suffix(".question-check.xlsx")
+        try:
+            require(path.resolve()!=args.bank.resolve(),"题号核对清单与输入题库路径冲突")
+            write_question_check(path,error.issues)
+            print(f"{error}；核对清单：{path.resolve()}",file=sys.stderr)
+        except (ArchiveError,OSError,ValueError):
+            print(f"{error}；无法写入核对清单",file=sys.stderr)
     except ArchiveError as error:
         print(error, file=sys.stderr)
     except (OSError, sqlite3.Error, TypeError, ValueError):
