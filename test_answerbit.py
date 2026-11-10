@@ -134,7 +134,8 @@ class AnswerbitTest(unittest.TestCase):
         content = answerbit.read_snapshot(self.output, "group-research", ["gb", "core"])["content"]
         self.assertEqual(content["valid"], 1)
         self.assertEqual(content["sentiment_raw_counts"], {"4": 1})
-        self.assertEqual(content["sentiment"]["unknown"], 1)
+        self.assertEqual(content["sentiment"]["neutral"], 1)
+        self.assertEqual(content["sentiment"]["unknown"], 0)
         self.assertEqual(content["dimensions"]["market"][0]["first_rate"], 1)
         self.assertEqual(content["dimensions"]["market"][0]["sov_denominator"], 1)
         self.assertEqual(answerbit.read_snapshot(self.output, "group-research", ["gb", "missing"])["content"]["valid"], 0)

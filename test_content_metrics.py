@@ -52,4 +52,12 @@ class ContentMetricsTest(unittest.TestCase):
         self.assertEqual([(r["value"], r["valid"]) for r in result["dimensions"]["tag"]], [("x", 1), ("y", 2)])
         self.assertEqual(result["recommendation"]["neutral"], 1)
         self.assertEqual(result["neutral_questions"][0]["answers"][0]["prompt"], "Which tool?")
-        self.assertEqual(result["sentiment"]["unknown"], 3)
+        self.assertEqual(result["sentiment"]["neutral"], 1)
+        self.assertEqual(result["sentiment"]["unknown"], 2)
+
+    def test_platform_reputation_codes_and_missing_values(self):
+        cases = [(0, "not_mentioned"), (1, "positive"), (2, "negative"), (3, "mixed"), (4, "neutral"),
+                 (None, "unknown"), (9, "unknown"), (True, "unknown"), ("1", "unknown")]
+        for code, label in cases:
+            with self.subTest(code=code):
+                self.assertEqual(content_flags("Kalodata", "Which tool?", "US", code)[-1], label)

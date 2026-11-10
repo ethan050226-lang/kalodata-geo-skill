@@ -21,10 +21,12 @@ ALIASES = {
     "Astream Deep": (r"astream[\s-]+deep",),
 }
 RECOMMENDATIONS = ("explicit", "conditional", "neutral", "no_recommendation", "unknown")
-SENTIMENTS = ("positive", "neutral", "negative", "mixed", "unknown")
-# shortcut: undocumented values remain unmapped until matched with the same
-# answer's platform label or an authoritative enum.
-VERIFIED_REPUTATION = {}
+VERIFIED_REPUTATION = {0: "not_mentioned", 1: "positive", 2: "negative", 3: "mixed", 4: "neutral"}
+SENTIMENTS = (*VERIFIED_REPUTATION.values(), "unknown")
+
+
+def reputation_label(code):
+    return VERIFIED_REPUTATION.get(code, "unknown") if type(code) is int else "unknown"
 
 
 def market_brands(market):
@@ -156,7 +158,8 @@ def summarize_content(rows, tags_by_task):
             brands=brands, sov_denominator=sov_denominator, first=first, first_rate=first / valid,
             rank_sum=sum(ranks), rank_count=len(ranks), average_rank=sum(ranks) / len(ranks) if ranks else None))
     rec = Counter(row["recommendation"] for row in rows)
-    sentiment = Counter(row["sentiment"] for row in rows)
+    # Existing snapshots may have stored "unknown" before the enum was supplied.
+    sentiment = Counter(reputation_label(row["reputation_code"]) for row in rows)
     raw = Counter(str(row["reputation_code"]) if row["reputation_code"] is not None else "missing" for row in rows)
     valid = len(rows)
     return dict(valid=valid, dimensions=dict(summaries),

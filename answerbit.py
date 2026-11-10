@@ -20,7 +20,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 from zipfile import BadZipFile
 
 from archive import ArchiveError, BRAND, URL, citation_flag, domain_hit, host, identifier, read_json, require, write_atomic
-from content_metrics import (KALODATA, VERIFIED_REPUTATION, first_ranks, recommendation,
+from content_metrics import (KALODATA, first_ranks, recommendation, reputation_label,
                              strip_opening_echo, summarize_content)
 
 BASE = "https://answerbit.qq.com"
@@ -93,7 +93,7 @@ def content_flags(body, prompt, market, reputation):
     ranks = first_ranks(clean, market)
     label = recommendation(clean, market, ranks)
     code = reputation if type(reputation) is int else None
-    sentiment = VERIFIED_REPUTATION.get(code, "unknown")
+    sentiment = reputation_label(code)
     return clean, ranks, label, code, sentiment
 
 
