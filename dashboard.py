@@ -186,14 +186,25 @@ def dashboard_data(snapshot, bank, native):
                 v[1] += body is not None
                 v[2] += formal == 1
                 v[3] += formal is not None
-            b["rec"][row["recommendation"]] += 1
-            b["sent"][reputation_label(row["reputation_code"])] += 1
+            rec = row["recommendation"]
+            sentiment = reputation_label(row["reputation_code"])
+            b["rec"][rec] += 1
+            b["sent"][sentiment] += 1
             qid = row["question_id"]
             reference = {"q":qid, "text":prompts.get(qid), "d":dim}
-            if row["recommendation"] == "neutral":
+            if rec == "neutral":
                 neutral.append(reference)
-            if not rank and "evidence" not in b:
-                b["evidence"] = {"q":qid, "text":prompts.get(qid)}
+            if reference["text"]:
+                signals = {
+                    "absence": not rank and not named,
+                    "formal": bool(rank) and sites[task].get(KALODATA,[None,None])[1] == 0,
+                    "rank": bool(rank and rank > 1),
+                    "sentiment": sentiment in ("negative", "mixed"),
+                    "recommendation": rec == "unknown",
+                }
+                for signal, matches in signals.items():
+                    if matches:
+                        b.setdefault("evidence", {}).setdefault(signal, {"q":qid, "text":reference["text"]})
         expected = db.execute("SELECT count(*) FROM sample WHERE status='valid'").fetchone()[0]
         issues = dict(db.execute("SELECT code,count(*) FROM issue GROUP BY code"))
     api.require(valid > 0 and expected == valid == sum(b["n"] for b in buckets.values()),

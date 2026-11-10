@@ -217,6 +217,8 @@ class AnswerbitTest(unittest.TestCase):
         self.assertEqual(data["rows"][0]["mentions"],{"Kalodata":1,"FastMoss":1})
         self.assertEqual(data["rows"][0]["sent"],{"positive":1})
         self.assertEqual(data["rows"][0]["links"]["Kalodata"],[0,1,0,1])
+        self.assertEqual(set(data["rows"][0]["evidence"]),{"formal","recommendation"})
+        self.assertEqual(data["rows"][0]["evidence"]["formal"]["q"],"TEST-01-GB")
         target = self.output.with_suffix(".html")
         dashboard.render(data,target)
         self.assertNotIn("PRIVATE_ANSWER",target.read_text())
