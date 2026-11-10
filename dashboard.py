@@ -17,6 +17,7 @@ import time
 import answerbit as api
 from content_metrics import KALODATA, market_brands, reputation_label
 from recommendation_review import identity, review_result, run_review, saved_review, sidecar, write_review
+from workbook_export import export_workbook
 
 CHINA = timezone(timedelta(hours=8))
 ASSET = Path(__file__).resolve().parent / "skill/geo-sampling/assets/dashboard.html"
@@ -290,6 +291,7 @@ def main():
     parser.add_argument("--end")
     parser.add_argument("--fetch-platform", action="store_true")
     parser.add_argument("--defer-unavailable", action="store_true", help="复检时暂缓上轮未读到的任务")
+    parser.add_argument("--excel", type=Path, help="导出同批可筛选的 .xlsx 记录")
     args = parser.parse_args()
     stage = "配置"
     staging = None
@@ -297,6 +299,9 @@ def main():
         api.require(args.output.suffix.lower() == ".html" and args.snapshot.suffix == ".sqlite"
                     and len({p.resolve() for p in (args.output,args.bank,args.snapshot)}) == 3,
                     "配置 / 题库、SQLite 与 HTML 路径必须独立")
+        api.require(not args.excel or (args.excel.suffix.lower()==".xlsx" and args.excel.resolve()
+                    not in {p.resolve() for p in (args.bank,args.snapshot,args.output)}),
+                    "配置 / Excel 输出必须是独立的 .xlsx 文件")
         today = datetime.now(CHINA).date()
         begin = api.date_arg(args.begin or str(today-timedelta(days=6)))
         end = api.date_arg(args.end or str(today))
@@ -354,6 +359,11 @@ def main():
         data = dashboard_data(snapshot,args.bank,native)
         api.require(args.mode!="refresh" or data["review"] is not None,
                     "推荐复检 / 当次复检文件与快照不匹配，请重新运行")
+        excel = None
+        if args.excel:
+            stage = "Excel 记录导出"
+            excel = export_workbook(snapshot,data)
+            stage = "看板校验与渲染"
         if staging:
             api.require(data["recommendations"] is not None,"本地原文库 / 当次原文未入库，请重新运行")
             html = Path(staging.name) / "dashboard.html"
@@ -363,9 +373,13 @@ def main():
             api.write_atomic(args.output,html.read_bytes())
         else:
             render(data,args.output)
+        if excel is not None:
+            stage = "Excel 文件写入"
+            api.write_atomic(args.excel,excel)
         status = args.output.with_suffix(".status.json")
         status.unlink(missing_ok=True)
         print(json.dumps({"dashboard":str(args.output.resolve()),"mode":args.mode,
+                          **({"excel":str(args.excel.resolve())} if args.excel else {}),
                           "valid":sum(b["n"] for b in data["rows"]), "batch":data["batch"],
                           "native_available":list(native["data"]) if native else [],
                           "native_issues":native["issues"] if native else {},
