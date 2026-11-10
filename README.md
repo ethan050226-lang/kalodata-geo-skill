@@ -14,6 +14,8 @@ python3 dashboard.py refresh /path/to/question-bank.xlsx .trial/dashboard.sqlite
 
 默认交付同批简短报告、`GEO运营看板.html` 和 `GEO采样明细.xlsx`。报告写在对话内，标明时间、样本数、主要发现和回查建议。飞书会话支持附件且获准交付时，两个文件作为当前用户可下载的产物。HTML 在浏览器里离线筛选和对照。Excel 可按题号、日期、市场、平台、分组和标签筛选，并有单独的异常表。两份文件保留必要的回查字段，含原文的 SQLite 留在获批本机。
 
+每条异常都要有已确认的飞书题号。发现缺号时保留上一批，另生成 `.question-check.xlsx` 供核对题文、候选题号和任务 ID。修正飞书题库或 Answerbit 提问、标签后重新运行。
+
 在本机执行 `python3 answerbit.py query .trial/dashboard.sqlite` 可只读查询同批指标和异常。查具体回答时，执行 `python3 local_answers.py .trial/dashboard.sqlite .trial/GEO运营看板.html` 并打开返回的本机地址。在「非明确推荐记录」点击「查看原文」，可定位题号、题文和 Answerbit 回答。保持查询进程运行。这两种查询都无需 Answerbit Key。
 
 默认读取北京时间最近七个自然日（含当天）的全范围，也可附 `--begin` 与 `--end`。平台原生快照有独立范围与读取时间。刷新失败保留最后成功数据并显示失败阶段。使用 `snapshot` 代替 `refresh` 可从已保存的兼容 SQLite 离线生成；附 `--fetch-platform` 时仅补拉 Answerbit 原生快照。
