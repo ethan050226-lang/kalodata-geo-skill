@@ -178,12 +178,16 @@ def task_list(call, brand, begin, end, page_size=None):
     return tasks
 
 
+def record_markets(row):
+    tags = row.get("tags")
+    return {MARKETS[tag["tag_name"]] for tag in tags
+            if isinstance(tag, dict) and isinstance(tag.get("tag_name"), str)
+            and tag["tag_name"] in MARKETS} if isinstance(tags, list) else set()
+
+
 def select_question(row, questions, by_text):
     candidates = by_text.get(question_text(row.get("query_str")), [])
-    tags = row.get("tags")
-    markets = {MARKETS[tag["tag_name"]] for tag in tags
-               if isinstance(tag, dict) and isinstance(tag.get("tag_name"), str)
-               and tag["tag_name"] in MARKETS} if isinstance(tags, list) else set()
+    markets = record_markets(row)
     if markets:
         candidates = [number for number in candidates if questions[number][0] in markets]
     if len(markets) > 1:
@@ -191,6 +195,13 @@ def select_question(row, questions, by_text):
     if len(candidates) != 1:
         return None, "ambiguous_question" if candidates else "unmatched_question"
     return candidates[0], None
+
+
+def platform_question_key(row):
+    prompt_id = row.get("query_id") or row.get("prompt_id")
+    if isinstance(prompt_id, str) or type(prompt_id) is int:
+        return str(prompt_id), question_text(row.get("query_str"))
+    return None
 
 
 def analysis_state(record):
@@ -243,18 +254,33 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
     version, questions, by_text = load_bank(bank)
     records = task_list(call, brand, begin, end, page_size)
     require(records, "取数 / 当前日期范围无 Answerbit 记录，请核对首轮采样状态；已有本地库保留")
+    matches = [select_question(row, questions, by_text) for row in records]
+    verified_numbers = defaultdict(set)
+    for row, (number, _) in zip(records, matches):
+        key = platform_question_key(row)
+        if number and key:
+            verified_numbers[key].add(number)
     samples, groups, tags, websites, issues, content = [], [], [], [], [], []
     originals = []
     valid_count = 0
-    for row in records:
+    for row, (number, problem) in zip(records, matches):
         task = row["task_id"]
         platform, language, day = row.get("platform"), row.get("language"), row.get("date")
         require(identifier(platform) and identifier(language) and isinstance(day, str) and begin <= day <= end,
                 f"记录 / 任务 {task} 的平台、语言或日期不符合查询窗口，请回 Answerbit 核对")
         date_arg(day)
-        number, problem = select_question(row, questions, by_text)
         if problem:
-            issues.append((task, number, platform, day, problem, "飞书题库与 Answerbit 回答记录"))
+            prompt = question_text(row.get("query_str"))
+            candidates = by_text.get(prompt, [])
+            markets = record_markets(row)
+            if len(markets) == 1:
+                candidates = [qid for qid in candidates if questions[qid][0] in markets] or candidates
+            verified = verified_numbers.get(platform_question_key(row), set())
+            if problem == "ambiguous_question" and not markets and len(verified) == 1:
+                number = next(iter(verified))
+            issues.append((task, number, platform, day, problem, "飞书题库与 Answerbit 回答记录",
+                           prompt or None, "、".join(candidates) if candidates and not number else None,
+                           "同批提问 ID 和题文" if number else None))
             continue
         state = analysis_state(row)
         status, mentioned, official, form = "unconfirmed", None, None, None
@@ -296,14 +322,14 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
                 websites.extend((task, *result) for result in flags)
                 mentioned, official = int(KALODATA in ranks), {name: formal for name, _, formal in flags}["Kalodata"]
                 if official is None:
-                    issues.append((task, number, platform, day, "citation_unknown", "Answerbit 引用字段"))
+                    issues.append((task, number, platform, day, "citation_unknown", "Answerbit 引用字段", None, None, None))
         if status != "valid":
-            issues.append((task, number, platform, day, "answer_unconfirmed", "Answerbit 回答分析状态"))
+            issues.append((task, number, platform, day, "answer_unconfirmed", "Answerbit 回答分析状态", None, None, None))
         title_id, title_name, tags_known, task_tags = question_metadata(row, detail)
         groups.append((task, title_id, title_name, tags_known))
         tags.extend((task, *tag) for tag in task_tags)
         if not tags_known:
-            issues.append((task, number, platform, day, "tag_metadata_incomplete", "Answerbit 提问标签"))
+            issues.append((task, number, platform, day, "tag_metadata_incomplete", "Answerbit 提问标签", None, None, None))
         zone = row.get("zone")
         samples.append((task, number, platform, language, day, zone if identifier(zone) else None,
                         status, mentioned, official, form))
@@ -329,7 +355,8 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
                     status TEXT, mentioned INTEGER, official INTEGER, answer_brand_form TEXT
                 );
                 CREATE TABLE issue (
-                    task_id TEXT, question_id TEXT, platform TEXT, task_date TEXT, code TEXT, check_at TEXT
+                    task_id TEXT, question_id TEXT REFERENCES question(question_id), platform TEXT, task_date TEXT,
+                    code TEXT, check_at TEXT, question_text TEXT, candidate_question_ids TEXT, match_basis TEXT
                 );
                 CREATE TABLE sample_group (
                     task_id TEXT PRIMARY KEY REFERENCES sample(task_id), group_id TEXT, group_name TEXT,
@@ -357,7 +384,7 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
             db.executemany("INSERT INTO sample_tag VALUES (?, ?, ?, ?)", tags)
             db.executemany("INSERT INTO sample_website VALUES (?, ?, ?, ?)", websites)
             db.executemany("INSERT INTO sample_content VALUES (?, ?, ?, ?, ?, ?, ?)", content)
-            db.executemany("INSERT INTO issue VALUES (?, ?, ?, ?, ?, ?)", issues)
+            db.executemany("INSERT INTO issue VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", issues)
             if store_answers:
                 db.execute("""CREATE TABLE sample_answer (
                     task_id TEXT PRIMARY KEY REFERENCES sample(task_id), prompt TEXT NOT NULL, body TEXT NOT NULL
