@@ -234,7 +234,7 @@ def date_arg(value):
         raise ArchiveError("日期 / 需要 YYYY-MM-DD") from None
 
 
-def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *, page_size=None):
+def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *, page_size=None, review_unknown=None):
     begin, end = date_arg(begin), date_arg(end)
     require(begin <= end and identifier(brand), "取数 / 日期范围或 Kalodata 品牌 ID 无效")
     require(output.suffix == ".sqlite" and bank.resolve() != output.resolve(),
@@ -284,6 +284,8 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
                 form = brand_form(clean)
                 content.append((task, json.dumps(ranks), label, code, sentiment,
                                 detail_question if label == "neutral" else None, reputation_issue))
+                if label == "unknown" and review_unknown is not None:
+                    review_unknown(task,body,detail_question,questions[number][0])
                 flags = website_flags(body, urls)
                 websites.extend((task, *result) for result in flags)
                 mentioned, official = int(KALODATA in ranks), {name: formal for name, _, formal in flags}["Kalodata"]

@@ -253,6 +253,18 @@ def saved_review(snapshot, *, previous=False):
     return data
 
 
+def review_result(body,prompt,market):
+    label,reason,table = classify(body,prompt,market)
+    return {"status":"ok","label":label,"reason":reason,"table":table}
+
+
+def write_review(snapshot,digest,records):
+    api.require(identity(snapshot)==digest,"推荐复检 / 复检期间快照已变化，请重跑")
+    data = {"snapshot":digest,"version":VERSION,"total":len(records),"records":records,
+            "checked_at":datetime.now(timezone.utc).isoformat(timespec="seconds")}
+    api.write_atomic(sidecar(snapshot),json.dumps(data,ensure_ascii=False).encode())
+
+
 def run_review(bank,snapshot,brand,call,progress=None,*,defer_unavailable=False):
     sha,_,by_text = api.load_bank(bank)
     prompts = {q:t for t,ids in by_text.items() for q in ids}
@@ -294,17 +306,13 @@ def run_review(bank,snapshot,brand,call,progress=None,*,defer_unavailable=False)
         _,ranks,rec,_,_=api.content_flags(body,prompt,row["market"],detail.get("brand_reputation"))
         if ranks!=json.loads(row["ranks"]) or rec!="unknown":
             return {"status":"mismatch"}
-        label,reason,table = classify(body,prompt,row["market"])
-        return {"status":"ok","label":label,"reason":reason,"table":table}
+        return review_result(body,prompt,row["market"])
 
     with ThreadPoolExecutor(max_workers=5) as pool:
         for i,(row,result) in enumerate(zip(remaining,pool.map(inspect,remaining)),1):
             records[row["task_id"]] = result
             if progress and i%200==0:
                 progress(len(records),len(rows))
-    api.require(len(records)==len(rows) and identity(snapshot)==digest,
-                "推荐复检 / 复检期间快照已变化，请重跑")
-    data = {"snapshot":digest,"version":VERSION,"total":len(rows),"records":records,
-            "checked_at":datetime.now(timezone.utc).isoformat(timespec="seconds")}
-    api.write_atomic(sidecar(snapshot),json.dumps(data,ensure_ascii=False).encode())
+    api.require(len(records)==len(rows),"推荐复检 / 任务总数未闭合")
+    write_review(snapshot,digest,records)
     return Counter(r["status"] for r in records.values())

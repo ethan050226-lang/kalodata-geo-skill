@@ -232,8 +232,10 @@ class AnswerbitTest(unittest.TestCase):
 
     def test_dashboard_refresh_counts_and_failed_update_preserves_batch(self):
         record = self.records()[0]
+        calls = []
 
         def call(path, payload):
+            calls.append(path)
             if path == answerbit.LIST:
                 return {"scores":[record], "total":1}
             return dict(prompt=record["query_str"], platform=record["platform"],
@@ -242,6 +244,10 @@ class AnswerbitTest(unittest.TestCase):
 
         dashboard.refresh_answers(self.bank,self.output,"test",self.day,self.day,call)
         data = dashboard.dashboard_data(self.output,self.bank,None)
+        self.assertEqual(calls,[answerbit.LIST,answerbit.DETAIL])
+        self.assertEqual(len(data["review"]["rows"]),1)
+        self.assertEqual(data["review"]["rows"][0]["status"],"ok")
+        self.assertEqual(data["review"]["rows"][0]["label"],"unknown")
         self.assertEqual(sum(row["n"] for row in data["rows"]),1)
         self.assertEqual(data["rows"][0]["d"][-1],("core","gb","model"))
         self.assertEqual(data["rows"][0]["mentions"],{"Kalodata":1,"FastMoss":1})

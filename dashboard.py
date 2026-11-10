@@ -10,12 +10,13 @@ import math
 from pathlib import Path
 import sqlite3
 import sys
+from tempfile import TemporaryDirectory
 from threading import Lock
 import time
 
 import answerbit as api
 from content_metrics import KALODATA, market_brands, reputation_label
-from recommendation_review import run_review, saved_review
+from recommendation_review import identity, review_result, run_review, saved_review, sidecar, write_review
 
 CHINA = timezone(timedelta(hours=8))
 ASSET = Path(__file__).resolve().parent / "skill/geo-sampling/assets/dashboard.html"
@@ -57,8 +58,13 @@ def refresh_answers(bank, snapshot, brand, begin, end, call):
     # Fetch at most one small wave ahead. Answer bodies stay in memory.
     _, questions, by_text = api.load_bank(bank)
     listed, pending = [], {}
+    reviewed = {}
     remaining = iter(())
-    with ThreadPoolExecutor(max_workers=5) as executor:
+
+    def review_unknown(task,body,prompt,market):
+        reviewed[task] = review_result(body,prompt,market)
+
+    with TemporaryDirectory() as directory, ThreadPoolExecutor(max_workers=5) as executor:
         def fetch(path, payload):
             nonlocal remaining
             if path == api.LIST:
@@ -73,7 +79,14 @@ def refresh_answers(bank, snapshot, brand, begin, end, call):
                 for task in islice(remaining, 20):
                     pending[task] = executor.submit(call, path, {"brand_id": brand, "task_id": task})
             return pending.pop(payload["task_id"]).result()
-        return api.refresh(bank, snapshot, brand, begin, end, fetch, page_size=500)
+        staged = Path(directory) / "refresh.sqlite"
+        report = api.refresh(bank,staged,brand,begin,end,fetch,page_size=500,review_unknown=review_unknown)
+        api.require(len(reviewed)==report["content"]["recommendation"]["unknown"],
+                    "推荐复检 / 当次未知任务总数未闭合")
+        write_review(staged,identity(staged),reviewed)
+        api.write_atomic(snapshot,staged.read_bytes())
+        api.write_atomic(sidecar(snapshot),sidecar(staged).read_bytes())
+    return report
 
 
 def number(value):
@@ -318,6 +331,8 @@ def main():
                 api.require(not failed, "原生快照刷新失败 / " + "、".join(failed))
         stage = "看板校验与渲染"
         data = dashboard_data(args.snapshot,args.bank,native)
+        api.require(args.mode!="refresh" or data["review"] is not None,
+                    "推荐复检 / 当次复检文件与快照不匹配，请重新运行")
         render(data,args.output)
         status = args.output.with_suffix(".status.json")
         status.unlink(missing_ok=True)
