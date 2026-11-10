@@ -80,7 +80,8 @@ def refresh_answers(bank, snapshot, brand, begin, end, call):
                     pending[task] = executor.submit(call, path, {"brand_id": brand, "task_id": task})
             return pending.pop(payload["task_id"]).result()
         staged = Path(directory) / "refresh.sqlite"
-        report = api.refresh(bank,staged,brand,begin,end,fetch,page_size=500,review_unknown=review_unknown)
+        report = api.refresh(bank,staged,brand,begin,end,fetch,page_size=500,
+                             review_unknown=review_unknown,store_answers=True)
         api.require(len(reviewed)==report["content"]["recommendation"]["unknown"],
                     "推荐复检 / 当次未知任务总数未闭合")
         write_review(staged,identity(staged),reviewed)
@@ -155,6 +156,8 @@ def dashboard_data(snapshot, bank, native):
         batch = dict(db.execute("SELECT * FROM batch").fetchone())
         api.require(batch["question_version"] == sha, "题库校验 / 快照和题库版本不一致")
         api.require(db.execute("PRAGMA quick_check").fetchone()[0] == "ok", "快照校验 / SQLite 文件校验失败")
+        has_originals = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sample_answer'").fetchone()
+        recommendations = [] if has_originals else None
         tags = defaultdict(list)
         tag_names = {}
         for row in db.execute("SELECT task_id,tag_id,tag_name FROM sample_tag ORDER BY tag_id"):
@@ -213,10 +216,17 @@ def dashboard_data(snapshot, bank, native):
                 b.setdefault("sent_issues", Counter())[reason] += 1
             qid = row["question_id"]
             reference = {"q":qid, "text":prompts.get(qid), "d":dim}
+            result = None
             if review and rec == "unknown":
                 result = review["records"].get(task)
                 api.require(result is not None, "推荐复检 / 任务未在复检记录中")
                 review_rows.append({**result, **reference, "task":task})
+            if recommendations is not None:
+                judgment = result["label"] if result and result["status"] == "ok" else rec
+                if judgment == "negative":
+                    judgment = "no_recommendation"
+                if judgment != "explicit":
+                    recommendations.append({**(result or {}), **reference, "task":task, "label":judgment})
             if rec == "neutral":
                 neutral.append(reference)
             if reference["text"]:
@@ -232,6 +242,12 @@ def dashboard_data(snapshot, bank, native):
                         b.setdefault("evidence", {}).setdefault(signal, {"q":qid, "text":reference["text"]})
         expected = db.execute("SELECT count(*) FROM sample WHERE status='valid'").fetchone()[0]
         issues = dict(db.execute("SELECT code,count(*) FROM issue GROUP BY code"))
+        if has_originals:
+            originals = db.execute("""
+                SELECT COUNT(*) FROM sample_answer JOIN sample USING(task_id)
+                WHERE status='valid' AND length(body)>0
+            """).fetchone()[0]
+            api.require(originals == valid, "本地原文库 / 有效回答和原文条数不一致，请重新运行")
     api.require(valid > 0 and expected == valid == sum(b["n"] for b in buckets.values()),
                 "快照校验 / 有效回答或分组计数未闭合")
     api.require(set(sites) == valid_tasks and
@@ -244,7 +260,8 @@ def dashboard_data(snapshot, bank, native):
     return {"batch":batch, "platform":native, "rows":list(buckets.values()), "issues":issues,
             "markets":{v:k for k,v in api.MARKETS.items()}, "competitors":{v:market_brands(v) for v in api.MARKETS.values()},
             "tags":tag_names, "groups":groups, "neutral":neutral, "links":{"answerbit":SOURCE,"bank":QNA},
-            "review":{"rows":review_rows,"version":review["version"],"checked_at":review["checked_at"]} if review else None}
+            "review":{"rows":review_rows,"version":review["version"],"checked_at":review["checked_at"]} if review else None,
+            "recommendations":recommendations}
 
 
 def render(data, output):
@@ -275,6 +292,7 @@ def main():
     parser.add_argument("--defer-unavailable", action="store_true", help="复检时暂缓上轮未读到的任务")
     args = parser.parse_args()
     stage = "配置"
+    staging = None
     try:
         api.require(args.output.suffix.lower() == ".html" and args.snapshot.suffix == ".sqlite"
                     and len({p.resolve() for p in (args.output,args.bank,args.snapshot)}) == 3,
@@ -284,6 +302,7 @@ def main():
         end = api.date_arg(args.end or str(today))
         api.require(begin <= end, "配置 / 起始日应早于或等于截止日")
         native = None
+        snapshot = args.snapshot
         if args.mode != "snapshot" or args.fetch_platform:
             stage = "只读凭证"
             print("真实取数需要 Kalodata 品牌级只读 Key。常见一周窗口约 3–8 分钟，平台限流可能延长。"
@@ -310,9 +329,11 @@ def main():
                            defer_unavailable=args.defer_unavailable)
             if args.mode == "refresh":
                 stage = "Answerbit 回答取数与对账"
+                staging = TemporaryDirectory()
+                snapshot = Path(staging.name) / "snapshot.sqlite"
                 for attempt in range(2):
                     try:
-                        refresh_answers(args.bank,args.snapshot,brand,begin,end,call)
+                        refresh_answers(args.bank,snapshot,brand,begin,end,call)
                         break
                     except api.ArchiveError as error:
                         if attempt or not str(error).startswith("分页 /"):
@@ -330,10 +351,18 @@ def main():
                           if path in available and reason != "响应无可用数据"]
                 api.require(not failed, "原生快照刷新失败 / " + "、".join(failed))
         stage = "看板校验与渲染"
-        data = dashboard_data(args.snapshot,args.bank,native)
+        data = dashboard_data(snapshot,args.bank,native)
         api.require(args.mode!="refresh" or data["review"] is not None,
                     "推荐复检 / 当次复检文件与快照不匹配，请重新运行")
-        render(data,args.output)
+        if staging:
+            api.require(data["recommendations"] is not None,"本地原文库 / 当次原文未入库，请重新运行")
+            html = Path(staging.name) / "dashboard.html"
+            render(data,html)
+            api.write_atomic(args.snapshot,snapshot.read_bytes())
+            api.write_atomic(sidecar(args.snapshot),sidecar(snapshot).read_bytes())
+            api.write_atomic(args.output,html.read_bytes())
+        else:
+            render(data,args.output)
         status = args.output.with_suffix(".status.json")
         status.unlink(missing_ok=True)
         print(json.dumps({"dashboard":str(args.output.resolve()),"mode":args.mode,
@@ -359,6 +388,9 @@ def main():
                 pass
         print(json.dumps(status,ensure_ascii=False),file=sys.stderr)
         return 1
+    finally:
+        if staging:
+            staging.cleanup()
 
 
 if __name__ == "__main__":
