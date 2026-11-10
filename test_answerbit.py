@@ -269,10 +269,12 @@ class AnswerbitTest(unittest.TestCase):
 
         data = dashboard.dashboard_data(self.output,self.bank,None)
         with contextlib.closing(load_workbook(io.BytesIO(export_workbook(self.output,data)))) as book:
-            rows = {r[6]:r for r in list(book["数据异常"].values)[1:]}
-            self.assertEqual(rows["recovered"][:3],("TEST-01-GB","已匹配（同批提问 ID 和题文）",None))
-            self.assertEqual(rows["conflicting"][:3],(None,"候选待核对","TEST-01-US、TEST-01-GB"))
-            self.assertEqual(rows["missing"][:4],(None,"未匹配",None,"Unmatched text"))
+            rows = {r[5]:r for r in list(book["数据异常"].values)[1:]}
+            self.assertEqual(rows["recovered"][:2],("TEST-01-GB","已匹配（同批提问 ID 和题文）"))
+            self.assertEqual(rows["mock-3"][0],"TEST-01-DE")
+            self.assertNotIn("conflicting",rows)
+            self.assertNotIn("missing",rows)
+            self.assertEqual(dict(book["批次说明"].values)["未确认题号（未纳入明细）"],4)
 
         target = self.output.with_suffix(".html")
         target.write_text("previous dashboard")
@@ -288,12 +290,24 @@ class AnswerbitTest(unittest.TestCase):
         with patch("sys.argv",args), patch.object(answerbit,"operator_credentials",return_value=("test","brand")), \
              patch.object(dashboard,"PacedRead",return_value=list_only), contextlib.redirect_stderr(log):
             self.assertEqual(dashboard.main(),1)
-        self.assertIn("4 条异常记录缺少已确认题号",log.getvalue())
+        self.assertIn("3 条有题库候选的异常记录缺少已确认题号",log.getvalue())
         self.assertEqual(previous_db,self.output.read_bytes())
         self.assertEqual("previous dashboard",target.read_text())
         with contextlib.closing(load_workbook(target.with_suffix(".question-check.xlsx"))) as book:
             self.assertEqual({r[0] for r in list(book.active.values)[1:]},
-                             {"mock-2","conflicting","wrong-market","missing"})
+                             {"mock-2","conflicting","wrong-market"})
+
+        records[:] = [recovered,missing,unfinished,matched]
+        excel = target.with_suffix(".xlsx")
+        args.extend(["--excel",str(excel)])
+        native = {"data":{},"issues":{}}
+        with patch("sys.argv",args), patch.object(answerbit,"operator_credentials",return_value=("test","brand")), \
+             patch.object(dashboard,"PacedRead",return_value=call), patch.object(dashboard,"platform_snapshot",return_value=native), \
+             contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(dashboard.main(),0)
+        with contextlib.closing(load_workbook(excel)) as book:
+            self.assertEqual(dict(book["批次说明"].values)["未确认题号（未纳入明细）"],1)
+            self.assertTrue(all(r[0] for r in list(book["数据异常"].values)[1:]))
 
     def test_dashboard_refresh_counts_and_failed_update_preserves_batch(self):
         record = self.records()[0]
@@ -359,6 +373,33 @@ class AnswerbitTest(unittest.TestCase):
         _, retained, _ = dashboard.retained_data(target)
         self.assertEqual(retained["batch"],data["batch"])
         self.assertEqual(retained["last_failure"]["last_success"],data["batch"]["fetched_at_utc"])
+
+    def test_mention_rate_excludes_only_confirmed_negative_kalodata_hits(self):
+        from openpyxl import load_workbook
+
+        record = self.records()[0]
+        bodies = (("Kalodata and FastMoss.",2),("Kalodata.",3),("Kalodata.",None),("FastMoss.",2))
+        details = dict(zip(("negative","mixed","unknown","no-hit"),bodies))
+        records = [dict(record,task_id=task) for task in details]
+
+        def call(path,payload):
+            if path == answerbit.LIST:
+                return {"scores":records,"total":len(records)}
+            body,code = details[payload["task_id"]]
+            return dict(prompt=record["query_str"],platform=record["platform"],language=record["language"],
+                        date=self.day,links=[],llm_output=body,brand_reputation=code)
+
+        report = answerbit.refresh(self.bank,self.output,"test",self.day,self.day,call)
+        group = report["groups"][0]
+        self.assertEqual((group["mentioned"],group["all_mentions"],group["valid"],group["mention_rate"]),(2,3,4,.5))
+        brands = {b["brand"]:b for b in report["content"]["dimensions"]["market"][0]["brands"]}
+        self.assertEqual((brands["Kalodata"]["mention_rate"],brands["Kalodata"]["sov"]),(.5,.6))
+        self.assertEqual(brands["FastMoss"]["mentions"],2)
+        data = dashboard.dashboard_data(self.output,self.bank,None)
+        self.assertEqual((data["rows"][0]["negative_mentions"],data["rows"][0]["rank"]),(1,[3,3]))
+        with contextlib.closing(load_workbook(io.BytesIO(export_workbook(self.output,data)))) as book:
+            included = {row[6]:row[-1] for row in list(book["回答记录"].values)[1:]}
+            self.assertEqual(included,{"negative":"负面排除","mixed":"计入","unknown":"计入","no-hit":"未提及"})
 
     def test_recommendation_review_is_bound_to_batch_and_keeps_only_labels(self):
         record = self.records()[0]

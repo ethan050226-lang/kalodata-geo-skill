@@ -188,7 +188,7 @@ def dashboard_data(snapshot, bank, native):
             groups[group] = row["group_name"] or "分组未知"
             dim = (market, platform, day, group, named, tuple(tags[task]))
             if dim not in buckets:
-                buckets[dim] = {"d": dim, "n":0, "mentions":Counter(), "first":0, "rank":[0,0],
+                buckets[dim] = {"d": dim, "n":0, "mentions":Counter(), "negative_mentions":0, "first":0, "rank":[0,0],
                                 "links":{}, "rec":Counter(), "sent":Counter()}
             b = buckets[dim]
             ranks = json.loads(row["ranks"])
@@ -210,6 +210,7 @@ def dashboard_data(snapshot, bank, native):
                 v[3] += formal is not None
             rec = row["recommendation"]
             sentiment = reputation_label(row["reputation_code"])
+            b["negative_mentions"] += bool(rank) and sentiment == "negative"
             b["rec"][rec] += 1
             b["sent"][sentiment] += 1
             if sentiment == "unknown":
@@ -232,7 +233,7 @@ def dashboard_data(snapshot, bank, native):
                 neutral.append(reference)
             if reference["text"]:
                 signals = {
-                    "absence": not rank and not named,
+                    "absence": not named and (not rank or sentiment == "negative"),
                     "formal": bool(rank) and sites[task].get(KALODATA,[None,None])[1] == 0,
                     "rank": bool(rank and rank > 1),
                     "sentiment": sentiment in ("negative", "mixed"),
@@ -363,8 +364,13 @@ def main():
         if args.excel:
             stage = "Excel 记录导出"
             with closing(sqlite3.connect(snapshot.resolve().as_uri()+"?mode=ro",uri=True)) as db:
-                missing = db.execute("SELECT count(*) FROM issue WHERE question_id IS NULL OR question_id=''").fetchone()[0]
-            api.require(not missing, f"题号对账 / 旧批有 {missing} 条异常缺题号，请用已核对的题库重新取数")
+                columns = {r[1] for r in db.execute("PRAGMA table_info(issue)")}
+                if "candidate_question_ids" in columns:
+                    missing = db.execute("""
+                        SELECT count(*) FROM issue
+                        WHERE coalesce(question_id,'')='' AND coalesce(candidate_question_ids,'')<>''
+                    """).fetchone()[0]
+                    api.require(not missing, f"题号对账 / 有 {missing} 条题库候选尚未确认，请用已核对的题库重新取数")
             excel = export_workbook(snapshot,data)
             stage = "看板校验与渲染"
         if staging:

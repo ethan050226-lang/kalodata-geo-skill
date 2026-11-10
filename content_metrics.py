@@ -146,12 +146,15 @@ def summarize_content(rows, tags_by_task):
     summaries = defaultdict(list)
     for (dimension, market, named, value), items in sorted(buckets.items()):
         mention_counts = Counter(brand for item in items for brand in item["ranks"])
+        negative_mentions = sum(KALODATA in item["ranks"] and reputation_label(item["reputation_code"])=="negative"
+                                for item in items)
         valid, sov_denominator = len(items), sum(mention_counts.values())
         brands = []
         for brand in market_brands(market):
-            hits = mention_counts[brand]
-            brands.append(dict(brand=brand, mentions=hits, mention_rate=hits / valid,
-                               sov=hits / sov_denominator if sov_denominator else None))
+            raw_hits = mention_counts[brand]
+            hits = raw_hits - (negative_mentions if brand==KALODATA else 0)
+            brands.append(dict(brand=brand, mentions=hits, all_mentions=raw_hits, mention_rate=hits / valid,
+                               sov=raw_hits / sov_denominator if sov_denominator else None))
         ranks = [item["ranks"][KALODATA] for item in items if KALODATA in item["ranks"]]
         first = ranks.count(1)
         summaries[dimension].append(dict(market=market, named_prompt=named, value=value, valid=valid,

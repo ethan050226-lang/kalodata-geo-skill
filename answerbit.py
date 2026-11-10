@@ -52,7 +52,7 @@ class NoRedirect(HTTPRedirectHandler):
 class QuestionNumberError(ArchiveError):
     def __init__(self, issues):
         self.issues = issues
-        super().__init__(f"题号对账 / {len(issues)} 条异常记录缺少已确认题号，请核对飞书题库和 Answerbit 题文、市场标签")
+        super().__init__(f"题号对账 / {len(issues)} 条有题库候选的异常记录缺少已确认题号，请核对飞书题库和 Answerbit 市场标签")
 
 
 def request(path, payload, key):
@@ -292,7 +292,7 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
     require(records, "取数 / 当前日期范围无 Answerbit 记录，请核对首轮采样状态；已有本地库保留")
     matches, issues = question_alignment(records,questions,by_text,begin,end)
     if require_issue_numbers:
-        missing = [row for row in issues if not row[1]]
+        missing = [row for row in issues if not row[1] and row[7]]
         if missing:
             raise QuestionNumberError(missing)
     samples, groups, tags, websites, content = [], [], [], [], []
@@ -425,9 +425,12 @@ def read_snapshot(path, group_id=None, tag_ids=()):
                 "本地库 / 指标版本不受支持，请重新刷新")
         has_forms = version != "answerbit-observed/1"
         form = "q.prompt_brand_form" if has_forms else "NULL"
-        latin_count = "COUNT(*) FILTER (WHERE s.answer_brand_form IN ('latin', 'both'))" if has_forms else "NULL"
-        ja_count = "COUNT(*) FILTER (WHERE s.answer_brand_form IN ('ja', 'both'))" if has_forms else "NULL"
         tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+        has_reputation = "sample_content" in tables
+        negative = """EXISTS (SELECT 1 FROM sample_content c WHERE c.task_id=s.task_id
+                       AND typeof(c.reputation_code)='integer' AND c.reputation_code=2)""" if has_reputation else "0"
+        latin_count = f"COUNT(*) FILTER (WHERE s.answer_brand_form IN ('latin', 'both') AND NOT ({negative}))" if has_forms else "NULL"
+        ja_count = f"COUNT(*) FILTER (WHERE s.answer_brand_form IN ('ja', 'both') AND NOT ({negative}))" if has_forms else "NULL"
         metadata_available = {"sample_group", "sample_tag"} <= tables
         require(metadata_available or (group_id is None and not tag_ids),
                 "本地库 / 此快照没有 Answerbit 分组与标签，请重新刷新")
@@ -447,7 +450,8 @@ def read_snapshot(path, group_id=None, tag_ids=()):
             results = [dict(row) for row in db.execute(f"""
                 SELECT {', '.join(columns)}, {latin_count} AS mentioned_latin, {ja_count} AS mentioned_ja,
                     COUNT(*) AS matched, COUNT(*) FILTER (WHERE s.status = 'valid') AS valid,
-                    COUNT(*) FILTER (WHERE s.mentioned = 1) AS mentioned, COUNT(s.official) AS citation_known,
+                    COUNT(*) FILTER (WHERE s.mentioned=1 AND NOT ({negative})) AS mentioned,
+                    COUNT(*) FILTER (WHERE s.mentioned=1) AS all_mentions, COUNT(s.official) AS citation_known,
                     COUNT(*) FILTER (WHERE s.official = 1) AS official
                 FROM sample s JOIN question q USING (question_id) {join} {where}
                 GROUP BY {positions} ORDER BY {positions}
@@ -494,6 +498,7 @@ def read_snapshot(path, group_id=None, tag_ids=()):
 
         return {
             "batch": batch, "coverage": None, "coverage_reason": "未取得独立的实际启用与采样计划",
+            "mention_rate_policy": "exclude_confirmed_negative" if has_reputation else "all_mentions_legacy",
             "filters": {"group_id": group_id, "tag_ids": list(tag_ids)},
             "content": content, "content_status": "available" if content is not None else "需刷新",
             "groups": summarize(), "answerbit_metadata_available": metadata_available,
