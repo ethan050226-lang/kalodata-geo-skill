@@ -7,11 +7,15 @@ import sqlite3
 import tempfile
 import unittest
 import warnings
+from threading import Thread
 from unittest.mock import patch
+from urllib.error import HTTPError
+from urllib.request import urlopen
 from zipfile import ZipFile
 
 import answerbit
 import dashboard
+from local_answers import make_server
 import recommendation_review
 from archive import ArchiveError
 
@@ -240,7 +244,7 @@ class AnswerbitTest(unittest.TestCase):
                 return {"scores":[record], "total":1}
             return dict(prompt=record["query_str"], platform=record["platform"],
                         language=record["language"], date=self.day, links=[], brand_reputation=1,
-                        llm_output="Kalodata compared with FastMoss. PRIVATE_ANSWER")
+                        llm_output="Kalodata compared with FastMoss. PRIVATE_ANSWER <script>unsafe</script>")
 
         dashboard.refresh_answers(self.bank,self.output,"test",self.day,self.day,call)
         data = dashboard.dashboard_data(self.output,self.bank,None)
@@ -258,6 +262,35 @@ class AnswerbitTest(unittest.TestCase):
         target = self.output.with_suffix(".html")
         dashboard.render(data,target)
         self.assertNotIn("PRIVATE_ANSWER",target.read_text())
+        self.assertEqual([(r["task"],r["q"],r["label"]) for r in data["recommendations"]],
+                         [("mock-1","TEST-01-GB","unknown")])
+        with contextlib.closing(sqlite3.connect(self.output)) as db:
+            prompt, raw = db.execute("SELECT prompt,body FROM sample_answer WHERE task_id='mock-1'").fetchone()
+        self.assertEqual(prompt, "Shared question?")
+        self.assertEqual(raw, "Kalodata compared with FastMoss. PRIVATE_ANSWER <script>unsafe</script>")
+        self.assertEqual(os.stat(self.output).st_mode & 0o077, 0)
+        server, base = make_server(self.output,target)
+        with server:
+            worker = Thread(target=server.serve_forever, daemon=True)
+            worker.start()
+            try:
+                with urlopen(base+"answer?task=mock-1", timeout=5) as reply:
+                    evidence = reply.read().decode()
+                    self.assertEqual(reply.headers["Cache-Control"], "no-store")
+                self.assertIn("TEST-01-GB",evidence)
+                self.assertIn("Shared question?",evidence)
+                self.assertIn("PRIVATE_ANSWER &lt;script&gt;unsafe&lt;/script&gt;",evidence)
+                with self.assertRaises(HTTPError) as missing:
+                    urlopen(base+"answer?task=mock-2", timeout=5)
+                self.assertEqual(missing.exception.code, 404)
+                with contextlib.closing(sqlite3.connect(self.output)) as db, db:
+                    db.execute("UPDATE batch SET fetched_at_utc='different batch'")
+                with self.assertRaises(HTTPError) as stale:
+                    urlopen(base+"answer?task=mock-1", timeout=5)
+                self.assertEqual(stale.exception.code, 409)
+            finally:
+                server.shutdown()
+                worker.join()
         self.assertNotIn("</script>",dashboard.encode({"unsafe":"</script>"}))
         with patch("sys.argv",["dashboard.py","snapshot",str(self.bank),str(self.output.with_name("missing.sqlite")),str(target)]):
             with contextlib.redirect_stderr(io.StringIO()):
