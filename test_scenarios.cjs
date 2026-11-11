@@ -1,0 +1,11 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const html=fs.readFileSync(require('path').join(__dirname,'skill/geo-sampling/assets/dashboard.html'),'utf8');
+const fn=html.slice(html.indexOf('function renderScenarios('),html.indexOf('function render(){'));
+let output;const context={D:{groups:{g:'对比'},tags:{h:'品牌健康',d:'发现度'}},$:()=>({set innerHTML(v){output=v}}),total:rs=>rs.reduce((s,r)=>s+r.n,0),sum:(rs,f)=>rs.reduce((s,r)=>s+f(r),0),num:String,ratio:(a,b)=>`${a}/${b}`,mentionCount:r=>r.mentions.Kalodata-(r.negative_mentions||0),table:(h,rows)=>rows};
+vm.createContext(context);vm.runInContext(fn,context);
+const row=(named,tags)=>({d:['US','chatgpt','2026-11-09','g',named,tags],n:2,mentions:{Kalodata:2},negative_mentions:1,first:1,rank:[3,2],sent:{positive:1,negative:1},links:{Kalodata:[1,2,1,2]}});
+context.renderScenarios([row(0,['h','d']),row(1,[])]);
+assert(output[0][2].includes('1/2'));assert(output[1][1]==='2');assert(output[2][2].includes('1.50'));assert(output[3][2].includes('负面 1/2'));assert(output[3][3].includes('2/2'));
+context.renderScenarios([]);assert(output.every(r=>r[2]==='暂无数据'));
+console.log('Scene calculations passed');
+const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(x=>x[1]).filter(x=>!x.includes('__GEO_PAYLOAD__'));for(const s of scripts)new vm.Script(s);console.log('JavaScript syntax passed');

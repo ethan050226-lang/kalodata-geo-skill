@@ -8,6 +8,7 @@ from itertools import islice
 import json
 import hashlib
 import math
+import os
 from pathlib import Path
 import sqlite3
 import sys
@@ -23,7 +24,7 @@ from workbook_export import export_workbook, write_question_check
 CHINA = timezone(timedelta(hours=8))
 ASSET = Path(__file__).resolve().parent / "skill/geo-sampling/assets/dashboard.html"
 SOURCE = "https://answerbit.qq.com/zh-CN/dashboard/home"
-QNA = "https://kalowave.feishu.cn/wiki/QhQewzO72ia8c8kxn8mcCwSDnOg?sheet=3Qrfdv"
+QNA = os.environ.get("GEO_QUESTION_BANK_URL", "")
 DATA_MARKER = '<script id="geo-data" type="application/json">'
 ANALYSIS_VERSION = "geo-core/2-unnamed-negative"
 

@@ -80,6 +80,7 @@ body:not([data-active-view=overview]) .hero{min-height:0;padding-block:16px}body
 <div class="scope" id="scope" aria-live="polite"></div>
 <section id="overview" class="section" data-page aria-label="总览">
 <div id="kpis" class="kpis"></div>
+<article class="card"><h3>按运营场景看表现</h3><p class="sub">按 Answerbit 分组和标签名称识别，随顶部筛选更新；场景可重叠。</p><div id="scenario-results"></div></article>
 <div id="brief" class="brief"><span id="headline"></span><a href="#action">查看行动清单 ↗</a></div>
 <div class="section-head"><h2>优先行动</h2><span class="label">按证据、样本量和问题占比排序</span></div>
 <div id="home-actions" class="home-actions"></div>
@@ -252,7 +253,7 @@ document.addEventListener("keydown",e=>{
   if(pick){pick.open=false;pick.querySelector("summary").focus();}
 });
 for(const id of ["source","answerbit-footer","review-workbench"]) $(id).href=D.links.answerbit;
-$("bank-link").href=D.links.bank;
+if(D.links.bank){$("bank-link").href=D.links.bank;}else{$("bank-link").hidden=true;}
 $("batch").textContent=`查询窗口 ${batch.begin_date} 至 ${batch.end_date} · 最后成功取数 ${fmtDate(batch.fetched_at_utc)}（北京时间）`;
 if(D.last_failure){
   $("failure").hidden=false;
@@ -365,11 +366,29 @@ function native(f){
     $("native").querySelector('[aria-pressed="true"]')?.focus();
   }));
 }
+function renderScenarios(rows){
+  const inScene=(r,words)=>[D.groups[r.d[3]]||"",...(r.d[5]||[]).map(t=>D.tags[t]||"")].some(name=>words.some(w=>name.includes(w)));
+  const specs=[
+    ["发现度 / 数据引用",["发现度","数据引用"],0],
+    ["对比 · 未点名",["对比"],0],
+    ["对比 · 点名",["对比"],1],
+    ["品牌健康",["品牌健康"],null]
+  ];
+  $("scenario-results").innerHTML=table(["场景","有效回答","优先指标","解读"],specs.map(([name,words,named])=>{
+    const rs=rows.filter(r=>inScene(r,words)&&(named===null||r.d[4]===named)), n=total(rs);
+    if(!n)return [name,"0","暂无数据","当前范围无匹配样本；核对平台分组和标签名称"];
+    if(named===1){const count=sum(rs,r=>r.rank[1]);return [name,num(n),`平均首次出现名次 ${count?(sum(rs,r=>r.rank[0])/count).toFixed(2):"不适用"} · 有名次 ${num(count)}/${num(n)}`,"越小越靠前；正文顺序，非平台排名"]}
+    if(named===0)return [name,num(n),`提及率 ${ratio(sum(rs,r=>mentionCount(r)),n)}；首次出现第一 ${ratio(sum(rs,r=>r.first),n)}`,"自然发现与出现顺序；首位不扣负面，不等于推荐"];
+    const known=sum(rs,r=>r.links.Kalodata?.[3]||0),bodyKnown=sum(rs,r=>r.links.Kalodata?.[1]||0);
+    return [name,num(n),[["positive","正面"],["negative","负面"],["mixed","褒贬并存"],["neutral","中性"],["not_mentioned","未提及"],["unknown","未知"]].map(([k,t])=>`${t} ${ratio(sum(rs,r=>r.sent[k]||0),n)}`).join(" · ")+`；官网正式来源 ${ratio(sum(rs,r=>r.links.Kalodata?.[2]||0),known)}；正文官网链接 ${ratio(sum(rs,r=>r.links.Kalodata?.[0]||0),bodyKnown)}`,`仅 Kalodata；正式来源字段覆盖 ${ratio(known,n)}`];
+  }));
+}
 function render(){
   const f=filters(), rs=D.rows.filter(r=>matches(r.d,f)), n=total(rs), selected=breakdown(rs);
   $("scope").textContent=describe(f)+` · ${num(n)} 条有效回答`+(f.from>f.to?" · 起始日应早于或等于结束日":"");
   if(activePage==="compare")renderComparison(f,rs);
   if(activePage==="overview")renderPrevious(f);
+  renderScenarios(rs);
   const un=rs.filter(r=>!r.d[4]), unr=total(un), kh=sum(rs,r=>mentionCount(r));
   const namedCount=n-unr, nh=sum(un,r=>mentionCount(r)), first=sum(rs,r=>r.first);
   const excluded=sum(rs,r=>r.negative_mentions||0), excludedUnnamed=sum(un,r=>r.negative_mentions||0);

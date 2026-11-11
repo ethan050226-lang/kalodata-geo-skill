@@ -30,7 +30,7 @@ python3 dashboard.py refresh /path/to/question-bank.xlsx .trial/dashboard.sqlite
 
 ## 试跑
 
-在仓库目录运行。预检和发布由 GEO 负责人操作。运营只运行同步和查询。
+本节仅为合成测试流程；真实使用按上文直接刷新看板。预检和发布由 GEO 负责人操作，测试运营端运行同步和查询。
 
 ```sh
 python3 archive.py prepare examples/demo-batch.json .trial/draft.sqlite
@@ -69,3 +69,9 @@ python3 answerbit.py refresh /path/to/question-bank.xlsx .trial/answerbit.sqlite
 参考 [Answerbit OpenAPI 接入](https://answerbit.qq.com/zh-CN/docs/external/4-openapi-getting-started) 和 [回答查询](https://answerbit.qq.com/zh-CN/docs/external/4-openapi-getting-started/answers)。
 
 默认「提及率」只使用返回题文未点名 Kalodata 及审核别名的有效回答，分子扣除明确负面。点名题单独展示；首页包含判断、优先行动和可展开的数据状态。历史快照未保存完整返回题文或题目范围时，会注明回算来源和对比限制。
+
+## 运营场景和公开范围
+
+看板新增按发现度、数据引用、对比、品牌健康划分的场景表，随筛选重算；见[场景定义](skill/geo-sampling/references/analysis-scenarios.md)。标签序号不等于接口 ID，点名状态仍按实际题文判断。
+
+内部飞书题库链接通过 `GEO_QUESTION_BANK_URL` 在本机配置，未配置时不显示链接。不要提交真实题库、HTML 看板、Excel、原文库、日志或凭证；HTML 和 Excel 也包含内部提问与统计。团队和品牌 ID 是既有授权保留的资源标识，不是访问凭证。安装时需保留完整仓库目录；单独复制 `skill/geo-sampling` 不包含 Python 运行工具。

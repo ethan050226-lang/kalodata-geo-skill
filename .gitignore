@@ -7,3 +7,14 @@ __pycache__/
 
 # Internal question-bank exports
 *.xlsx
+
+# Private runtime outputs (publish the template only)
+*.db
+*.db-*
+*.log
+*.pem
+*.key
+GEO*.html
+GEO*.md
+*.recommendation-review.json
+*.refresh-status.json
