@@ -15,3 +15,22 @@ const sample={...row(0,['d']),rec:{explicit:1,unknown:1}};const stats=context.co
 assert.deepEqual(Array.from(stats.unmentioned),[1,2]);assert.deepEqual(Array.from(stats.first),[1,2]);assert.deepEqual(Array.from(stats.rank),[3,2]);
 const emptyStats=context.compareStats([]);assert.deepEqual(Array.from(emptyStats.first),[0,0]);assert.deepEqual(Array.from(emptyStats.rank),[0,0]);
 console.log('Metric numerator/denominator checks passed');
+
+// Matrix cells use only unnamed answers; duplicate tag membership never adds within a cell.
+context.D.markets={US:'美国',JP:'日本'};context.D.tags={d:'发现度',h:'健康'};
+
+const cellRow={...row(0,['d','h']),rec:{},sent:{positive:1,unknown:1}};
+const namedRow={...cellRow,d:['US','chatgpt','2026-11-09','g',1,['d']]};
+const matrix=context.matrixData([cellRow,namedRow],'group');assert.equal(matrix.cells[0][0].n,2);assert.equal(matrix.cells[0][0].hits,1);
+assert.equal(context.matrixData([namedRow],'group').columns.length,0);
+const tags=context.matrixData([cellRow],'tag');assert.equal(tags.cells[0][0].n,2);assert.equal(tags.cells[0][1].n,2);
+const sent=context.sentimentCounts([cellRow]);assert.equal(sent.known,1);assert.equal(sent.counts.reduce((a,b)=>a+b,0),2);
+assert.equal(context.sentimentCounts([]).n,0);
+console.log('Matrix, unknown reputation and zero-sample checks passed');
+context.batch={begin_date:'2026-11-01',end_date:'2026-11-07'};
+const allFilters={m:[],e:[],g:[],tags:[],named:[],from:context.batch.begin_date,to:context.batch.end_date};
+context.D.comparison={previous_batch:{},limitations:[],metrics:[{id:'skill.first_rate',change:25}]};
+assert(context.cardHistory('skill.first_rate',allFilters).includes('+25.00'));
+assert(context.cardHistory('skill.first_rate',{...allFilters,m:['US']}).includes('暂不比较'));
+context.D.comparison.limitations=['题库版本不同'];assert(context.cardHistory('skill.first_rate',allFilters).includes('上次不可比'));
+console.log('Card history scope checks passed');

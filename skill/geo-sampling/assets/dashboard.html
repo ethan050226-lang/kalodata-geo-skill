@@ -80,6 +80,13 @@ main.wrap{max-width:1700px;margin:0 0 0 224px;padding:0 30px 25px}.hero,.hero::a
 @media(prefers-reduced-motion:no-preference){a,button,summary{transition:background .15s,border-color .15s,box-shadow .15s}}
 
 .mast .wrap{min-height:0;height:auto;flex:none}.mast .page-tabs{display:flex;flex-direction:column;flex-wrap:nowrap;gap:10px}.mast .page-tabs a{color:#c8d5e9}.mast .page-tabs a[aria-current=page]{color:#fff}@media(max-width:700px){.mast .page-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;flex-direction:initial}.mast .page-tabs a{font-size:10px}}
+
+/* Matrix and mutually exclusive platform reputation, without decorative trends. */
+#overview .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.card-history{font-size:11px;color:#586c89;margin-top:10px;padding-top:8px;border-top:1px solid #cbd9ed;line-height:1.6}.overview-grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:start}.matrix-card .table-wrap{max-height:530px}.matrix-card table{min-width:490px}.matrix-card th{position:sticky;top:0;z-index:1;white-space:normal;min-width:112px}.matrix-card th:first-child{min-width:75px}.matrix-card td{padding:6px}.matrix-cell{display:block;width:100%;min-width:104px;min-height:81px;margin:0;border:1px solid #b7ccec;border-radius:6px;background:rgba(41,104,212,var(--heat));color:#102b51;padding:9px 5px}.matrix-cell:hover{background:#d9e7fc!important;box-shadow:inset 0 0 0 2px #3b73c9}.matrix-cell b{display:block;font-size:16px}.matrix-cell small{display:block;color:#1e3c66;font-size:11px}.matrix-cell em{font-size:9px;display:block;font-style:normal;margin-top:3px}.matrix-empty{display:block;background:#f0f2f6;padding:12px 6px;min-height:81px;color:#66758d;font-size:12px}.matrix-empty small{font-size:10px}.sent-stack{height:34px;display:flex;overflow:hidden;border-radius:7px;margin:16px 0 18px;background:#edf1f7}.sent-stack span{height:100%;min-width:0}.sent-key{width:11px;height:11px;border-radius:3px;display:inline-block;vertical-align:middle;margin-right:7px}.sentiment-summary .table-wrap{border:0}.sentiment-summary td,.sentiment-summary th{padding:9px 7px}.finding{margin:0 0 20px}.finding #headline{margin-block:8px}.home-actions{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+@media(max-width:1150px){.overview-grid{grid-template-columns:1fr}.home-actions{grid-template-columns:1fr}}
+@media(max-width:700px){#overview .kpis{grid-template-columns:1fr}.kpi{min-height:0!important;padding:17px!important}.kpi .value{font-size:34px}.card-history{font-size:11px}.matrix-card table{min-width:480px}.matrix-cell{min-width:99px}.overview-grid{gap:13px}.home-actions{grid-template-columns:1fr}.matrix-card .section-head{align-items:flex-start}}
+
+.matrix-card td:first-child{position:sticky;left:0;background:#f8fbff;z-index:1}.matrix-card th:first-child{left:0;z-index:2}
 </style>
 </head>
 <body>
@@ -97,7 +104,8 @@ main.wrap{max-width:1700px;margin:0 0 0 224px;padding:0 30px 25px}.hero,.hero::a
 <section id="overview" class="section" data-page aria-label="总览">
 <div id="kpis" class="kpis"></div>
 <details class="card scenario-card"><summary>按运营场景看表现</summary><p class="sub">按 Answerbit 分组和标签名称识别，随顶部筛选更新；场景可重叠。</p><div id="scenario-results"></div></details>
-<div class="overview-grid"><article class="card market-summary"><div class="section-head"><h3>各市场提及表现</h3><span class="label">未点名题</span></div><p class="definition">当前筛选 · 提及率从零起轴 · 标注分子 / 分母</p><div id="home-market-chart"></div></article><article class="card finding"><div class="section-head"><h3>核心发现</h3><span class="label">基于当前样本</span></div><p id="headline"></p><p class="definition">上述为样本现象及核查优先级，不代表市场因果或业务转化。</p><a href="#action">查看证据与行动 ↗</a></article></div>
+<div class="overview-grid"><article class="card matrix-card"><div class="section-head"><h3>国家 × 题类提及率</h3><label class="review-reason">题类来源 <select id="matrix-dimension"><option value="group">Answerbit 分组</option><option value="tag">Answerbit 标签</option></select></label></div><p class="definition">未点名题 · 每格独立计算 · 色深仅辅助定位 · 点击单元格查看对应范围</p><div id="home-matrix"></div><p class="definition">各格题目、平台构成及样本量可能不同；标签可重叠，不可相加。竞品集合因国家而异，矩阵不代表市场整体优劣。未设置业务样本阈值，最小样本格仅作相对提示。</p></article><article class="card sentiment-summary"><div class="section-head"><h3>Kalodata 口碑构成</h3><a href="#metrics/metric-sentiment">指标说明 ↗</a></div><div id="home-sentiment"></div><p class="definition">Answerbit 平台口碑，区别于 Skill 推荐判断。全体有效回答为统一分母，未提及不算中性。</p><a href="#sources">查看来源与口碑详情 ↗</a></article></div>
+<article class="card finding"><div class="section-head"><h3>核心发现</h3><span class="label">当前样本事实与核查优先级</span></div><p id="headline"></p><p class="definition">以上为当前监测样本现象；优化方向是待验证建议，不代表因果或转化。</p></article>
 <div class="section-head"><h2>优先行动</h2><span class="label">按证据、样本量和问题占比排序</span></div>
 <div id="home-actions" class="home-actions"></div>
 <article class="card data-status"><h3>数据状态</h3><div id="home-status"></div></article>
@@ -399,6 +407,46 @@ function renderScenarios(rows){
     return [name,num(n),[["positive","正面"],["negative","负面"],["mixed","褒贬并存"],["neutral","中性"],["not_mentioned","未提及"],["unknown","未知"]].map(([k,t])=>`${t} ${ratio(sum(rs,r=>r.sent[k]||0),n)}`).join(" · ")+`；官网正式来源 ${ratio(sum(rs,r=>r.links.Kalodata?.[2]||0),known)}；正文官网链接 ${ratio(sum(rs,r=>r.links.Kalodata?.[0]||0),bodyKnown)}`,`仅 Kalodata；正式来源字段覆盖 ${ratio(known,n)}`];
   }));
 }
+const sentimentTypes=[["positive","正面","#1952a0"],["neutral","中性","#5293ee"],["negative","负面","#df6f53"],["mixed","褒贬并存","#d2a443"],["not_mentioned","未提及","#698b83"],["unknown","未知","#9da8b9"]];
+function sentimentCounts(rows){
+  const n=total(rows),counts=sentimentTypes.map(([key])=>sum(rows,r=>r.sent?.[key]||0));
+  counts[5]+=Math.max(0,n-counts.reduce((a,b)=>a+b,0));
+  return {n,counts,known:n-counts[5]};
+}
+function matrixData(rows,kind){
+  const unnamed=rows.filter(r=>r.d[4]===0), source=kind==="tag"?D.tags:D.groups;
+  const columns=Object.entries(source).filter(([id])=>unnamed.some(r=>kind==="tag"?r.d[5].includes(id):r.d[3]===id)).sort((a,b)=>a[1].localeCompare(b[1],"zh-CN"));
+  const markets=Object.keys(D.markets).filter(m=>rows.some(r=>r.d[0]===m));
+  const cells=markets.map(m=>columns.map(([id])=>{const rs=unnamed.filter(r=>r.d[0]===m&&(kind==="tag"?r.d[5].includes(id):r.d[3]===id));return {m,id,n:total(rs),hits:sum(rs,r=>mentionCount(r)),platforms:[...new Set(rs.map(r=>r.d[1]))].sort()};}));
+  const nonempty=cells.flat().filter(c=>c.n>0).map(c=>c.n);
+  return {columns,markets,cells,min:nonempty.length?Math.min(...nonempty):null};
+}
+function renderMatrix(rows,f){
+  const kind=$("matrix-dimension").value, data=matrixData(rows,kind);
+  if(!data.columns.length){$("home-matrix").innerHTML=empty("当前筛选没有带该题类元数据的未点名有效回答；可切换分组 / 标签或调整题文状态。");return;}
+  $("home-matrix").innerHTML=table(["国家 / "+(kind==="tag"?"标签":"分组"),...data.columns.map(([,name])=>esc(name))],data.markets.map((m,i)=>[
+    esc(marketName(m)),...data.cells[i].map(c=>!c.n?'<span class="matrix-empty">不适用<br><small>无未点名有效样本</small></span>':`<button type="button" class="matrix-cell" data-market="${esc(m)}" data-topic="${esc(c.id)}" style="--heat:${(.06+.42*c.hits/c.n).toFixed(3)}" title="${esc(c.platforms.join('、'))} · 点击筛选该国家与题类"><b>${pct(c.hits,c.n)}</b><small>${num(c.hits)} / ${num(c.n)}</small>${c.n===data.min?'<em>当前最小样本量 · 谨慎解读</em>':''}</button>`)
+  ]));
+  $("home-matrix").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+    const next={...f,m:[b.dataset.market]};if(kind==="tag"){next.tags=[b.dataset.topic];next.tagMode="all";}else next.g=[b.dataset.topic];
+    setFilters("a",next);render();
+  }));
+}
+function renderSentimentSummary(rows){
+  const {n,counts,known}=sentimentCounts(rows);
+  if(!n){$("home-sentiment").innerHTML=empty("当前筛选没有有效回答，无法计算口碑构成或字段覆盖率。");return;}
+  $("home-sentiment").innerHTML=`<p class="definition">样本 ${num(n)} · 可识别字段覆盖率 ${ratio(known,n)}</p><div class="sent-stack" role="img" aria-label="${esc(sentimentTypes.map(([,t],i)=>t+' '+ratio(counts[i],n)).join('；'))}">${sentimentTypes.map(([,label,color],i)=>counts[i]?`<span style="width:${100*counts[i]/n}%;background:${color}" title="${esc(label+' '+ratio(counts[i],n))}"></span>`:'').join('')}</div>`+table(["平台状态","占比","回答数"],sentimentTypes.map(([,label,color],i)=>[`<i class="sent-key" style="background:${color}"></i>${label}`,pct(counts[i],n),num(counts[i])]))+`<p class="definition">六类互斥，总计 ${num(counts.reduce((a,b)=>a+b,0))}/${num(n)}；未知 ${num(counts[5])} 条。</p>`;
+}
+function cardHistory(id,f){
+  const c=D.comparison;
+  if(!c?.previous_batch)return "无上次成功结果";
+  const changed=f.m.length||f.e.length||f.g.length||f.tags.length||f.named.length||f.from!==batch.begin_date||f.to!==batch.end_date;
+  if(changed)return "上次仅有整批范围 · 当前筛选暂不比较";
+  if(c.limitations?.length)return "上次不可比："+c.limitations.join("、");
+  const metric=c.metrics.find(r=>r.id===id);
+  if(!metric||metric.change===null||metric.change===undefined)return "上次未记录同口径指标或无有效分母";
+  return `较上次 ${metric.change>0?"+":""}${metric.change.toFixed(2)} 个百分点 · 整批同范围`;
+}
 function render(){
   const f=filters(), rs=D.rows.filter(r=>matches(r.d,f)), n=total(rs), selected=breakdown(rs);
   $("scope").textContent=describe(f)+` · ${num(n)} 条有效回答`+(f.from>f.to?" · 起始日应早于或等于结束日":"");
@@ -413,12 +461,13 @@ function render(){
   const negative=sum(rs,r=>r.sent.negative||0), mixed=sum(rs,r=>r.sent.mixed||0);
   const notMentioned=sum(rs,r=>r.sent.not_mentioned||0),sentUnknown=sum(rs,r=>r.sent.unknown||0);
   $("kpis").innerHTML=kpi("提及率",pct(nh,unr),`${num(nh)}/${num(unr)} · 扣除明确负面 ${num(excludedUnnamed)}`,"metric-core")+
-    kpi("首次出现第一比例",pct(first,n),`${num(first)}/${num(n)} · 当前范围全部有效回答`,"metric-first")+
-    kpi("平均首次出现名次",rankSamples?(rankSum/rankSamples).toFixed(2):"不适用",`名次总和 ${num(rankSum)} / 有名次 ${num(rankSamples)} 条`,"metric-rank")+
-    kpi("Kalodata 负面与褒贬并存",pct(negative+mixed,n),`负面 ${num(negative)} + 褒贬并存 ${num(mixed)} / ${num(n)} · 未提及 ${num(notMentioned)} · 未知 ${num(sentUnknown)}`,"metric-sentiment");
-  const marketRows=Object.keys(D.markets).map(m=>({m,rows:un.filter(r=>r.d[0]===m)})).filter(x=>total(x.rows)>0)
-    .sort((a,b)=>total(b.rows)-total(a.rows));
-  $("home-market-chart").innerHTML=marketRows.length?scaleLabel+`<div class="bars">${marketRows.map(x=>bar(marketName(x.m),sum(x.rows,r=>mentionCount(r)),total(x.rows))).join("")}</div>`:empty("当前范围无未点名题样本，提及率不适用。");
+    kpi("首次出现第一比例",pct(first,n),`${num(first)}/${num(n)} · 反映正文品牌出现顺序，非推荐率`,"metric-first")+
+    kpi("负面与褒贬并存",pct(negative+mixed,n),`负面 ${ratio(negative,n)} · 褒贬并存 ${ratio(mixed,n)} · 统一分母：全部有效回答`,"metric-sentiment");
+  ["skill.core_mention_rate","skill.first_rate","skill.adverse_rate"].forEach((id,i)=>{
+    $("kpis").children[i].insertAdjacentHTML("beforeend",`<p class="card-history">${esc(cardHistory(id,f))}</p>`);
+  });
+  renderMatrix(rs,f);
+  renderSentimentSummary(rs);
   const named=rs.filter(r=>r.d[4]===1);
   $("named-results").innerHTML=namedCount?table(["点名题有效回答","提及率（扣负面）","明确推荐","平台口碑"],[[
     num(namedCount),ratio(kh-nh,namedCount),ratio(sum(named,r=>r.rec.explicit||0),namedCount),
@@ -484,6 +533,7 @@ function render(){
     ]))}
     <p class="definition">点名判定来源 ${esc(D.prompt_basis||"旧批来源待核对")}。完整异常和任务定位见同批 Excel「数据异常」。题库外记录仅在全批计数，不进入有编号明细。</p></details>`;
 }
+$("matrix-dimension").addEventListener("change",()=>render());
 let brandMarket="";
 $("brand-market").addEventListener("change",e=>{brandMarket=e.target.value;render();});
 function renderPrevious(f){
@@ -604,43 +654,44 @@ function renderActions(rows){
      change:"把复核结果按这三类记录。条件说明不清时，在官网补上适合谁、需要满足什么条件。",
      retest:"固定同类题和模型，复测可判定覆盖率，并用人工抽样检查推荐判断。"}
   ];
-  const chosen=rules.flatMap(rule=>{
+  const allActions=rules.flatMap(rule=>{
     const candidates=[...cuts.values()].flatMap(rs=>{
       const lead=rs.find(r=>r.evidence?.[rule.key]);
       if(!lead)return [];
       const [hits,den]=rs.reduce(([a,b],r)=>{const [x,y]=rule.counts(r);return [a+x,b+y];},[0,0]);
       return den&&(rule.key!=="recommendation"||hits)?[{lead,hits,den,rate:hits/den}]:[];
-    }).sort((a,b)=>(b.den>=20)-(a.den>=20)||(rule.low?a.rate-b.rate:b.rate-a.rate)||b.den-a.den);
-    return candidates.length?[{...rule,...candidates[0]}]:[];
-  }).sort((a,b)=>(b.den>=20)-(a.den>=20)||
+    }).sort((a,b)=>(rule.low?a.rate-b.rate:b.rate-a.rate)||b.den-a.den);
+    return candidates.map(candidate=>({...rule,...candidate}));
+  }).sort((a,b)=>
       ((b.low?1-b.rate:b.rate)*Math.sqrt(b.den)-(a.low?1-a.rate:a.rate)*Math.sqrt(a.den)));
-  $("action-count").textContent=`${chosen.length} 项可回查行动`;
+  const chosen=allActions.filter((item,i)=>allActions.findIndex(other=>other.key===item.key)===i);
+  $("action-count").textContent=`${allActions.length} 项可回查行动 · 按顶部范围筛选`;
   const candidates=[...cuts.values()].filter(rs=>!rs[0].d[4]).map(rs=>({
     rows:rs,den:total(rs),hits:sum(rs,r=>mentionCount(r))
-  })).filter(r=>r.hits<r.den).sort((a,b)=>(b.den>=20)-(a.den>=20)||a.hits/a.den-b.hits/b.den||b.den-a.den);
+  })).filter(r=>r.hits<r.den).sort((a,b)=>a.hits/a.den-b.hits/b.den||b.den-a.den);
   const focus=candidates[0], allUnnamed=rows.filter(r=>!r.d[4]);
   $("headline").textContent=focus?
-    `当前最值得核查的是${marketName(focus.rows[0].d[0])}「${groupName(focus.rows[0].d[3])}」在 ${focus.rows[0].d[1]} 的表现。未点名、扣除明确负面的提及率为 ${ratio(focus.hits,focus.den)}，当前范围为 ${pct(sum(allUnnamed,r=>mentionCount(r)),total(allUnnamed))}。${focus.den<20?"该切片样本较少，先核查具体回答。":"该切片的提及率较低，可优先核对未提及或负面回答的选型依据。"}`:
+    `当前最值得核查的是${marketName(focus.rows[0].d[0])}「${groupName(focus.rows[0].d[3])}」在 ${focus.rows[0].d[1]} 的表现。未点名、扣除明确负面的提及率为 ${ratio(focus.hits,focus.den)}，当前范围为 ${pct(sum(allUnnamed,r=>mentionCount(r)),total(allUnnamed))}。${"样本构成可能不同，先核查具体回答及选型依据，再决定内容优化。"}`:
     total(allUnnamed)?`当前范围提及率 ${ratio(sum(allUnnamed,r=>mentionCount(r)),total(allUnnamed))}，本次未检出未提及或明确负面命中缺口，可继续查看官网引用和推荐表现。`:
     "当前筛选没有未点名题有效回答，提及率不适用。可查看点名题专题或调整题文状态。";
   $("home-actions").innerHTML=chosen.slice(0,3).map((item,i)=>{
     const [market,platform,day,group]=item.lead.d, example=item.lead.evidence[item.key];
     return `<article class="card"><h3><span class="priority">P${i+1}</span>${esc(item.title)}</h3>
       <p>${esc(marketName(market))} · ${esc(groupName(group))} · ${esc(platform)} · ${num(item.den)} 条样本</p>
-      <p>${item.den<20?"样本不足，优先核查该回答。":esc(item.check)}</p>
+      <p>${esc(item.check)}</p>
       <small>${esc(example.q)} · ${esc(day)} · <a href="#action">查看核查与复测步骤</a></small>
       <small><a href="${esc(D.links.answerbit)}" target="_blank" rel="noopener noreferrer">打开 Answerbit 工作台核查</a></small></article>`;
   }).join("")||empty("当前没有证据充分的行动项，请先补齐样本或核对数据。");
-  $("next").innerHTML=chosen.length?chosen.map((item,i)=>{
+  $("next").innerHTML=allActions.length?allActions.map((item,i)=>{
     const {lead}=item, [m,platform,day,g,named]=lead.d, example=lead.evidence[item.key];
     return `<article class="card action-item"><div class="action-heading"><h3>P${i+1} · ${esc(item.title)}</h3><span>${ratio(item.hits,item.den)}</span></div>
       <p class="sub action-scope">${esc(marketName(m))} · ${esc(platform)} · ${esc(groupName(g))} · ${named?"点名":"未点名"} · ${num(item.den)} 条样本 · ${esc(item.metric)}</p>
       <dl><dt>核查哪条</dt><dd>${esc(example.q)}「${esc(example.text)}」· ${esc(day)} · ${esc(platform)}。${esc(item.check)}</dd>
       <dt>去哪核实</dt><dd>Answerbit 工作台 → 大模型回答记录，按题文、分组、平台和日期查找。题文或编号有误时，在飞书题库按 ${esc(example.q)} 核对。</dd>
-      <dt>优化方向</dt><dd>围绕「${esc(example.text)}」对应的内容或帮助页面，${esc(item.change)}</dd>
+      <dt>证据标签</dt><dd>${esc((item.lead.d[5]||[]).map(t=>D.tags[t]||t).join("、")||"未返回标签")}（Answerbit）</dd><dt>优化方向</dt><dd>【运营建议，待复测】围绕「${esc(example.text)}」对应的内容或帮助页面，${esc(item.change)}</dd>
       <dt>下轮复测</dt><dd>复用 ${esc(example.q)}，固定 ${esc(platform)} 和市场、语言、采样条件。${esc(item.retest)}</dd></dl>
       <div class="question"><b>${esc(example.q)}</b> · ${esc(example.text)}<small>${esc(day)} · ${esc(platform)} · <a target="_blank" rel="noopener noreferrer" href="${esc(D.links.answerbit)}">在 Answerbit 按题文回查 ↗</a></small></div>
-      ${item.den<20?'<p class="sub sample-note">样本较少，先核实个例。</p>':""}</article>`;
+      <p class="sub sample-note">仅代表当前样本，优化建议需用同条件复测验证。</p></article>`;
   }).join(""):empty("当前筛选没有可回查的行动样本。");
 }
 let comparisonOpened=false;

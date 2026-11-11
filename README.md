@@ -87,3 +87,5 @@ python3 answerbit.py refresh /path/to/question-bank.xlsx .trial/answerbit.sqlite
 五个主模块采用深蓝侧栏与蓝灰内容区。首页分开展示提及率、首次出现第一比例、平均首次出现名次和平台负面与褒贬并存，官网链接及完整口碑移至详情。图表只使用当前批次真实数据；历史条件不一致时不输出变化结论。
 
 Python 回归：`python3 -m unittest discover -p 'test_*.py'`。手算与模板语法：`node test_scenarios.cjs`。可选浏览器检查：在已安装 Playwright 的验证环境运行 `node test_dashboard_ui.cjs <本地看板.html>`；可设置 `PLAYWRIGHT_MODULE`、`CHROME_PATH` 和 `SCREENSHOT_DIR`。此验证只打开指定本地看板，使用独立浏览器，不复用登录数据。真实看板与截图保持私有。
+
+首页新增国家与题类提及率矩阵（Answerbit 分组 / 标签切换）、六类平台口碑构成及覆盖率。三项核心卡按可靠历史基线显示变化；筛选后缺少同条件历史数据则明确暂不比较。没有固定样本不足阈值或装饰性趋势。

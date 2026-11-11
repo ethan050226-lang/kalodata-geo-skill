@@ -323,13 +323,21 @@ def report_metrics(data):
                {"id":"skill.core_mention_rate","name":"提及率","source":"未点名、扣除明确负面","kind":"percent",
                 "value":100*num/den if den and known else None,"numerator":num if known else None,
                 "denominator":den,"excluded_negative":negative if known else None}]
+    for metric_id, title, hits in (
+        ("skill.first_rate", "首次出现第一比例", sum(r["first"] for r in rows) if all("first" in r for r in rows) else None),
+        ("skill.adverse_rate", "负面与褒贬并存", sum(r["sent"].get("negative",0)+r["sent"].get("mixed",0) for r in rows) if all("sent" in r for r in rows) else None),
+    ):
+        if hits is None:
+            continue
+        metrics.append({"id":metric_id,"name":title,"source":"Skill 全部有效回答" if metric_id=="skill.first_rate" else "Answerbit Kalodata 口碑字段 / Skill 汇总",
+                        "kind":"percent","value":100*hits/valid if valid else None,"numerator":hits,"denominator":valid})
     native = ((data.get("platform") or {}).get("data") or {}).get("/geo/base/dashboard",{})
     for key, title, kind in (("exposure","品牌提及率","percent"),("avg_rank","平均排名","rank"),
                              ("score","曝光效果分数","score")):
         if number(native.get(key)) is not None:
             metrics.append({"id":"platform."+key,"name":title,"source":"Answerbit 平台口径","kind":kind,
                             "value":native[key],"numerator":None,"denominator":None})
-    if len(metrics)==2:
+    if not any(m["id"].startswith("platform.") for m in metrics):
         official = sum(r["links"].get("Kalodata",[0,0,0,0])[2] for r in rows)
         official_known = sum(r["links"].get("Kalodata",[0,0,0,0])[3] for r in rows)
         metrics.append({"id":"skill.official_rate","name":"官网正式来源命中率","source":"Skill 全部有效回答",
