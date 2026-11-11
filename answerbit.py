@@ -19,9 +19,9 @@ from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from zipfile import BadZipFile
 
-from archive import ArchiveError, BRAND, URL, citation_flag, domain_hit, host, identifier, read_json, require, write_atomic
+from archive import ArchiveError, URL, citation_flag, domain_hit, host, identifier, read_json, require, write_atomic
 from content_metrics import (KALODATA, first_ranks, recommendation, reputation_label,
-                             strip_opening_echo, summarize_content)
+                             strip_opening_echo, summarize_content, named_prompt)
 from workbook_export import write_question_check
 
 BASE = "https://answerbit.qq.com"
@@ -82,7 +82,7 @@ def question_text(value):
 
 def brand_form(text):
     body = normalize("NFKC", URL.sub(" ", text))
-    latin = bool(BRAND.search(body))
+    latin = bool(re.search(r"(?<![a-z0-9_])kalo[\s-]*data(?![a-z0-9_])",body,re.I))
     japanese = "カロデータ" in body
     return {(False, False): "none", (True, False): "latin", (False, True): "ja", (True, True): "both"}[
         latin, japanese
@@ -281,6 +281,17 @@ def question_alignment(records, questions, by_text, begin, end):
     return matches, issues
 
 
+def observed_scope(records):
+    keys = set()
+    for row in records:
+        tags = row.get("tags")
+        key = {"prompt":question_text(row.get("query_str")),"platform":row.get("platform"),
+               "language":row.get("language"),"group":row.get("title_id"),
+               "tags":sorted(json.dumps(t,sort_keys=True,ensure_ascii=False) for t in tags) if isinstance(tags,list) else None}
+        keys.add(json.dumps(key,sort_keys=True,ensure_ascii=False))
+    return hashlib.sha256(json.dumps(sorted(keys)).encode()).hexdigest()
+
+
 def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *, page_size=None,
             review_unknown=None, store_answers=False, require_issue_numbers=False):
     begin, end = date_arg(begin), date_arg(end)
@@ -295,7 +306,7 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
         missing = [row for row in issues if not row[1] and row[7]]
         if missing:
             raise QuestionNumberError(missing)
-    samples, groups, tags, websites, content = [], [], [], [], []
+    samples, groups, tags, websites, content, prompts = [], [], [], [], [], []
     originals = []
     valid_count = 0
     for row, (number, problem) in zip(records,matches):
@@ -303,6 +314,7 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
             continue
         task = row["task_id"]
         platform, language, day = row["platform"], row["language"], row["date"]
+        prompts.append((task,question_text(row["query_str"]),named_prompt(row["query_str"])))
         state = analysis_state(row)
         status, mentioned, official, form = "unconfirmed", None, None, None
         detail = {}
@@ -396,6 +408,11 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
                     recommendation TEXT NOT NULL, reputation_code INTEGER, sentiment TEXT NOT NULL,
                     prompt TEXT, reputation_issue TEXT
                 );
+                CREATE TABLE sample_question (
+                    task_id TEXT PRIMARY KEY REFERENCES sample(task_id),
+                    prompt TEXT NOT NULL, named_prompt INTEGER NOT NULL CHECK(named_prompt IN (0,1))
+                );
+                CREATE TABLE retrieval_scope (signature TEXT NOT NULL);
             """)
             db.execute("INSERT INTO batch VALUES (?, ?, ?, ?, ?, ?, ?)",
                        ("Answerbit", begin, end, datetime.now(timezone.utc).isoformat(), version, VERSION, len(records)))
@@ -405,6 +422,8 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
             db.executemany("INSERT INTO sample_tag VALUES (?, ?, ?, ?)", tags)
             db.executemany("INSERT INTO sample_website VALUES (?, ?, ?, ?)", websites)
             db.executemany("INSERT INTO sample_content VALUES (?, ?, ?, ?, ?, ?, ?)", content)
+            db.executemany("INSERT INTO sample_question VALUES (?, ?, ?)", prompts)
+            db.execute("INSERT INTO retrieval_scope VALUES (?)",(observed_scope(records),))
             db.executemany("INSERT INTO issue VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", issues)
             if store_answers:
                 db.execute("""CREATE TABLE sample_answer (
@@ -432,6 +451,12 @@ def read_snapshot(path, group_id=None, tag_ids=()):
         latin_count = f"COUNT(*) FILTER (WHERE s.answer_brand_form IN ('latin', 'both') AND NOT ({negative}))" if has_forms else "NULL"
         ja_count = f"COUNT(*) FILTER (WHERE s.answer_brand_form IN ('ja', 'both') AND NOT ({negative}))" if has_forms else "NULL"
         metadata_available = {"sample_group", "sample_tag"} <= tables
+        prompt_join = "LEFT JOIN sample_question p USING(task_id)" if "sample_question" in tables else ""
+        named = "p.named_prompt" if prompt_join else "q.named_prompt"
+        if prompt_join:
+            require(db.execute("""SELECT count(*) FROM sample s LEFT JOIN sample_question p USING(task_id)
+                               WHERE p.task_id IS NULL OR p.prompt='' OR p.named_prompt NOT IN (0,1)""").fetchone()[0]==0,
+                    "返回题文校验 / 部分题文或点名判定缺失，请重新取数")
         require(metadata_available or (group_id is None and not tag_ids),
                 "本地库 / 此快照没有 Answerbit 分组与标签，请重新刷新")
         conditions, parameters = [], []
@@ -444,7 +469,7 @@ def read_snapshot(path, group_id=None, tag_ids=()):
         where = "WHERE " + " AND ".join(conditions) if conditions else ""
 
         def summarize(dimensions=(), join=""):
-            columns = ["q.market", "s.language", "s.platform", "q.named_prompt", f"{form} AS prompt_brand_form",
+            columns = ["q.market", "s.language", "s.platform", f"{named} AS named_prompt", f"{form} AS prompt_brand_form",
                        *dimensions]
             positions = ", ".join(str(i) for i in range(1, len(columns) + 1))
             results = [dict(row) for row in db.execute(f"""
@@ -453,7 +478,7 @@ def read_snapshot(path, group_id=None, tag_ids=()):
                     COUNT(*) FILTER (WHERE s.mentioned=1 AND NOT ({negative})) AS mentioned,
                     COUNT(*) FILTER (WHERE s.mentioned=1) AS all_mentions, COUNT(s.official) AS citation_known,
                     COUNT(*) FILTER (WHERE s.official = 1) AS official
-                FROM sample s JOIN question q USING (question_id) {join} {where}
+                FROM sample s JOIN question q USING (question_id) {prompt_join} {join} {where}
                 GROUP BY {positions} ORDER BY {positions}
             """, parameters)]
             for row in results:
@@ -483,10 +508,10 @@ def read_snapshot(path, group_id=None, tag_ids=()):
         content = None
         if "sample_content" in tables:
             content_rows = [dict(row) for row in db.execute(f"""
-                SELECT c.*, s.question_id, s.task_date, s.platform, q.market, q.named_prompt,
+                SELECT c.*, s.question_id, s.task_date, s.platform, q.market, {named} AS named_prompt,
                        g.group_id, g.group_name
                 FROM sample s JOIN sample_content c USING (task_id)
-                JOIN question q USING (question_id) LEFT JOIN sample_group g USING (task_id)
+                JOIN question q USING (question_id) {prompt_join} LEFT JOIN sample_group g USING (task_id)
                 {where} ORDER BY s.task_date, s.platform, s.task_id
             """, parameters)]
             for row in content_rows:
@@ -496,12 +521,21 @@ def read_snapshot(path, group_id=None, tag_ids=()):
                 tags_by_task[row["task_id"]].append(row["tag_id"])
             content = summarize_content(content_rows, tags_by_task)
 
+        summaries = summarize()
+        core_num = sum(r["mentioned"] for r in summaries if r["named_prompt"] == 0)
+        core_den = sum(r["valid"] for r in summaries if r["named_prompt"] == 0)
         return {
             "batch": batch, "coverage": None, "coverage_reason": "未取得独立的实际启用与采样计划",
             "mention_rate_policy": "exclude_confirmed_negative" if has_reputation else "all_mentions_legacy",
+            "core_mention": {
+                "name":"提及率","numerator":core_num if has_reputation else None,"denominator":core_den,
+                "value":core_num/core_den if core_den and has_reputation else None,
+                "excluded_negative":sum(r["all_mentions"]-r["mentioned"] for r in summaries if r["named_prompt"] == 0) if has_reputation else None,
+                "prompt_source":"Answerbit 返回题文" if prompt_join else "旧批题库题文回算",
+            },
             "filters": {"group_id": group_id, "tag_ids": list(tag_ids)},
             "content": content, "content_status": "available" if content is not None else "需刷新",
-            "groups": summarize(), "answerbit_metadata_available": metadata_available,
+            "groups": summaries, "answerbit_metadata_available": metadata_available,
             "website_links": summarize_websites() if websites_available else None,
             "website_links_by_group": summarize_websites(("g.group_id", "g.group_name"),
                 "JOIN sample_group g ON g.task_id = s.task_id") if websites_available and metadata_available else None,

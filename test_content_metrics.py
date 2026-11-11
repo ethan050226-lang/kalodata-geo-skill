@@ -2,10 +2,18 @@ import unittest
 from collections import defaultdict
 
 from answerbit import content_flags
-from content_metrics import summarize_content
+from content_metrics import summarize_content, named_prompt
 
 
 class ContentMetricsTest(unittest.TestCase):
+    def test_named_prompts_use_reviewed_english_and_japanese_spellings(self):
+        for prompt in ("Kalodata useful?","Kalo Data?","Kalo-Data?","ＫＡＬＯ　ＤＡＴＡ？",
+                       "カロデータは何？","ｶﾛﾃﾞｰﾀは何？","https://kalodata.com good?"):
+            with self.subTest(prompt=prompt):
+                self.assertEqual(named_prompt(prompt),1)
+        for prompt in ("Which tool?","Kalo Database?","notkalodata","動画分析ツールは？"):
+            with self.subTest(prompt=prompt):
+                self.assertEqual(named_prompt(prompt),0)
     def test_competitor_order_echo_url_and_repeat(self):
         question = "Is Kalodata useful?"
         answer = "> **Question: Is Kalodata useful?**\n# FastMoss\n| Winning Hunter | Kalodata |\nKalodata https://echotik.example/"

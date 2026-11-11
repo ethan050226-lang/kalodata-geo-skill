@@ -18,7 +18,7 @@
 .hero::after{content:"";position:absolute;inset:0 0 0 50%;z-index:-1;background:repeating-linear-gradient(110deg,transparent 0 35px,#d8e9ff10 35px 36px);mask-image:linear-gradient(90deg,transparent,#000)}
 .hero-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:12px}.hero-actions a{white-space:nowrap}.hero-actions button{color:#0d3064;background:#eaf2ff;border:1px solid #d3e2fd;margin:0;padding:7px 12px}.hero-actions button[aria-expanded=true]{background:#cadfff}
 .filter-frame{border:1px solid var(--line);background:#fff;border-radius:16px;overflow:visible}.filter-frame .filter{border:0;background:none;padding:0 14px 12px}.filter-heading{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 14px 6px}.filter-heading b{font-size:.91rem}.filter-heading span{font-size:.76rem;color:var(--muted)}
-.pick-grid>div{min-width:0}.pick-grid{grid-template-columns:repeat(4,minmax(0,1fr)) repeat(2,minmax(0,.85fr)) auto}.picker{min-width:0;position:relative}.picker summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0;min-height:37px;margin-top:4px;padding:6px 9px;border:1px solid #c9d7eb;border-radius:8px;cursor:pointer;background:#f8faff;font-size:.86rem}.picker summary::-webkit-details-marker{display:none}.picker summary::after{content:"⌄";color:#3865a8}.picker summary span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.picker[open] summary,.picker.has-selection summary{border-color:#8db0ed;background:#edf4ff;color:#1c4388}
+.pick-grid>div{min-width:0}.pick-grid{grid-template-columns:repeat(5,minmax(0,1fr)) repeat(2,minmax(0,.85fr)) auto}.picker{min-width:0;position:relative}.picker summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0;min-height:37px;margin-top:4px;padding:6px 9px;border:1px solid #c9d7eb;border-radius:8px;cursor:pointer;background:#f8faff;font-size:.86rem}.picker summary::-webkit-details-marker{display:none}.picker summary::after{content:"⌄";color:#3865a8}.picker summary span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.picker[open] summary,.picker.has-selection summary{border-color:#8db0ed;background:#edf4ff;color:#1c4388}
 .pick-menu{position:absolute;z-index:5;left:0;top:calc(100% + 3px);width:max(100%,190px);max-width:calc(100vw - 33px);padding:7px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px #112b4f26}.pick-list{max-height:196px;overflow:auto}.pick-list label{display:flex;align-items:center;gap:7px;padding:5px 4px;color:var(--ink);font-weight:500}.pick-list label:hover{background:#edf4ff}.pick-menu button{min-height:28px;padding:2px 7px;margin:0 0 5px;color:var(--blue);font-size:.75rem}.pick-menu .tag-rule{display:flex;justify-content:space-between;align-items:center;gap:4px;padding:0 3px 5px}.pick-menu .tag-rule select{width:auto;font-size:.75rem;min-height:26px;margin:0;padding:0 2px}
 .kpi{border-top:3px solid #b9d0f1;padding-top:11px}.kpi:nth-child(2){border-top-color:#3c6fcb}.scope{padding:9px 2px 5px}.compare{margin:18px 0 25px;border:1px solid #bfd1ee;background:#eaf1fc;padding:15px;border-radius:17px}.compare[hidden]{display:none}.compare-head{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;margin-bottom:10px}.compare-head p{color:var(--muted);font-size:.83rem}.compare-head button{margin:0;color:#204785}.compare .filter-frame{margin-bottom:10px}.compare-results{margin-top:10px}.cohorts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.cohort{background:white;border:1px solid var(--line);border-radius:11px;padding:9px 11px;min-width:0;overflow-wrap:anywhere}.cohort .tag{display:inline-grid;place-items:center;width:21px;height:21px;border-radius:6px;color:white;background:#2459c4;margin-right:5px;font-size:.76rem}.cohort.b .tag{background:#526888}.cohort small{display:block;margin-top:3px}.compare-chart{padding:10px 0}.compare-chart .bar:last-child .fill{background:#627b9f}.compare-results table td:not(:first-child){font-variant-numeric:tabular-nums}.delta{color:#244681;font-weight:670;white-space:nowrap}.compare .table-wrap{background:white}
 @media(max-width:950px){.pick-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
@@ -53,6 +53,14 @@ body:not([data-active-view=overview]) .hero{min-height:0;padding-block:16px}body
 .metric-guide article h3::before{content:counter(guide,decimal-leading-zero);font-variant-numeric:tabular-nums;letter-spacing:.04em;color:#2556a8;background:#edf3ff;border-radius:7px;padding:3px 7px;font-size:.75rem}
 .metric-guide dl{margin:7px 0 0}.metric-guide dt{font-weight:700;padding-top:12px;margin-top:12px;border-top:1px solid #e8eef6}
 .metric-guide dd{margin:3px 0 0;color:var(--muted);line-height:1.65}
+.metric-help{display:inline-block;font-size:.72rem;margin-top:7px;text-decoration:none}.metric-guide dd p{margin-top:5px}
+.home-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:15px}
+.home-actions .card{padding:14px 16px}.home-actions h3{font-size:.94rem}.home-actions p{font-size:.82rem;margin-top:6px}
+.home-actions small{display:block;margin-top:7px}.data-status,.named-topic{margin-bottom:15px}
+.named-topic summary,.data-status summary{cursor:pointer;color:#244d92;font-weight:650;font-size:.88rem}
+.named-topic .table-wrap{margin-top:10px}.home-actions .priority{display:inline-block;border-radius:5px;background:#e9f0ff;color:#2455a4;padding:1px 6px;margin-right:5px;font-size:.74rem}
+.mobile-hint{display:none}
+@media(max-width:650px){.home-actions{grid-template-columns:1fr}.home-actions .card{padding:12px 14px}.mobile-hint{display:block;color:var(--muted);font-size:.74rem;margin-top:5px}}
 @media(max-width:650px){.kpis{gap:9px}.kpi{padding:11px 12px}.metric-guide .grid{gap:11px}.metric-guide article{padding:14px 15px}.metric-guide article h3{font-size:1rem}}
 </style>
 </head>
@@ -73,6 +81,10 @@ body:not([data-active-view=overview]) .hero{min-height:0;padding-block:16px}body
 <section id="overview" class="section" data-page aria-label="总览">
 <div id="kpis" class="kpis"></div>
 <div id="brief" class="brief"><span id="headline"></span><a href="#action">查看行动清单 ↗</a></div>
+<div class="section-head"><h2>优先行动</h2><span class="label">按证据、样本量和问题占比排序</span></div>
+<div id="home-actions" class="home-actions"></div>
+<article class="card data-status"><h3>数据状态</h3><div id="home-status"></div></article>
+<details class="card named-topic"><summary>点名题专题 · 品牌介绍、推荐与口碑</summary><div id="named-results"></div></details>
 <article class="card"><div class="section-head"><h3>上次测量对比</h3><span class="label">整批范围</span></div><div id="previous-comparison"></div></article>
 </section>
 <section id="compare" class="compare" data-page aria-labelledby="compare-title" hidden>
@@ -86,19 +98,19 @@ body:not([data-active-view=overview]) .hero{min-height:0;padding-block:16px}body
 <section id="brand" class="section" data-page hidden>
 <div class="section-head"><h2>品牌表现</h2><span class="label">按市场与题型拆分</span></div>
 <div class="grid">
-<article class="card wide"><h3>未点名题品牌提及率</h3><p class="definition">同一市场、同一题型比较。Kalodata 排除平台判为负面的提及，竞品按正文命中计。</p><div id="mention-chart"></div></article>
+<article class="card wide"><div class="section-head"><h3 id="mention-title">品牌提及率</h3><label class="review-reason">查看其他市场 <select id="brand-market"><option value="">样本量最大市场</option></select></label></div><p class="definition">Kalodata 按「未点名、扣除明确负面」计算，竞品按全部正文命中计算。<a href="#metrics/metric-core">查看口径差异</a></p><div id="mention-chart"></div></article>
 <article class="card wide"><h3>市场与竞品表现</h3><p class="definition">点名与未点名分别统计。Kalodata 提及率的分子排除明确负面，分母为全部有效回答。提及份额按全部品牌正文命中计算，按各市场的竞品集合解释。</p><div id="markets"></div></article>
 </div></section>
 <section id="sources" class="section" data-page hidden>
 <div class="section-head"><h2>官网引用</h2><span class="label">正文链接与正式来源</span></div>
 <div class="grid">
-<article class="card wide"><h3>官网链接出现率</h3><p class="definition">正文链接以全部有效回答为分母；正式来源以字段可判定的有效回答为分母。两项独立计数。</p><div id="website"></div></article>
+<article class="card wide"><h3>官网链接出现率</h3><p class="definition">正文链接以全部有效回答为分母；正式来源以字段可判定的有效回答为分母。两项独立计数。<a href="#metrics/metric-formal">来源与缺失处理</a></p><div id="website"></div></article>
 </div></section>
 <section id="answers" class="section" data-page hidden>
 <div class="section-head"><h2>回答表现</h2><span class="label">推荐判断与平台口碑</span></div>
 <div class="grid">
-<article class="card"><h3>Kalodata 推荐判断</h3><p class="definition">各类回答 ÷ 全部有效回答。中立推荐指同一条回答对不同场景既明确推荐又附条件推荐。分类来自规则判断。</p><div id="recommendation"></div></article>
-<article class="card"><h3>Kalodata 平台口碑</h3><p class="definition">平台口碑字段只评价 Kalodata。全样本以有效回答为分母；已提及分母为平台口碑码 1–4 的回答。</p><div id="sentiment"></div></article>
+<article class="card"><h3>Kalodata 推荐判断</h3><p class="definition">各类回答 ÷ 全部有效回答。<a href="#metrics/metric-recommendation">推荐分类与分母</a></p><div id="recommendation"></div></article>
+<article class="card"><h3>Kalodata 平台口碑</h3><p class="definition">平台口碑字段只评价 Kalodata。<a href="#metrics/metric-sentiment">口碑码与未知处理</a></p><div id="sentiment"></div></article>
 <article class="card wide"><h3>中立推荐题单</h3><p class="definition">按飞书题号归并，保留逐条回答的定位信息。</p><div id="neutral"></div></article>
 <article class="card wide"><h3 id="review-heading">推荐待确认记录</h3>
 <p class="definition" id="local-answer-note" hidden></p>
@@ -113,34 +125,31 @@ body:not([data-active-view=overview]) .hero{min-height:0;padding-block:16px}body
 <details class="card action-quality"><summary>数据完整性与口径限制</summary><div id="quality" class="compact"></div></details>
 </section>
 <section id="metrics" class="section metric-guide" data-page aria-labelledby="metrics-title" hidden>
-<div class="section-head"><h2 id="metrics-title">指标说明</h2><span class="label">定义、分母与使用范围</span></div>
-<div class="grid">
-<article class="card wide"><h3>样本与筛选</h3><dl>
-<dt>有效回答</dt><dd>同一 Answerbit 任务 ID 只计一次。题目须唯一匹配飞书题库，任务须完成分析且有有效正文。题库外记录和未确认的回答单列。</dd>
-<dt>点名题与未点名题</dt><dd>按飞书题库的提问是否点名 Kalodata 判定。市场来自题库，平台、日期、分组和标签来自 Answerbit。同维度多选，跨维度取交集；标签可选择匹配全部或任一。</dd>
-<dt>有效样本覆盖率</dt><dd>有效采样单元数 ÷ 实际计划采样单元数。缺少实际启用题单和采样计划时显示无法计算。</dd>
+<div class="section-head"><h2 id="metrics-title">指标说明</h2><span class="label">看什么 · 怎么算 · 注意什么</span></div><div class="grid">
+<article class="card wide"><h3>样本与题文</h3><dl>
+<dt id="metric-samples">有效回答与题库匹配</dt><dd><p><b>看什么</b> 本次可用于计算的回答量和未纳入范围。</p><p><b>怎么算</b> 按唯一 Answerbit 任务 ID 去重，题目须唯一匹配飞书编号、任务完成分析且正文有效。</p><p><b>注意什么</b> 题库外记录单列数量，题号歧义需核对。采样覆盖率还需独立计划量，缺少计划时无法计算。</p></dd>
+<dt id="metric-prompt">题文点名判定</dt><dd><p><b>看什么</b> 题目是否已经提示 Kalodata。</p><p><b>怎么算</b> 检查 Answerbit 返回的题文，按审核别名 Kalodata、Kalo Data、Kalo-Data、カロデータ及全半角等价写法判定。</p><p><b>注意什么</b> 题库编号用于定位；旧批缺少返回题文时按唯一匹配的题库题文回算并注明来源。点名状态来自题文，不按回答是否提及判定。</p></dd>
 </dl></article>
 <article class="card"><h3>品牌表现</h3><dl>
-<dt>Kalodata 提及率</dt><dd>正文命中 Kalodata、Kalo Data 或カロデータ，且平台口碑未判为明确负面的有效回答数 ÷ 全部有效回答数。每条回答最多计一次，排除 URL 和开头原样复述的题文。褒贬并存和口碑未知的命中仍计入。竞品按正文命中计算。</dd>
-<dt>未点名题提及率</dt><dd>沿用提及率判定，只在未点名题的有效回答中计算分子和分母。</dd>
-<dt>品牌提及份额</dt><dd>该品牌正文命中数 ÷ 同一市场配置品牌的正文命中数之和，含负面提及。一个回答可同时命中多个品牌。对照两组须使用同一竞品集合。</dd>
-<dt>首次出现第一比例</dt><dd>Kalodata 在配置品牌中最先出现的回答数 ÷ 全部有效回答数，按正文阅读顺序判定。</dd>
-<dt>平均首次名次</dt><dd>Kalodata 首次出现名次之和 ÷ 有 Kalodata 名次的回答数，数值越小越靠前。</dd>
+<dt id="metric-core">提及率</dt><dd><p><b>看什么</b> 未被题目点名时，Kalodata 获得非明确负面提及的比例。</p><p><b>怎么算</b> 未点名题中正文命中 Kalodata、且平台口碑不是明确负面的有效回答数 ÷ 未点名题有效回答数。</p><p><b>注意什么</b> 同一回答最多计一次；正文 URL、开头题文原样复述不算命中。明确负面只从分子扣除，褒贬并存和口碑未知仍计入。零分母不适用。</p></dd>
+<dt id="metric-named">点名题专题</dt><dd><p><b>看什么</b> 已点名 Kalodata 的品牌介绍、推荐与口碑。</p><p><b>怎么算</b> 点名题内分别重算提及率、推荐率及口碑分布。</p><p><b>注意什么</b> 点名题不进入提及率；全部题型提及率只作补充。主题、平台、日期和标签不同会影响结果。</p></dd>
+<dt id="metric-share">品牌提及份额</dt><dd><p><b>看什么</b> 同一竞品集合内各品牌的正文可见度构成。</p><p><b>怎么算</b> 某品牌的正文命中回答数 ÷ 本市场配置品牌正文命中数之和。</p><p><b>注意什么</b> 份额保留负面命中。竞品提及率暂按全部正文命中，Kalodata 提及率扣除明确负面，品牌对比需注明差异。跨市场竞品集合不同不直接比较份额。</p></dd>
+<dt id="metric-first">首次出现第一比例</dt><dd><p><b>看什么</b> Kalodata 在配置品牌中是否先出现。</p><p><b>怎么算</b> Kalodata 最先出现的有效回答数 ÷ 所选范围全部有效回答数。</p><p><b>注意什么</b> 按正文标题、列表和表格阅读顺序扫描，URL 和开头题文复述排除；没有命中的回答仍在分母。</p></dd>
+<dt id="metric-rank">平均首次名次</dt><dd><p><b>看什么</b> Kalodata 首次出现的平均顺位。</p><p><b>怎么算</b> 首次出现名次之和 ÷ 有 Kalodata 名次的回答数。</p><p><b>注意什么</b> 数值越小越靠前。未提及的回答不进入该分母，不能与首次第一比例共用分母。</p></dd>
 </dl></article>
 <article class="card"><h3>官网引用</h3><dl>
-<dt>正文官网链接出现率</dt><dd>正文含该品牌官网 URL 或裸域名的有效回答数 ÷ 全部有效回答数。Kalodata 和 FastMoss 分开统计，各自官网子域也计入。</dd>
-<dt>官网正式来源命中率</dt><dd>Answerbit 的正式来源含该品牌官网的有效回答数 ÷ 正式来源字段可判定的有效回答数。明确无来源计入分母，字段缺失或不可解析记未知。正文链接和正式来源独立计数。</dd>
-<dt>正式来源字段覆盖率</dt><dd>正式来源字段可判定的有效回答数 ÷ 全部有效回答数。</dd>
+<dt id="metric-body">正文官网链接出现率</dt><dd><p><b>看什么</b> 回答正文是否给出品牌官网入口。</p><p><b>怎么算</b> 正文含该品牌官网 URL 或裸域名的有效回答数 ÷ 所选范围全部有效回答数。</p><p><b>注意什么</b> Kalodata 与 FastMoss 独立计算，官网子域计入；普通正文链接不等同于正式来源。</p></dd>
+<dt id="metric-formal">官网正式来源命中率</dt><dd><p><b>看什么</b> Answerbit 正式来源是否引用品牌官网。</p><p><b>怎么算</b> 正式来源命中官网的有效回答数 ÷ 正式来源字段可判定的有效回答数。</p><p><b>注意什么</b> 明确无来源仍在分母；字段缺失或不可解析为未知。域名命中不验证页面内容是否支撑回答。</p></dd>
+<dt id="metric-field">正式来源字段覆盖率</dt><dd><p><b>看什么</b> 引用数据的可判定程度。</p><p><b>怎么算</b> 正式来源字段可判定的有效回答数 ÷ 全部有效回答数。</p><p><b>注意什么</b> 覆盖不足时先核查接口字段，再解释官网正式来源命中率。</p></dd>
 </dl></article>
 <article class="card"><h3>推荐与口碑</h3><dl>
-<dt>推荐率与可判定覆盖率</dt><dd>明确推荐指直接建议使用，条件推荐指满足明确条件才建议使用，中立推荐指同一回答对不同场景同时给出两类建议。各类别以全部有效回答为分母。可判定覆盖率为有明确分类（含未推荐）的回答数 ÷ 全部有效回答数。</dd>
-<dt>中立推荐题单</dt><dd>按飞书题号归并，命中数按回答计，保留每条回答的日期、平台和分组。</dd>
-<dt>Kalodata 平台口碑</dt><dd>Answerbit 口碑码 0 为未提及，1 正面，2 负面，3 褒贬并存，4 中性，缺失或未识别为未知。全样本占比以有效回答为分母；已提及占比以口碑码 1–4 的回答为分母。</dd>
+<dt id="metric-recommendation">推荐判断与覆盖率</dt><dd><p><b>看什么</b> Kalodata 是否被建议使用，以及规则能否作出判断。</p><p><b>怎么算</b> 明确推荐为直接建议，条件推荐须满足明确条件，中立推荐为同一回答针对不同场景同时给出两者。各类回答数 ÷ 全部有效回答数；有明确分类（含未推荐）回答数 ÷ 全部有效回答数为覆盖率。</p><p><b>注意什么</b> 分类互斥。仅列举、指代或条件不清等记未知。推荐为本地规则判断，需结合原文核查。</p></dd>
+<dt id="metric-neutral">中立推荐题单</dt><dd><p><b>看什么</b> 哪些题目产生场景不同的混合推荐。</p><p><b>怎么算</b> 按飞书题号归并命中的回答，每条保留平台、日期和分组。</p><p><b>注意什么</b> 零条显示“规则未检出中立推荐”，推荐未知记录仍可能需要核查。</p></dd>
+<dt id="metric-sentiment">平台口碑分布</dt><dd><p><b>看什么</b> 平台对 Kalodata 的评价倾向。</p><p><b>怎么算</b> 口碑码 0 未提及、1 正面、2 负面、3 褒贬并存、4 中性。全样本用有效回答作分母，仅看已提及时用口碑码 1–4 作分母。</p><p><b>注意什么</b> 缺失、格式异常或未识别口碑码记未知。平台口碑与本地正文品牌命中分别判定，未知不能当作正面。</p></dd>
 </dl></article>
-<article class="card"><h3>Answerbit 平台快照与对照</h3><dl>
-<dt>平台品牌提及率、平均排名、曝光效果分数</dt><dd>直接展示平台返回的值和读取范围。平均排名越小越靠前。曝光效果分数直接取平台值，本看板不重算。平台快照保持读取时的范围，顶部筛选只重算 Skill 指标。</dd>
-<dt>平台引用排行</dt><dd>分别展示平台返回的引用域名和文章引用次数。次数用于看来源分布，官网命中率按回答计。</dd>
-<dt>对照差值</dt><dd>当前范围减对照范围。比例差用百分点，名次差用名。两组可重叠，比较时同时看样本量、筛选条件和分母。分母为零时显示不适用。总览另有自动上次测量对比，按两批全量范围展示；题库、指标版本或窗口长度不同会提示限制。</dd>
+<article class="card"><h3>平台快照与对比</h3><dl>
+<dt id="metric-native">Answerbit 平台指标</dt><dd><p><b>看什么</b> 平台原有品牌提及率、平均排名、曝光效果分数和引用排行。</p><p><b>怎么算</b> 直接读取平台返回值、时间窗和来源；引用排行展示平台引用次数。</p><p><b>注意什么</b> 统一标注“平台口径”，不会套用 Skill 的提及率公式。平台分母未返回时明确说明；曝光分数不自行重算。</p></dd>
+<dt id="metric-compare">范围对照与上次测量</dt><dd><p><b>看什么</b> 当前范围与对照范围的差异，及两次成功测量的变化。</p><p><b>怎么算</b> 比例差用百分点、排名差用名、曝光分差用分。上次对比来自上一份成功 HTML 的两批全量数据。</p><p><b>注意什么</b> 两次窗口、来源、题库、题目范围及分析口径必须列明；不具可比性时并列数据并说明限制。顶部筛选改变后，上次对比仍为整批范围，单独提示。</p></dd>
 </dl></article>
 </div></section>
 <footer class="foot"><a id="answerbit-footer" rel="noopener noreferrer" target="_blank">Answerbit 工作台</a><a id="bank-link" rel="noopener noreferrer" target="_blank">飞书一期题库</a></footer>
@@ -178,7 +187,8 @@ const dimensions=[
   ["m","市场",Object.entries(D.markets)],
   ["e","平台",enginePairs],
   ["g","Answerbit 分组",[...groupPairs.sort(ns),["__unknown","分组未知"]]],
-  ["tags","Answerbit 标签",tagPairs.sort(ns)]
+  ["tags","Answerbit 标签",tagPairs.sort(ns)],
+  ["named","题文状态",[["0","未点名 Kalodata"],["1","点名 Kalodata"]]]
 ];
 function makeFilters(side){
   const form=$("filter-"+side);
@@ -251,9 +261,9 @@ if(D.last_failure){
 const sum=(rs,fn)=>rs.reduce((x,r)=>x+fn(r),0), total=rs=>sum(rs,r=>r.n);
 const mentionCount=(r,brand="Kalodata")=>(r.mentions[brand]||0)-(brand==="Kalodata"?(r.negative_mentions||0):0);
 function table(headers,rows){
-  return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th scope="col">${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+  return `<div class="table-wrap" tabindex="0" aria-label="数据表，可横向滚动查看"><table><thead><tr>${headers.map(h=>`<th scope="col">${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>${headers.length>3?'<p class="mobile-hint">左右滑动表格可查看完整数据</p>':""}`;
 }
-function kpi(title,value,detail){return `<div class="card kpi"><b>${esc(title)}</b><div class="value">${esc(value)}</div><small>${esc(detail)}</small></div>`;}
+function kpi(title,value,detail,definition="metric-samples"){return `<div class="card kpi"><b>${esc(title)}</b><div class="value">${esc(value)}</div><small>${esc(detail)}</small><a class="metric-help" href="#metrics/${definition}">指标说明 ↗</a></div>`;}
 function filters(side="a"){
   const form=$("filter-"+side), result={from:form.elements.from.value||batch.begin_date,
     to:form.elements.to.value||batch.end_date,tagMode:form.elements.tagMode.value};
@@ -275,14 +285,15 @@ function setFilters(side, f){
 }
 const includes=(values,v)=>!values.length||values.includes(v);
 function matches(d,f){
-  const [m,e,day,g,,tags]=d;
+  const [m,e,day,g,named,tags]=d;
   const tagMatch=!f.tags.length||(f.tagMode==="all"?f.tags.every(t=>tags.includes(t)):f.tags.some(t=>tags.includes(t)));
-  return includes(f.m,m)&&includes(f.e,e)&&includes(f.g,g||"__unknown")&&day>=f.from&&day<=f.to&&tagMatch;
+  return includes(f.m,m)&&includes(f.e,e)&&includes(f.g,g||"__unknown")&&includes(f.named||[],String(named))&&day>=f.from&&day<=f.to&&tagMatch;
 }
 function describe(f){
   return [f.m.length?f.m.map(marketName).join("、"):"全部市场",f.e.length?f.e.join("、"):"全部平台",
     f.g.length?f.g.map(groupName).join("、"):"全部分组",
     f.tags.length?f.tags.map(t=>D.tags[t]).join(f.tagMode==="all"?" ∩ ":" ∪ "):"全部标签",
+    f.named?.length?f.named.map(x=>x==="0"?"未点名":"点名").join("、"):"全部题文状态",
     f.from+" 至 "+f.to].join(" · ");
 }
 function breakdown(rs){
@@ -328,11 +339,11 @@ function native(f){
   const metricNames={exposure:"品牌提及率",avg_rank:"平均排名",score:"曝光效果分数"};
   const available=Object.keys(metricNames).filter(k=>Object.hasOwn(cards,k));
   if(available.length&&!available.includes(nativeMetric))nativeMetric=available[0];
-  const adjusted=f.m.length||f.e.length||f.g.length||f.tags.length||f.from!==batch.begin_date||f.to!==batch.end_date;
+  const adjusted=f.m.length||f.e.length||f.g.length||f.tags.length||f.named.length||f.from!==batch.begin_date||f.to!==batch.end_date;
   const unit=nativeMetric==="exposure"?"%":nativeMetric==="avg_rank"?"名":"";
   const display=(v,u)=>v===null||v===undefined?"—":v.toFixed(2)+u;
   let view=`<p class="sub">范围 ${esc(p.begin)} 至 ${esc(p.end)} · 全部平台、分组和标签 · 读取 ${esc(fmtDate(p.fetched))}（北京时间）。${adjusted?" 当前筛选与对照分析重算 Skill 指标，原生快照保持其读取范围。":""}</p>`;
-  view+=`<div class="native-cards" aria-label="切换 Answerbit 指标">${available.map(k=>`<button type="button" class="native-tab" data-metric="${k}" aria-pressed="${k===nativeMetric}"><small>${metricNames[k]}</small><div class="value">${display(cards[k],k==="exposure"?"%":"")}</div><small>平台概览口径</small></button>`).join("")}</div>`;
+  view+=`<p class="definition">平台原值 · 平台口径 · <a href="#metrics/metric-native">查看平台指标说明</a></p><div class="native-cards" aria-label="切换 Answerbit 指标">${available.map(k=>`<button type="button" class="native-tab" data-metric="${k}" aria-pressed="${k===nativeMetric}"><small>${metricNames[k]}</small><div class="value">${display(cards[k],k==="exposure"?"%":"")}</div><small>平台口径</small></button>`).join("")}</div>`;
   const trendPath=nativeMetric==="score"?"/geo/score/trends":"/geo/exposure/trends";
   const metricPoints=rows=>nativeMetric==="avg_rank"?rows.filter(p=>p.rank>0).map(p=>({...p,value:p.rank})):rows;
   const points=metricPoints(data[trendPath]||[]);
@@ -358,15 +369,20 @@ function render(){
   const f=filters(), rs=D.rows.filter(r=>matches(r.d,f)), n=total(rs), selected=breakdown(rs);
   $("scope").textContent=describe(f)+` · ${num(n)} 条有效回答`+(f.from>f.to?" · 起始日应早于或等于结束日":"");
   if(activePage==="compare")renderComparison(f,rs);
-  if(activePage==="overview")renderPrevious();
+  if(activePage==="overview")renderPrevious(f);
   const un=rs.filter(r=>!r.d[4]), unr=total(un), kh=sum(rs,r=>mentionCount(r));
   const namedCount=n-unr, nh=sum(un,r=>mentionCount(r)), first=sum(rs,r=>r.first);
   const excluded=sum(rs,r=>r.negative_mentions||0), excludedUnnamed=sum(un,r=>r.negative_mentions||0);
   const known=sum(rs,r=>r.links.Kalodata?.[3]||0), official=sum(rs,r=>r.links.Kalodata?.[2]||0);
-  $("kpis").innerHTML=kpi("有效回答",num(n),`点名 ${num(namedCount)} · 未点名 ${num(unr)}`)+
-    kpi("Kalodata 提及率",pct(kh,n),`${num(kh)} / ${num(n)} 有效回答 · 扣除负面 ${num(excluded)}`)+
-    kpi("未点名题提及率",pct(nh,unr),`${num(nh)} / ${num(unr)} 未点名有效回答 · 扣除负面 ${num(excludedUnnamed)}`)+
-    kpi("官网正式来源命中",pct(official,known),`${num(official)} / ${num(known)} 正式来源可判定`);
+  $("kpis").innerHTML=kpi("提及率",pct(nh,unr),`${num(nh)}/${num(unr)} · 扣除负面 ${num(excludedUnnamed)}`,"metric-core")+
+    kpi("未点名有效回答",num(unr),`当前范围共 ${num(n)} 条 · 点名 ${num(namedCount)} 条`)+
+    kpi("点名题提及率",pct(kh-nh,namedCount),`${num(kh-nh)}/${num(namedCount)} · 扣除负面 ${num(excluded-excludedUnnamed)}`,"metric-named")+
+    kpi("官网正式来源命中",pct(official,known),`${num(official)} / ${num(known)} 正式来源可判定`,"metric-formal");
+  const named=rs.filter(r=>r.d[4]===1);
+  $("named-results").innerHTML=namedCount?table(["点名题有效回答","提及率（扣负面）","明确推荐","平台口碑"],[[
+    num(namedCount),ratio(kh-nh,namedCount),ratio(sum(named,r=>r.rec.explicit||0),namedCount),
+    [["positive","正面"],["neutral","中性"],["negative","负面"],["mixed","褒贬并存"],["unknown","未知"]].map(([k,t])=>`${t} ${num(sum(named,r=>r.sent[k]||0))}`).join(" · ")
+  ]]):empty("当前范围没有点名题有效回答。");
   if(activePage==="platform")native(f);
   $("markets").innerHTML=selected.length?table(["市场 / 点名状态","有效回答","各品牌提及率","各品牌提及份额","首次出现第一","平均首次名次"],
     selected.map(rows=>{
@@ -378,8 +394,15 @@ function render(){
       return [`<strong>${esc(marketName(m))}</strong><br><span class="soft">${named?"点名":"未点名"}</span>`,num(count),
         rateList(qualified,count),rateList(hits,sov),ratio(sum(rows,r=>r.first),count),rankCount?`${(rankSum/rankCount).toFixed(2)}（${rankSum}/${rankCount}）`:"不适用"];
     }))+ `<p class="definition">首次第一 = Kalodata 在配置品牌中最先出现 ÷ 有效回答（当前合计 ${ratio(first,n)}）。平均首次名次 = 名次总和 ÷ 有 Kalodata 名次的回答。</p>`:empty("当前筛选没有有效回答。");
-  const chosen=selected.filter(x=>!x[0].d[4]).sort((a,b)=>total(b)-total(a))[0];
-  $("mention-chart").innerHTML=chosen?`<p class="sub">${esc(marketName(chosen[0].d[0]))} · ${num(total(chosen))} 条${f.m.length===1?"":" · 当前样本量最大的市场"}</p>${scaleLabel}<div class="bars">${D.competitors[chosen[0].d[0]].map(b=>bar(b,sum(chosen,r=>mentionCount(r,b)),total(chosen))).join("")}</div>`:empty("当前筛选没有未点名题样本。");
+  if(new Set(selected.map(rs=>D.competitors[rs[0].d[0]].join("|"))).size>1){
+    $("markets").insertAdjacentHTML("afterbegin",'<p class="warning">当前市场的竞品集合不同。品牌名称逐市场列出，提及份额需在同一竞品集合内比较。</p>');
+  }
+  const choices=selected.filter(x=>!x[0].d[4]).sort((a,b)=>total(b)-total(a));
+  if(brandMarket&&!choices.some(x=>x[0].d[0]===brandMarket))brandMarket="";
+  const chosen=(brandMarket?choices.find(x=>x[0].d[0]===brandMarket):choices[0]);
+  $("brand-market").innerHTML='<option value="">样本量最大市场</option>'+choices.map(x=>`<option value="${esc(x[0].d[0])}"${x[0].d[0]===brandMarket?" selected":""}>${esc(marketName(x[0].d[0]))} · ${num(total(x))} 条</option>`).join("");
+  $("mention-title").textContent=chosen?`${marketName(chosen[0].d[0])} · 未点名题 · ${num(total(chosen))} 条有效回答`:"品牌提及率";
+  $("mention-chart").innerHTML=chosen?`<p class="sub">${brandMarket?"当前所选市场":"默认显示当前样本量最大的市场"} · 竞品集合 ${esc(D.competitors[chosen[0].d[0]].join("、"))}</p>${scaleLabel}<div class="bars">${D.competitors[chosen[0].d[0]].map(b=>bar(b,sum(chosen,r=>mentionCount(r,b)),total(chosen))).join("")}</div>`:empty("当前筛选没有未点名题样本。");
   const byBrand=(brand,i)=>sum(rs,r=>r.links[brand]?.[i]||0);
   $("website").innerHTML=n?scaleLabel+[[0,1,"正文链接"],[2,3,"正式来源"]].map(([a,b,name])=>`<div class="chart-group"><strong>${name}</strong><div class="bars">${["Kalodata","FastMoss"].map(x=>bar(x,byBrand(x,a),byBrand(x,b))).join("")}</div></div>`).join("")+
     `<p class="definition">正式来源字段覆盖 ${ratio(known,n)}。</p>`:empty("当前筛选没有有效回答。");
@@ -408,8 +431,19 @@ function render(){
   $("quality").innerHTML=`<p>当前范围正式来源字段待核对 <b>${num(missing)}</b> 条，推荐未知 <b>${num(unknown)}</b> 条。</p>
     <p class="definition">本批接口返回 ${num(batch.returned_records)} 条，题库未匹配 ${num(D.issues.unmatched_question||0)} 条，题文或市场歧义 ${num((D.issues.ambiguous_question||0)+(D.issues.market_tag_conflict||0))} 条，回答待确认 ${num(D.issues.answer_unconfirmed||0)} 条。此为全批数据，未匹配项未进入市场筛选。</p>
     <p class="sub">实际启用题单与采样计划未取得，样本覆盖率无法计算。题库版本 ${esc(batch.question_version.slice(0,12))} · ${esc(batch.metric_version)}</p>`;
+  const unmatched=(D.issues.unmatched_question||0)+(D.issues.ambiguous_question||0)+(D.issues.market_tag_conflict||0);
+  const issueNames={unmatched_question:"题库无匹配",ambiguous_question:"题号待确认",market_tag_conflict:"市场标签冲突",
+    citation_unknown:"引用字段缺失",answer_unconfirmed:"回答待确认",tag_metadata_incomplete:"标签信息不完整"};
+  $("home-status").innerHTML=`<p class="definition">全批未匹配或待核对 ${num(unmatched)} 条 · 当前口碑未知 ${num(sentimentUnknown)} 条 · 引用字段缺失 ${num(missing)} 条 · 采样覆盖率无法计算</p>
+    <details><summary>查看数据范围与问题</summary>${$("quality").innerHTML}
+    ${table(["全批问题","记录数","核实入口"],Object.entries(D.issues).map(([code,count])=>[
+      esc(issueNames[code]||code),num(count),["unmatched_question","ambiguous_question","market_tag_conflict"].includes(code)?"飞书题库与 Answerbit 用户提问":"Answerbit 大模型回答记录"
+    ]))}
+    <p class="definition">点名判定来源 ${esc(D.prompt_basis||"旧批来源待核对")}。完整异常和任务定位见同批 Excel「数据异常」。题库外记录仅在全批计数，不进入有编号明细。</p></details>`;
 }
-function renderPrevious(){
+let brandMarket="";
+$("brand-market").addEventListener("change",e=>{brandMarket=e.target.value;render();});
+function renderPrevious(f){
   const c=D.comparison;
   if(!c?.previous_batch){
     $("previous-comparison").innerHTML=empty("暂无可读取的上次成功结果，下次在同一输出位置刷新后自动对比。");
@@ -429,7 +463,9 @@ function renderPrevious(){
     return `${r.change>0?"+":"−"}${r.kind==="count"?num(Math.abs(r.change)):Math.abs(r.change).toFixed(2)} ${unit}`;
   };
   const a=c.current_batch,b=c.previous_batch;
-  $("previous-comparison").innerHTML=`<p class="definition">本次 ${esc(a.begin_date)} 至 ${esc(a.end_date)} · 上次 ${esc(b.begin_date)} 至 ${esc(b.end_date)}，成功取数 ${esc(fmtDate(b.fetched_at_utc))}（北京时间）。按两批全量范围比较。</p>`+
+  const changed=f.m.length||f.e.length||f.g.length||f.tags.length||f.named.length||f.from!==batch.begin_date||f.to!==batch.end_date;
+  $("previous-comparison").innerHTML=`<p class="definition">本次 ${esc(a.begin_date)} 至 ${esc(a.end_date)} · 上次 ${esc(b.begin_date)} 至 ${esc(b.end_date)}，成功取数 ${esc(fmtDate(b.fetched_at_utc))}（北京时间）。两批均为全部市场、平台、分组、标签及题文状态。</p>
+    ${changed?'<p class="warning">顶部筛选已改变。下表仍是整批范围，上次同条件切片尚未取全。</p>':""}`+
     table(["核心指标","来源","本次","上次","变化"],c.metrics.map(r=>[esc(r.name),esc(r.source),value(r),value(before.get(r.id)),esc(change(r))]))+
     `<p class="definition">${c.limitations.length?esc(c.limitations.join("、"))+"。":""}比例变化用百分点，平均排名越小越靠前。平台未返回分母时沿用平台数值。上次对比与顶部筛选分开。</p>`;
 }
@@ -533,14 +569,33 @@ function renderActions(rows){
       return den&&(rule.key!=="recommendation"||hits)?[{lead,hits,den,rate:hits/den}]:[];
     }).sort((a,b)=>(b.den>=20)-(a.den>=20)||(rule.low?a.rate-b.rate:b.rate-a.rate)||b.den-a.den);
     return candidates.length?[{...rule,...candidates[0]}]:[];
-  });
+  }).sort((a,b)=>(b.den>=20)-(a.den>=20)||
+      ((b.low?1-b.rate:b.rate)*Math.sqrt(b.den)-(a.low?1-a.rate:a.rate)*Math.sqrt(a.den)));
   $("action-count").textContent=`${chosen.length} 项可回查行动`;
-  $("headline").textContent=chosen.length?`当前范围有 ${chosen.length} 项可回查行动。优先看「${chosen[0].title}」，${chosen[0].metric} ${ratio(chosen[0].hits,chosen[0].den)}。`:"当前筛选没有可回查的行动样本。";
-  $("next").innerHTML=chosen.length?chosen.map(item=>{
+  const candidates=[...cuts.values()].filter(rs=>!rs[0].d[4]).map(rs=>({
+    rows:rs,den:total(rs),hits:sum(rs,r=>mentionCount(r))
+  })).filter(r=>r.hits<r.den).sort((a,b)=>(b.den>=20)-(a.den>=20)||a.hits/a.den-b.hits/b.den||b.den-a.den);
+  const focus=candidates[0], allUnnamed=rows.filter(r=>!r.d[4]);
+  $("headline").textContent=focus?
+    `当前最值得核查的是${marketName(focus.rows[0].d[0])}「${groupName(focus.rows[0].d[3])}」在 ${focus.rows[0].d[1]} 的表现。未点名、扣除明确负面的提及率为 ${ratio(focus.hits,focus.den)}，当前范围为 ${pct(sum(allUnnamed,r=>mentionCount(r)),total(allUnnamed))}。${focus.den<20?"该切片样本较少，先核查具体回答。":"该切片的提及率较低，可优先核对未提及或负面回答的选型依据。"}`:
+    total(allUnnamed)?`当前范围提及率 ${ratio(sum(allUnnamed,r=>mentionCount(r)),total(allUnnamed))}，本次未检出未提及或明确负面命中缺口，可继续查看官网引用和推荐表现。`:
+    "当前筛选没有未点名题有效回答，提及率不适用。可查看点名题专题或调整题文状态。";
+  $("home-actions").innerHTML=chosen.slice(0,3).map((item,i)=>{
+    const [market,platform,day,group]=item.lead.d, example=item.lead.evidence[item.key];
+    return `<article class="card"><h3><span class="priority">P${i+1}</span>${esc(item.title)}</h3>
+      <p>${esc(marketName(market))} · ${esc(groupName(group))} · ${esc(platform)} · ${num(item.den)} 条样本</p>
+      <p>${item.den<20?"样本不足，优先核查该回答。":esc(item.check)}</p>
+      <small>${esc(example.q)} · ${esc(day)} · <a href="#action">查看核查与复测步骤</a></small>
+      <small><a href="${esc(D.links.answerbit)}" target="_blank" rel="noopener noreferrer">打开 Answerbit 工作台核查</a></small></article>`;
+  }).join("")||empty("当前没有证据充分的行动项，请先补齐样本或核对数据。");
+  $("next").innerHTML=chosen.length?chosen.map((item,i)=>{
     const {lead}=item, [m,platform,day,g,named]=lead.d, example=lead.evidence[item.key];
-    return `<article class="card action-item"><div class="action-heading"><h3>${esc(item.title)}</h3><span>${ratio(item.hits,item.den)}</span></div>
-      <p class="sub action-scope">${esc(marketName(m))} · ${esc(platform)} · ${esc(groupName(g))} · ${named?"点名":"未点名"} · ${esc(item.metric)}</p>
-      <dl><dt>去核实</dt><dd>${esc(item.check)}</dd><dt>怎么改</dt><dd>${esc(item.change)}</dd><dt>怎么测</dt><dd>${esc(item.retest)}</dd></dl>
+    return `<article class="card action-item"><div class="action-heading"><h3>P${i+1} · ${esc(item.title)}</h3><span>${ratio(item.hits,item.den)}</span></div>
+      <p class="sub action-scope">${esc(marketName(m))} · ${esc(platform)} · ${esc(groupName(g))} · ${named?"点名":"未点名"} · ${num(item.den)} 条样本 · ${esc(item.metric)}</p>
+      <dl><dt>核查哪条</dt><dd>${esc(example.q)}「${esc(example.text)}」· ${esc(day)} · ${esc(platform)}。${esc(item.check)}</dd>
+      <dt>去哪核实</dt><dd>Answerbit 工作台 → 大模型回答记录，按题文、分组、平台和日期查找。题文或编号有误时，在飞书题库按 ${esc(example.q)} 核对。</dd>
+      <dt>优化方向</dt><dd>围绕「${esc(example.text)}」对应的内容或帮助页面，${esc(item.change)}</dd>
+      <dt>下轮复测</dt><dd>复用 ${esc(example.q)}，固定 ${esc(platform)} 和市场、语言、采样条件。${esc(item.retest)}</dd></dl>
       <div class="question"><b>${esc(example.q)}</b> · ${esc(example.text)}<small>${esc(day)} · ${esc(platform)} · <a target="_blank" rel="noopener noreferrer" href="${esc(D.links.answerbit)}">在 Answerbit 按题文回查 ↗</a></small></div>
       ${item.den<20?'<p class="sub sample-note">样本较少，先核实个例。</p>':""}</article>`;
   }).join(""):empty("当前筛选没有可回查的行动样本。");
@@ -550,7 +605,7 @@ let activePage="overview";
 const pages=[...document.querySelectorAll("[data-page]")];
 const navLinks=[...document.querySelectorAll(".page-tabs a")];
 function showPage(resetScroll=false){
-  const hash=location.hash.slice(1), requested=hash==="analysis"?"brand":hash;
+  const [hash,target]=location.hash.slice(1).split("/"), requested=hash==="analysis"?"brand":hash;
   activePage=pages.some(page=>page.id===requested)?requested:"overview";
   for(const page of pages)page.hidden=page.id!==activePage;
   for(const link of navLinks){
@@ -568,7 +623,8 @@ function showPage(resetScroll=false){
     comparisonOpened=true;
   }
   render();
-  if(resetScroll)window.scrollTo(0,0);
+  if(target&&activePage==="metrics")$(target)?.scrollIntoView({block:"start"});
+  else if(resetScroll)window.scrollTo(0,0);
 }
 window.addEventListener("hashchange",()=>showPage(true));
 $("copy-a").addEventListener("click",()=>{setFilters("b",filters());render();});
@@ -604,8 +660,8 @@ function renderComparison(f,aRows){
     return `<span class="delta">${v===0?"当前范围与对照范围持平":`当前范围比对照范围${direction} ${Math.abs(v).toFixed(2)} ${rank?"名":"个百分点"}`}</span>`;
   }
   const comparisons=[
-    ["Kalodata 提及率","mention","提及 Kalodata 且未被平台判为负面的回答 ÷ 全部有效回答"],
-    ["未点名题提及率","unmentioned","未点名题中提及 Kalodata 且未被平台判为负面的回答 ÷ 未点名题有效回答"],
+    ["全部题型提及率（补充）","mention","提及 Kalodata 且未被平台判为负面的回答 ÷ 全部有效回答"],
+    ["提及率","unmentioned","未点名题中提及 Kalodata 且未被平台判为负面的回答 ÷ 未点名题有效回答"],
     ["Kalodata 提及份额","sov","Kalodata 提及回答数 ÷ 同一竞品集合内各品牌提及回答数之和"],
     ["Kalodata 首次出现第一","first","Kalodata 在配置品牌中最先出现的回答 ÷ 全部有效回答"],
     ["平均首次名次","rank","Kalodata 首次出现的名次之和 ÷ 有 Kalodata 名次的回答。数值越小越靠前"],
@@ -617,7 +673,9 @@ function renderComparison(f,aRows){
   ];
   const heading=(label,x,scope,side)=>`<div class="cohort ${side}"><b><span class="tag">${label}</span>${num(x.n)} 条有效回答</b><small>${esc(describe(scope))}</small><small>点名 ${num(x.n-x.unnamed)} · 未点名 ${num(x.unnamed)}</small></div>`;
   let view=`<div class="cohorts">${heading("当前范围",a,f,"a")}${heading("对照范围",b,f2,"b")}</div>`;
-  const summaryMetrics=[["未点名题提及率","unmentioned"],["首次出现第一比例","first"],["官网正式来源命中率","formal"]];
+  const sets=rs=>[...new Set(rs.map(r=>r.d[0]))].map(m=>`${marketName(m)}（${D.competitors[m].join("、")}）`).join("；");
+  view+=`<details class="definition"><summary>查看两组市场与竞品集合</summary><p>当前范围 ${esc(sets(aRows))}</p><p>对照范围 ${esc(sets(bRows))}</p><p>Kalodata 提及率扣除明确负面，竞品按全部正文命中计。不同竞品集合的份额不直接比较。</p></details>`;
+  const summaryMetrics=[["提及率","unmentioned"],["首次出现第一比例","first"],["官网正式来源命中率","formal"]];
   view+=`<div class="compare-kpis">${summaryMetrics.map(([title,key])=>{
     const x=a[key], y=b[key], xx=x[1]?100*x[0]/x[1]:null, yy=y[1]?100*y[0]/y[1]:null;
     const track=xx!==null&&yy!==null?`<div class="metric-track" aria-hidden="true">
@@ -629,7 +687,7 @@ function renderComparison(f,aRows){
   }).join("")}</div>`;
   if(a.unnamed&&b.unnamed){
     const gap=100*(a.unmentioned[0]/a.unnamed-b.unmentioned[0]/b.unnamed);
-    if(Math.abs(gap)>=.005)view+=`<p class="definition"><b>对照线索</b> · ${gap>0?"当前范围":"对照范围"}的未点名题提及率高 ${Math.abs(gap).toFixed(2)} 个百分点，可固定平台和题类再核对。</p>`;
+    if(Math.abs(gap)>=.005)view+=`<p class="definition"><b>对照线索</b> · ${gap>0?"当前范围":"对照范围"}的提及率高 ${Math.abs(gap).toFixed(2)} 个百分点，可固定平台和题类再核对。</p>`;
   }
   view+=`<p class="definition">差值 = 当前范围 − 对照范围 · 重叠样本 ${num(overlap)} 条。两组样本构成可能不同。</p>`;
   if(f2.from>f2.to)view+=empty("对照范围起始日应早于或等于结束日。");

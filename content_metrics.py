@@ -33,6 +33,10 @@ def market_brands(market):
     return (KALODATA, *COMPETITORS.get(market, COMMON))
 
 
+def named_prompt(text):
+    return int(bool(brand_patterns("US")[KALODATA].search(normalize("NFKC",text))))
+
+
 @lru_cache(maxsize=None)
 def brand_patterns(market):
     patterns = {}

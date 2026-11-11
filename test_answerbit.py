@@ -27,22 +27,37 @@ except ImportError:
 
 
 class OperatorCredentialsTest(unittest.TestCase):
+    def test_observed_scope_tracks_question_range_without_task_or_date_noise(self):
+        from copy import deepcopy
+
+        row={"task_id":"one","date":"2026-11-01","query_str":"Which tool?","platform":"demo","language":"en",
+             "title_id":"group","tags":[{"tag_id":"a"},{"tag_id":"b"}]}
+        later=deepcopy(row)
+        later.update(task_id="two",date="2026-11-08")
+        later["tags"].reverse()
+        self.assertEqual(answerbit.observed_scope([row]),answerbit.observed_scope([later]))
+        later["query_str"]="Which other tool?"
+        self.assertNotEqual(answerbit.observed_scope([row]),answerbit.observed_scope([later]))
+
     def test_previous_measurement_comparison_prefers_platform_values(self):
         from copy import deepcopy
 
         previous = {"batch":{"source":"Answerbit","question_version":"bank","metric_version":"v3",
                               "begin_date":"2026-11-01","end_date":"2026-11-07","fetched_at_utc":"2026-11-08T00:00:00Z"},
-                    "rows":[{"n":100}],"platform":{"data":{"/geo/base/dashboard":{
+                    "rows":[{"n":100,"d":["US","demo","2026-11-01","",0,[]],"mentions":{"Kalodata":40},"negative_mentions":0}],
+                    "analysis_version":dashboard.ANALYSIS_VERSION,
+                    "question_scope":{"signature":"same","verified":True},
+                    "platform":{"data":{"/geo/base/dashboard":{
                         "exposure":50,"avg_rank":2.5,"score":39}}}}
         current = deepcopy(previous)
         current["batch"].update(begin_date="2026-11-04",end_date="2026-11-10",fetched_at_utc="2026-11-11T00:00:00Z")
         current["platform"]["data"]["/geo/base/dashboard"] = {"exposure":55,"avg_rank":2,"score":42}
         previous["last_failure"] = {"error":"later attempt failed"}
         comparison = dashboard.previous_comparison(current,previous,refresh=True)
-        self.assertEqual([r["change"] for r in comparison["metrics"]],[0,5,-.5,3])
+        self.assertEqual([r["change"] for r in comparison["metrics"]],[0,0,5,-.5,3])
         self.assertEqual(comparison["previous_batch"],previous["batch"])
-        self.assertEqual(comparison["metrics"][1]["source"],"Answerbit 平台快照")
-        self.assertIsNone(comparison["metrics"][1]["denominator"])
+        self.assertEqual(comparison["metrics"][2]["source"],"Answerbit 平台口径")
+        self.assertIsNone(comparison["metrics"][2]["denominator"])
         current["comparison"] = comparison
         self.assertEqual(dashboard.previous_comparison(current,current),comparison)
         first = dashboard.previous_comparison(current,None)
@@ -52,6 +67,15 @@ class OperatorCredentialsTest(unittest.TestCase):
         incomparable = dashboard.previous_comparison(current,previous)
         self.assertEqual(incomparable["limitations"],["题库版本不同"])
         self.assertTrue(all(r["change"] is None for r in incomparable["metrics"]))
+        current["batch"]["question_version"] = "bank"
+        current["question_scope"] = {"signature":"changed","verified":True}
+        self.assertIn("题目、平台、语言、分组或标签范围不同",dashboard.previous_comparison(current,previous)["limitations"])
+        current["question_scope"] = previous["question_scope"]
+        current["analysis_version"] = "older-policy"
+        self.assertIn("分析口径不同或上次未记录口径",dashboard.previous_comparison(current,previous)["limitations"])
+        current["analysis_version"] = dashboard.ANALYSIS_VERSION
+        current["batch"]["end_date"] = current["batch"]["begin_date"]
+        self.assertIn("数据窗口长度不同",dashboard.previous_comparison(current,previous)["limitations"])
 
     def test_review_requires_key_before_reading_snapshot(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -424,8 +448,55 @@ class AnswerbitTest(unittest.TestCase):
         data = dashboard.dashboard_data(self.output,self.bank,None)
         self.assertEqual((data["rows"][0]["negative_mentions"],data["rows"][0]["rank"]),(1,[3,3]))
         with contextlib.closing(load_workbook(io.BytesIO(export_workbook(self.output,data)))) as book:
-            included = {row[6]:row[-1] for row in list(book["回答记录"].values)[1:]}
+            included = {row[6]:row[16] for row in list(book["回答记录"].values)[1:]}
             self.assertEqual(included,{"negative":"负面排除","mixed":"计入","unknown":"计入","no-hit":"未提及"})
+
+    def test_core_rate_uses_returned_prompt_and_excludes_named_answers(self):
+        from openpyxl import load_workbook
+
+        with contextlib.closing(load_workbook(self.bank)) as book:
+            sheet = book["英国"]
+            sheet.append(["测试","NAMED-EN-GB","How is Kalo Data?"])
+            sheet.append(["测试","NAMED-JA-GB","ｶﾛﾃﾞｰﾀって？"])
+            book.save(self.bank)
+        template = self.records()[0]
+        specs = [
+            ("negative","Shared question?","Kalodata.",2),
+            ("mixed","Shared question?","Kalodata.",3),
+            ("unknown","Shared question?","Kalodata.",None),
+            ("absent","Shared question?","FastMoss.",4),
+            ("english","How is Kalo Data?","Kalodata.",1),
+            ("japanese","ｶﾛﾃﾞｰﾀって？","カロデータ。",2),
+        ]
+        records = [dict(template,task_id=task,query_str=prompt) for task,prompt,_,_ in specs]
+        details = {task:(prompt,body,code) for task,prompt,body,code in specs}
+
+        def call(path,payload):
+            if path == answerbit.LIST:
+                return {"scores":records,"total":len(records)}
+            prompt,body,code = details[payload["task_id"]]
+            return dict(prompt=prompt,platform=template["platform"],language=template["language"],
+                        date=self.day,llm_output=body,brand_reputation=code,links=[])
+
+        report = answerbit.refresh(self.bank,self.output,"test",self.day,self.day,call,store_answers=True)
+        self.assertEqual((report["core_mention"]["numerator"],report["core_mention"]["denominator"],
+                          report["core_mention"]["excluded_negative"],report["core_mention"]["value"]),(2,4,1,.5))
+        with contextlib.closing(sqlite3.connect(self.output)) as db,db:
+            db.execute("UPDATE question SET named_prompt=1-named_prompt")
+        data = dashboard.dashboard_data(self.output,self.bank,None)
+        self.assertEqual(data["core_mention"],{"numerator":2,"denominator":4,"excluded_negative":1,"value":.5})
+        self.assertEqual(data["prompt_basis"],"Answerbit 返回题文")
+        self.assertTrue(data["question_scope"]["verified"])
+        with contextlib.closing(load_workbook(io.BytesIO(export_workbook(self.output,data)))) as book:
+            rows={r[6]:r for r in list(book["回答记录"].values)[1:]}
+            self.assertEqual(rows["english"][16],"点名题排除")
+            self.assertEqual(rows["japanese"][16],"点名题排除")
+            self.assertEqual(rows["negative"][16],"负面排除")
+            summary=dict(book["批次说明"].values)
+            self.assertEqual((summary["提及率分子"],summary["提及率分母"],summary["提及率"]),(2,4,.5))
+        named_only = dict(data,rows=[r for r in data["rows"] if r["d"][4] == 1])
+        core = next(r for r in dashboard.report_metrics(named_only) if r["id"]=="skill.core_mention_rate")
+        self.assertEqual((core["numerator"],core["denominator"],core["value"]),(0,0,None))
 
     def test_recommendation_review_is_bound_to_batch_and_keeps_only_labels(self):
         record = self.records()[0]

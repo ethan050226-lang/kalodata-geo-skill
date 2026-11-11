@@ -6,6 +6,7 @@ from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from itertools import islice
 import json
+import hashlib
 import math
 from pathlib import Path
 import sqlite3
@@ -15,7 +16,7 @@ from threading import Lock
 import time
 
 import answerbit as api
-from content_metrics import KALODATA, market_brands, reputation_label
+from content_metrics import KALODATA, market_brands, reputation_label, named_prompt
 from recommendation_review import identity, review_result, run_review, saved_review, sidecar, write_review
 from workbook_export import export_workbook, write_question_check
 
@@ -24,6 +25,7 @@ ASSET = Path(__file__).resolve().parent / "skill/geo-sampling/assets/dashboard.h
 SOURCE = "https://answerbit.qq.com/zh-CN/dashboard/home"
 QNA = "https://kalowave.feishu.cn/wiki/QhQewzO72ia8c8kxn8mcCwSDnOg?sheet=3Qrfdv"
 DATA_MARKER = '<script id="geo-data" type="application/json">'
+ANALYSIS_VERSION = "geo-core/2-unnamed-negative"
 
 
 class PacedRead:
@@ -158,6 +160,12 @@ def dashboard_data(snapshot, bank, native):
         api.require(batch["question_version"] == sha, "题库校验 / 快照和题库版本不一致")
         api.require(db.execute("PRAGMA quick_check").fetchone()[0] == "ok", "快照校验 / SQLite 文件校验失败")
         has_originals = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sample_answer'").fetchone()
+        has_questions = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sample_question'").fetchone()
+        has_scope = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='retrieval_scope'").fetchone()
+        returned_scope = db.execute("SELECT signature FROM retrieval_scope").fetchone()[0] if has_scope else None
+        prompt_join = ("LEFT JOIN sample_question p USING(task_id)" if has_questions else
+                       "LEFT JOIN sample_answer p USING(task_id)" if has_originals else "")
+        prompt_column = "p.prompt" if prompt_join else "NULL"
         recommendations = [] if has_originals else None
         tags = defaultdict(list)
         tag_names = {}
@@ -172,21 +180,28 @@ def dashboard_data(snapshot, bank, native):
         neutral = []
         valid = 0
         valid_tasks = set()
+        question_scope = set()
         columns = {r["name"] for r in db.execute("PRAGMA table_info(sample_content)")}
         reason_column = "c.reputation_issue" if "reputation_issue" in columns else "NULL"
         for row in db.execute(f"""
-            SELECT s.task_id,s.question_id,s.platform,s.task_date,q.market,q.named_prompt,g.group_id,g.group_name,
-                   c.ranks,c.recommendation,c.reputation_code,{reason_column} AS reputation_issue
+            SELECT s.task_id,s.question_id,s.platform,s.task_date,s.language,q.market,q.named_prompt,q.category,g.group_id,g.group_name,
+                   c.ranks,c.recommendation,c.reputation_code,{reason_column} AS reputation_issue,{prompt_column} AS actual_prompt
             FROM sample s JOIN question q USING(question_id) LEFT JOIN sample_group g USING(task_id)
-            JOIN sample_content c USING(task_id) WHERE s.status='valid' ORDER BY s.task_id
+            JOIN sample_content c USING(task_id) {prompt_join} WHERE s.status='valid' ORDER BY s.task_id
         """):
             valid += 1
             task = row["task_id"]
             valid_tasks.add(task)
+            api.require(not has_questions or bool(row["actual_prompt"]),
+                        "返回题文校验 / 样本题文缺失，请重新取数")
             market, platform, day, group, named = (row[k] for k in ("market","platform","task_date","group_id","named_prompt"))
+            prompt = row["actual_prompt"] or prompts.get(row["question_id"])
+            api.require(bool(prompt),"题文校验 / 无法核实题文的点名状态，请重新取数")
+            named = named_prompt(prompt)
             group = group or ""
             groups[group] = row["group_name"] or "分组未知"
             dim = (market, platform, day, group, named, tuple(tags[task]))
+            question_scope.add((row["question_id"],platform,row["language"],group,named,tuple(tags[task])))
             if dim not in buckets:
                 buckets[dim] = {"d": dim, "n":0, "mentions":Counter(), "negative_mentions":0, "first":0, "rank":[0,0],
                                 "links":{}, "rec":Counter(), "sent":Counter()}
@@ -217,7 +232,7 @@ def dashboard_data(snapshot, bank, native):
                 reason = row["reputation_issue"] or ("enum" if row["reputation_code"] is not None else "unrecorded")
                 b.setdefault("sent_issues", Counter())[reason] += 1
             qid = row["question_id"]
-            reference = {"q":qid, "text":prompts.get(qid), "d":dim}
+            reference = {"q":qid, "text":prompt, "category":row["category"], "task":task, "d":dim}
             result = None
             if review and rec == "unknown":
                 result = review["records"].get(task)
@@ -241,7 +256,7 @@ def dashboard_data(snapshot, bank, native):
                 }
                 for signal, matches in signals.items():
                     if matches:
-                        b.setdefault("evidence", {}).setdefault(signal, {"q":qid, "text":reference["text"]})
+                        b.setdefault("evidence", {}).setdefault(signal, reference)
         expected = db.execute("SELECT count(*) FROM sample WHERE status='valid'").fetchone()[0]
         issues = dict(db.execute("SELECT code,count(*) FROM issue GROUP BY code"))
         if has_originals:
@@ -259,7 +274,19 @@ def dashboard_data(snapshot, bank, native):
     if review:
         api.require(len(review_rows)==review["total"]==len(review["records"]),
                     "推荐复检 / 任务总数未闭合")
+    unnamed = [r for r in buckets.values() if r["d"][4] == 0]
+    core_num = sum(r["mentions"].get("Kalodata",0)-r["negative_mentions"] for r in unnamed)
+    core_den = sum(r["n"] for r in unnamed)
     return {"batch":batch, "platform":native, "rows":list(buckets.values()), "issues":issues,
+            "core_mention":{"numerator":core_num,"denominator":core_den,
+                            "excluded_negative":sum(r["negative_mentions"] for r in unnamed),
+                            "value":core_num/core_den if core_den else None},
+            "analysis_version":ANALYSIS_VERSION,
+            "prompt_basis":"Answerbit 返回题文" if prompt_join else "唯一匹配的题库题文回算（旧批）",
+            "question_named":{r[0]:r[4] for r in question_scope},
+            "question_scope":{"signature":hashlib.sha256(json.dumps(sorted(question_scope)).encode()).hexdigest(),
+                              "returned_signature":returned_scope,"verified":bool(has_questions and has_scope),
+                              "question_count":len({r[0] for r in question_scope}),"range":"全部返回题目及匹配题库的题目、平台、语言、分组和标签"},
             "markets":{v:k for k,v in api.MARKETS.items()}, "competitors":{v:market_brands(v) for v in api.MARKETS.values()},
             "tags":tag_names, "groups":groups, "neutral":neutral, "links":{"answerbit":SOURCE,"bank":QNA},
             "review":{"rows":review_rows,"version":review["version"],"checked_at":review["checked_at"]} if review else None,
@@ -285,31 +312,28 @@ def retained_data(output):
 def report_metrics(data):
     rows = data["rows"]
     valid = sum(r["n"] for r in rows)
+    unnamed = [r for r in rows if r["d"][4] == 0]
+    den = sum(r["n"] for r in unnamed)
+    known = data.get("analysis_version") == ANALYSIS_VERSION
+    num = sum(r["mentions"].get("Kalodata",0)-r.get("negative_mentions",0) for r in unnamed)
+    negative = sum(r.get("negative_mentions",0) for r in unnamed)
+    metrics = [{"id":"valid","name":"有效回答（全部题型）","source":"Skill","kind":"count",
+                "value":valid,"numerator":valid,"denominator":None},
+               {"id":"skill.core_mention_rate","name":"提及率","source":"未点名、扣除明确负面","kind":"percent",
+                "value":100*num/den if den and known else None,"numerator":num if known else None,
+                "denominator":den,"excluded_negative":negative if known else None}]
     native = ((data.get("platform") or {}).get("data") or {}).get("/geo/base/dashboard",{})
-    metrics = [{"id":"valid","name":"有效回答","source":"Skill","kind":"count",
-                "value":valid,"numerator":valid,"denominator":None}]
     for key, title, kind in (("exposure","品牌提及率","percent"),("avg_rank","平均排名","rank"),
                              ("score","曝光效果分数","score")):
         if number(native.get(key)) is not None:
-            metrics.append({"id":"platform."+key,"name":title,"source":"Answerbit 平台快照","kind":kind,
+            metrics.append({"id":"platform."+key,"name":title,"source":"Answerbit 平台口径","kind":kind,
                             "value":native[key],"numerator":None,"denominator":None})
-    if len(metrics)>1:
-        return metrics
-    unnamed = [r for r in rows if not r["d"][4]]
-    known_sentiment = all("negative_mentions" in r for r in rows)
-    mention = sum((r["mentions"].get("Kalodata",0)-r.get("negative_mentions",0)) for r in rows)
-    unnamed_mention = sum((r["mentions"].get("Kalodata",0)-r.get("negative_mentions",0)) for r in unnamed)
-    unnamed_count = sum(r["n"] for r in unnamed)
-    official = sum(r["links"].get("Kalodata",[0,0,0,0])[2] for r in rows)
-    official_known = sum(r["links"].get("Kalodata",[0,0,0,0])[3] for r in rows)
-    for key, title, num, den, known in (
-        ("mention_rate","Kalodata 提及率",mention,valid,known_sentiment),
-        ("unnamed_mention_rate","未点名题提及率",unnamed_mention,unnamed_count,known_sentiment),
-        ("official_rate","官网正式来源命中率",official,official_known,True),
-    ):
-        metrics.append({"id":"skill."+key,"name":title,"source":"Skill","kind":"percent",
-                        "value":100*num/den if den and known else None,
-                        "numerator":num if known else None,"denominator":den})
+    if len(metrics)==2:
+        official = sum(r["links"].get("Kalodata",[0,0,0,0])[2] for r in rows)
+        official_known = sum(r["links"].get("Kalodata",[0,0,0,0])[3] for r in rows)
+        metrics.append({"id":"skill.official_rate","name":"官网正式来源命中率","source":"Skill 全部有效回答",
+                        "kind":"percent","value":100*official/official_known if official_known else None,
+                        "numerator":official,"denominator":official_known})
     return metrics
 
 
@@ -318,14 +342,28 @@ def previous_comparison(data, previous, *, refresh=False):
     batch = data["batch"]
     baseline = None
     earlier = []
+    previous_scope = None
+    previous_policy = None
     if previous:
         if previous["batch"] != batch:
             baseline, earlier = previous["batch"], report_metrics(previous)
+            previous_scope = previous.get("question_scope")
+            previous_policy = previous.get("analysis_version")
         elif not refresh and previous.get("comparison"):
             baseline = previous["comparison"]["previous_batch"]
             earlier = previous["comparison"]["previous_metrics"]
+            previous_scope = previous["comparison"].get("previous_scope")
+            previous_policy = previous["comparison"].get("previous_policy")
     reasons = []
     if baseline:
+        if previous_policy != data.get("analysis_version") or not previous_policy:
+            reasons.append("分析口径不同或上次未记录口径")
+        if not previous_scope or not data.get("question_scope"):
+            reasons.append("缺少可核实的上次题目范围")
+        elif not previous_scope.get("verified") or not data["question_scope"].get("verified"):
+            reasons.append("历史批次未保存完整返回题目范围，需重新取数")
+        elif previous_scope != data["question_scope"]:
+            reasons.append("题目、平台、语言、分组或标签范围不同")
         for key, label in (("question_version","题库版本"),("metric_version","指标版本")):
             if batch[key] != baseline[key]:
                 reasons.append(label+"不同")
@@ -340,6 +378,8 @@ def previous_comparison(data, previous, *, refresh=False):
         delta = row["value"]-value if baseline and not reasons and row["value"] is not None and value is not None else None
         changes.append({**row,"previous":value,"change":delta})
     return {"previous_batch":baseline,"previous_metrics":earlier,"current_batch":batch,
+            "previous_scope":previous_scope,"current_scope":data.get("question_scope"),
+            "previous_policy":previous_policy,"current_policy":data.get("analysis_version"),
             "metrics":changes,"limitations":reasons}
 
 
