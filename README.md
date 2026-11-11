@@ -22,7 +22,7 @@ python3 dashboard.py refresh /path/to/question-bank.xlsx .trial/dashboard.sqlite
 
 默认读取北京时间最近七个自然日（含当天）的全范围，也可附 `--begin` 与 `--end`。平台原生快照有独立范围与读取时间。刷新失败保留最后成功数据并显示失败阶段。使用 `snapshot` 代替 `refresh` 可从已保存的兼容 SQLite 离线生成；附 `--fetch-platform` 时仅补拉 Answerbit 原生快照。
 
-看板按总览、平台快照、品牌表现、官网引用、回答表现、运营行动、对照分析和指标说明分页。「指标说明」可离线查看定义、分母和限制。同一窗口切页时保留主筛选和对照条件。平台快照页使用独立的全范围口径。
+看板按总览、市场与竞品、问题与行动、来源与口碑详情、指标说明五个主模块组织。平台快照与对照分析位于市场模块内，推荐记录位于行动模块内。「指标说明」可离线查看定义、分母和限制。同一窗口切页时保留主筛选和对照条件。平台快照页使用独立的全范围口径。
 
 每次正式 `refresh` 都重算首轮推荐，并在同一次读取中自动复检该批未知。要补做历史快照的推荐复检，用 `review` 代替 `refresh`，沿用该快照和看板的路径。历史复检只重读首轮未知任务，可用 `--defer-unavailable` 暂缓上轮未读到的旧任务。「回答表现」页的非明确推荐表支持市场、平台、日期、分组、标签、推荐判断和待确认原因筛选。刷新时只给能唯一匹配飞书题号并通过校验的有效回答保存原文。原文和对应题文仅保存在本机 SQLite，复检结果单独绑定该批快照。包含原文的库和本机查询入口仅供当前运行者使用，留在获批的本地目录。旧库缺少原文时需要重新刷新。
 
@@ -75,3 +75,15 @@ python3 answerbit.py refresh /path/to/question-bank.xlsx .trial/answerbit.sqlite
 看板新增按发现度、数据引用、对比、品牌健康划分的场景表，随筛选重算；见[场景定义](skill/geo-sampling/references/analysis-scenarios.md)。标签序号不等于接口 ID，点名状态仍按实际题文判断。
 
 内部飞书题库链接通过 `GEO_QUESTION_BANK_URL` 在本机配置，未配置时不显示链接。不要提交真实题库、HTML 看板、Excel、原文库、日志或凭证；HTML 和 Excel 也包含内部提问与统计。团队和品牌 ID 是既有授权保留的资源标识，不是访问凭证。安装时需保留完整仓库目录；单独复制 `skill/geo-sampling` 不包含 Python 运行工具。
+
+## 在线题库自动同步
+
+在本机配置 `GEO_QUESTION_BANK_URL`，安装并配置飞书官方 `lark-cli`（必要时用 `LARK_CLI` 指定路径）。`dashboard.py refresh` 确认 Answerbit 凭证后，自动把最新在线题单读取到第一个参数指定的 Excel 缓存，再分析 Answerbit。读取全部 11 个国家工作表，检查完整范围、版本稳定和题号有效性；失败停止刷新，保留上一份看板。`--offline-bank` 明确使用本地缓存；`snapshot`、`review` 沿用历史题库。未配置 URL 时仍采用手动 Excel，不宣称实时同步。
+
+只测题库：`python3 feishu_bank.py .trial/在线题库.xlsx`。返回读取时间、修订号、有效题数及校验值。只调用读取命令，不创建导出任务或写飞书。内部 URL 和实际题库不提交 GitHub。
+
+## 看板视觉与回归验证
+
+五个主模块采用深蓝侧栏与蓝灰内容区。首页分开展示提及率、首次出现第一比例、平均首次出现名次和平台负面与褒贬并存，官网链接及完整口碑移至详情。图表只使用当前批次真实数据；历史条件不一致时不输出变化结论。
+
+Python 回归：`python3 -m unittest discover -p 'test_*.py'`。手算与模板语法：`node test_scenarios.cjs`。可选浏览器检查：在已安装 Playwright 的验证环境运行 `node test_dashboard_ui.cjs <本地看板.html>`；可设置 `PLAYWRIGHT_MODULE`、`CHROME_PATH` 和 `SCREENSHOT_DIR`。此验证只打开指定本地看板，使用独立浏览器，不复用登录数据。真实看板与截图保持私有。

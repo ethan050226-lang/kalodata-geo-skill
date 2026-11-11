@@ -392,6 +392,8 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--begin")
     parser.add_argument("--end")
+    parser.add_argument("--offline-bank", action="store_true", help="明确使用本地题库，不读取在线新版")
+    parser.add_argument("--feishu-bank", help="在线题库 URL；默认从 GEO_QUESTION_BANK_URL 读取")
     parser.add_argument("--fetch-platform", action="store_true")
     parser.add_argument("--defer-unavailable", action="store_true", help="复检时暂缓上轮未读到的任务")
     parser.add_argument("--excel", type=Path, help="导出同批可筛选的 .xlsx 记录")
@@ -417,6 +419,13 @@ def main():
                   "凭证配置完成后才继续。", file=sys.stderr, flush=True)
             key,brand = api.operator_credentials()
             call = PacedRead(key)
+        bank_source = None
+        bank_url = args.feishu_bank or os.environ.get("GEO_QUESTION_BANK_URL")
+        if args.mode == "refresh" and bank_url and not args.offline_bank:
+            stage = "飞书在线题库读取与校验"
+            from feishu_bank import fetch_bank
+            bank_source = fetch_bank(bank_url, args.bank)
+            print(json.dumps({"question_bank":bank_source}, ensure_ascii=False), file=sys.stderr, flush=True)
         previous = None
         if args.output.is_file():
             try:
@@ -457,6 +466,8 @@ def main():
                 api.require(not failed, "原生快照刷新失败 / " + "、".join(failed))
         stage = "看板校验与渲染"
         data = dashboard_data(snapshot,args.bank,native)
+        if bank_source:
+            data["bank_source"] = bank_source
         api.require(args.mode!="refresh" or data["review"] is not None,
                     "推荐复检 / 当次复检文件与快照不匹配，请重新运行")
         data["comparison"] = previous_comparison(data,previous,refresh=args.mode=="refresh")

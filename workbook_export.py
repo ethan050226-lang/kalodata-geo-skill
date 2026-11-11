@@ -80,6 +80,10 @@ def export_workbook(snapshot, data):
         ("平台回查","在 Answerbit「大模型回答记录」按题号对应题文、日期及平台核对。"),
     ):
         append(summary,item)
+    source = data.get("bank_source")
+    if source:
+        for label, key in (("在线题库修订号","revision"),("题库读取时间（UTC）","read_at"),("有效题数","question_count")):
+            append(summary,(label,source[key]))
     core = data.get("core_mention")
     if core:
         append(summary,("提及率口径","未点名、扣除明确负面；分母保留全部未点名有效回答"))

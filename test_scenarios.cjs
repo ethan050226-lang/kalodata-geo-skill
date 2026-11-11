@@ -9,3 +9,9 @@ assert(output[0][2].includes('1/2'));assert(output[1][1]==='2');assert(output[2]
 context.renderScenarios([]);assert(output.every(r=>r[2]==='暂无数据'));
 console.log('Scene calculations passed');
 const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(x=>x[1]).filter(x=>!x.includes('__GEO_PAYLOAD__'));for(const s of scripts)new vm.Script(s);console.log('JavaScript syntax passed');
+// Hand-calculated mixed sample: unnamed hit 1/2 after one negative; first 1/2; rank 3/2.
+vm.runInContext(html.slice(html.indexOf('function compareStats('),html.indexOf('function renderComparison(')),context);
+const sample={...row(0,['d']),rec:{explicit:1,unknown:1}};const stats=context.compareStats([sample]);
+assert.deepEqual(Array.from(stats.unmentioned),[1,2]);assert.deepEqual(Array.from(stats.first),[1,2]);assert.deepEqual(Array.from(stats.rank),[3,2]);
+const emptyStats=context.compareStats([]);assert.deepEqual(Array.from(emptyStats.first),[0,0]);assert.deepEqual(Array.from(emptyStats.rank),[0,0]);
+console.log('Metric numerator/denominator checks passed');

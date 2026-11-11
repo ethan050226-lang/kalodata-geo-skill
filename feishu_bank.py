@@ -1,0 +1,115 @@
+"""Read a Feishu question bank through the official CLI; never write to Feishu."""
+import argparse
+import csv
+from datetime import datetime, timezone
+import io
+import json
+import os
+import re
+from pathlib import Path
+import shutil
+import subprocess
+import tempfile
+from zipfile import ZipFile, ZIP_DEFLATED
+
+from answerbit import MARKETS, load_bank
+from archive import ArchiveError, require, write_atomic
+
+
+def cli_read(args):
+    cli = os.environ.get('LARK_CLI') or shutil.which('lark-cli')
+    require(cli, '飞书题库 / 未找到 lark-cli，请安装飞书官方 CLI 并配置只读权限')
+    try:
+        result = subprocess.run([cli, *args, '--as', 'bot', '--format', 'json'],
+                                capture_output=True, text=True, timeout=120)
+        payload = json.loads(result.stdout if result.returncode == 0 else result.stderr)
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        raise ArchiveError('飞书题库 / CLI 未返回有效响应，请核对网络、钥匙串及应用配置；旧数据保留') from None
+    if result.returncode != 0 or payload.get('ok') is not True:
+        error = payload.get('error', {})
+        scopes = ', '.join(error.get('missing_scopes', []))
+        raise ArchiveError(f"飞书题库 / 读取失败，错误码 {error.get('code', '未知')}；"
+                           f"缺少权限 {scopes or '请核对应用文档阅读权限或本机钥匙串'}；旧数据保留")
+    return payload['data']
+
+
+def signature(info):
+    return (info.get('token'), info.get('revision'),
+            [(s.get('sheet_id'), s.get('sheet_name'), s.get('row_count'), s.get('column_count'))
+             for s in info.get('sheets', [])])
+
+
+def fetch_bank(url, destination, read=cli_read):
+    """Validate every country sheet before atomically replacing the local bank."""
+    from openpyxl import Workbook
+    from openpyxl.utils import get_column_letter
+    before = read(['sheets', '+workbook-info', '--url', url])
+    require(before.get('revision') is not None, '飞书题库 / 缺少修订号，无法校验读取期间变更')
+    sheets = [s for s in before.get('sheets', []) if s.get('sheet_name') in MARKETS]
+    require({s['sheet_name'] for s in sheets} == set(MARKETS) and len(sheets) == len(MARKETS),
+            '飞书题库 / 国家工作表缺失或重名，请在飞书核对 11 个国家题单')
+    book = Workbook(); book.remove(book.active)
+    book.properties.created = book.properties.modified = datetime(2000, 1, 1)
+    for sheet in sheets:
+        name = sheet['sheet_name']; rows = sheet.get('row_count', 0); cols = sheet.get('column_count', 0)
+        require(sheet.get('resource_type') == 'sheet' and 1 <= rows <= 100000 and 1 <= cols <= 1000,
+                f'飞书题库 / {name} 网格结构异常')
+        ws = book.create_sheet(name)
+        for start in range(1, rows + 1, 100):
+            end = min(start + 99, rows)
+            value = read(['sheets', '+csv-get', '--spreadsheet-token', before['token'],
+                          '--sheet-id', sheet['sheet_id'], '--range', f'A{start}:{get_column_letter(cols)}{end}',
+                          '--include-row-prefix=false', '--max-chars', '2000000'])
+            require(not value.get('has_more') and not value.get('truncated'),
+                    f'飞书题库 / {name} 第 {start}–{end} 行被截断，请缩小读取窗口')
+            require(value.get('revision') == before['revision'], f'飞书题库 / {name} 读取期间发生修改，请重试')
+            require(value.get('row_indices') == list(range(start, end + 1)) and
+                    value.get('col_count') == cols, f'飞书题库 / {name} 返回范围不完整')
+            records = list(csv.reader(io.StringIO(value.get('annotated_csv', ''))))
+            require(len(records) == end - start + 1 and all(len(r) == cols for r in records),
+                    f'飞书题库 / {name} 返回行列数不符')
+            for record in records:
+                # Treat source cells as text; never turn question text into Excel formulas.
+                for i, text in enumerate(record, 1):
+                    text = text.strip() if start == 1 else text
+                    if not text.strip(): text = ''
+                    cell = ws.cell(start, i, text or None)
+                    if text: cell.data_type = 's'
+                start += 1
+    after = read(['sheets', '+workbook-info', '--url', url])
+    require(signature(before) == signature(after), '飞书题库 / 全量读取期间版本或结构变更，请重新运行')
+    raw = io.BytesIO(); book.save(raw); book.close()
+    # Stable ZIP timestamps keep the same content hash across unchanged refreshes.
+    canonical = io.BytesIO()
+    with ZipFile(raw) as source, ZipFile(canonical, 'w', ZIP_DEFLATED) as target:
+        for name in source.namelist():
+            from zipfile import ZipInfo
+            entry = ZipInfo(name, (2000, 1, 1, 0, 0, 0)); entry.compress_type = ZIP_DEFLATED
+            data = source.read(name)
+            if name == 'docProps/core.xml':
+                data = re.sub(rb'(<dcterms:(?:created|modified)[^>]*>)[^<]+', rb'\g<1>2000-01-01T00:00:00Z', data)
+            target.writestr(entry, data)
+    content = canonical.getvalue()
+    with tempfile.TemporaryDirectory() as directory:
+        check = Path(directory) / 'bank.xlsx'; check.write_bytes(content)
+        version, bank, _ = load_bank(check)
+    write_atomic(destination, content)
+    return {'source': 'feishu-live', 'revision': before['revision'], 'title': before.get('title'),
+            'read_at': datetime.now(timezone.utc).isoformat(), 'question_version': version,
+            'question_count': len(bank), 'markets': len(sheets)}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('output', type=Path)
+    parser.add_argument('--url', default=os.environ.get('GEO_QUESTION_BANK_URL'))
+    args = parser.parse_args()
+    try:
+        require(args.url, '飞书题库 / 请在本机配置 GEO_QUESTION_BANK_URL')
+        print(json.dumps(fetch_bank(args.url, args.output), ensure_ascii=False))
+    except (ArchiveError, OSError, ValueError) as error:
+        parser.exit(1, f'{error}\n')
+
+
+if __name__ == '__main__':
+    main()
