@@ -80,6 +80,25 @@ def export_workbook(snapshot, data):
         ("平台回查","在 Answerbit「大模型回答记录」按题号对应题文、日期及平台核对。"),
     ):
         append(summary,item)
+    comparison = data.get("comparison")
+    if comparison and comparison["previous_batch"]:
+        history = book.create_sheet("上次对比")
+        append(history,("指标","数据来源","本次","上次","变化","单位"))
+        baseline = comparison["previous_batch"]
+        append(summary,("上次数据窗口",baseline["begin_date"]+" 至 "+baseline["end_date"]))
+        append(summary,("上次成功取数（UTC）",baseline["fetched_at_utc"]))
+        if comparison["limitations"]:
+            append(summary,("上次对比限制","；".join(comparison["limitations"])))
+        for row in comparison["metrics"]:
+            unit = {"count":"条","percent":"百分点","rank":"名","score":"分"}[row["kind"]]
+            append(history,(row["name"],row["source"],row["value"],row["previous"],row["change"],unit))
+            if row["kind"]=="percent":
+                for cell in list(history[history.max_row])[2:4]:
+                    if isinstance(cell.value,(float,int)):
+                        cell.number_format = '0.00"%"'
+        style(history,(25,25,17,17,17,15))
+    elif comparison:
+        append(summary,("上次对比","首次运行或没有可读取的上次成功结果"))
     append(records, ("飞书题号","回答日期","市场","平台","Answerbit 分组","Answerbit 标签","任务 ID",
                      "样本状态","点名状态","推荐判断","平台口碑","品牌首次出现顺序",
                      "Kalodata 正文链接","Kalodata 正式来源","FastMoss 正文链接","FastMoss 正式来源","Kalodata 提及率分子"))

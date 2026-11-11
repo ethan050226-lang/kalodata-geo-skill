@@ -27,6 +27,32 @@ except ImportError:
 
 
 class OperatorCredentialsTest(unittest.TestCase):
+    def test_previous_measurement_comparison_prefers_platform_values(self):
+        from copy import deepcopy
+
+        previous = {"batch":{"source":"Answerbit","question_version":"bank","metric_version":"v3",
+                              "begin_date":"2026-11-01","end_date":"2026-11-07","fetched_at_utc":"2026-11-08T00:00:00Z"},
+                    "rows":[{"n":100}],"platform":{"data":{"/geo/base/dashboard":{
+                        "exposure":50,"avg_rank":2.5,"score":39}}}}
+        current = deepcopy(previous)
+        current["batch"].update(begin_date="2026-11-04",end_date="2026-11-10",fetched_at_utc="2026-11-11T00:00:00Z")
+        current["platform"]["data"]["/geo/base/dashboard"] = {"exposure":55,"avg_rank":2,"score":42}
+        previous["last_failure"] = {"error":"later attempt failed"}
+        comparison = dashboard.previous_comparison(current,previous,refresh=True)
+        self.assertEqual([r["change"] for r in comparison["metrics"]],[0,5,-.5,3])
+        self.assertEqual(comparison["previous_batch"],previous["batch"])
+        self.assertEqual(comparison["metrics"][1]["source"],"Answerbit 平台快照")
+        self.assertIsNone(comparison["metrics"][1]["denominator"])
+        current["comparison"] = comparison
+        self.assertEqual(dashboard.previous_comparison(current,current),comparison)
+        first = dashboard.previous_comparison(current,None)
+        self.assertIsNone(first["previous_batch"])
+        self.assertTrue(all(r["change"] is None for r in first["metrics"]))
+        current["batch"]["question_version"] = "new bank"
+        incomparable = dashboard.previous_comparison(current,previous)
+        self.assertEqual(incomparable["limitations"],["题库版本不同"])
+        self.assertTrue(all(r["change"] is None for r in incomparable["metrics"]))
+
     def test_review_requires_key_before_reading_snapshot(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "result.html"

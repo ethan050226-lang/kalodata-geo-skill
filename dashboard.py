@@ -282,6 +282,67 @@ def retained_data(output):
     return before, json.loads(payload), after
 
 
+def report_metrics(data):
+    rows = data["rows"]
+    valid = sum(r["n"] for r in rows)
+    native = ((data.get("platform") or {}).get("data") or {}).get("/geo/base/dashboard",{})
+    metrics = [{"id":"valid","name":"有效回答","source":"Skill","kind":"count",
+                "value":valid,"numerator":valid,"denominator":None}]
+    for key, title, kind in (("exposure","品牌提及率","percent"),("avg_rank","平均排名","rank"),
+                             ("score","曝光效果分数","score")):
+        if number(native.get(key)) is not None:
+            metrics.append({"id":"platform."+key,"name":title,"source":"Answerbit 平台快照","kind":kind,
+                            "value":native[key],"numerator":None,"denominator":None})
+    if len(metrics)>1:
+        return metrics
+    unnamed = [r for r in rows if not r["d"][4]]
+    known_sentiment = all("negative_mentions" in r for r in rows)
+    mention = sum((r["mentions"].get("Kalodata",0)-r.get("negative_mentions",0)) for r in rows)
+    unnamed_mention = sum((r["mentions"].get("Kalodata",0)-r.get("negative_mentions",0)) for r in unnamed)
+    unnamed_count = sum(r["n"] for r in unnamed)
+    official = sum(r["links"].get("Kalodata",[0,0,0,0])[2] for r in rows)
+    official_known = sum(r["links"].get("Kalodata",[0,0,0,0])[3] for r in rows)
+    for key, title, num, den, known in (
+        ("mention_rate","Kalodata 提及率",mention,valid,known_sentiment),
+        ("unnamed_mention_rate","未点名题提及率",unnamed_mention,unnamed_count,known_sentiment),
+        ("official_rate","官网正式来源命中率",official,official_known,True),
+    ):
+        metrics.append({"id":"skill."+key,"name":title,"source":"Skill","kind":"percent",
+                        "value":100*num/den if den and known else None,
+                        "numerator":num if known else None,"denominator":den})
+    return metrics
+
+
+def previous_comparison(data, previous, *, refresh=False):
+    current = report_metrics(data)
+    batch = data["batch"]
+    baseline = None
+    earlier = []
+    if previous:
+        if previous["batch"] != batch:
+            baseline, earlier = previous["batch"], report_metrics(previous)
+        elif not refresh and previous.get("comparison"):
+            baseline = previous["comparison"]["previous_batch"]
+            earlier = previous["comparison"]["previous_metrics"]
+    reasons = []
+    if baseline:
+        for key, label in (("question_version","题库版本"),("metric_version","指标版本")):
+            if batch[key] != baseline[key]:
+                reasons.append(label+"不同")
+        length = lambda b: datetime.fromisoformat(b["end_date"])-datetime.fromisoformat(b["begin_date"])
+        if length(batch) != length(baseline):
+            reasons.append("数据窗口长度不同")
+    before = {r["id"]:r for r in earlier}
+    changes = []
+    for row in current:
+        old = before.get(row["id"])
+        value = old["value"] if old else None
+        delta = row["value"]-value if baseline and not reasons and row["value"] is not None and value is not None else None
+        changes.append({**row,"previous":value,"change":delta})
+    return {"previous_batch":baseline,"previous_metrics":earlier,"current_batch":batch,
+            "metrics":changes,"limitations":reasons}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("refresh","snapshot","review"))
@@ -315,18 +376,19 @@ def main():
                   "凭证配置完成后才继续。", file=sys.stderr, flush=True)
             key,brand = api.operator_credentials()
             call = PacedRead(key)
+        previous = None
+        if args.output.is_file():
+            try:
+                _, previous, _ = retained_data(args.output)
+            except (OSError,ValueError,IndexError):
+                pass
         if args.mode != "refresh":
             with closing(sqlite3.connect(args.snapshot.resolve().as_uri()+"?mode=ro", uri=True)) as db:
                 db.row_factory = sqlite3.Row
                 old_batch = dict(db.execute("SELECT * FROM batch").fetchone())
                 begin,end = old_batch["begin_date"],old_batch["end_date"]
-            if args.output.is_file():
-                try:
-                    _, previous, _ = retained_data(args.output)
-                except (OSError, ValueError, IndexError):
-                    previous = {}
-                if previous.get("batch") == old_batch:
-                    native = previous.get("platform")
+            if previous and previous.get("batch") == old_batch:
+                native = previous.get("platform")
         if args.mode != "snapshot":
             if args.mode == "review":
                 stage = "Answerbit 推荐原文复检"
@@ -347,11 +409,7 @@ def main():
         if args.mode == "refresh" or args.fetch_platform:
             stage = "Answerbit 原生图表快照"
             native = platform_snapshot(call,brand,begin,end)
-            if args.output.is_file() and native["issues"]:
-                try:
-                    _, previous, _ = retained_data(args.output)
-                except (OSError, ValueError, IndexError):
-                    previous = {}
+            if previous and native["issues"]:
                 available = (previous.get("platform") or {}).get("data", {})
                 failed = [path for path, reason in native["issues"].items()
                           if path in available and reason != "响应无可用数据"]
@@ -360,6 +418,7 @@ def main():
         data = dashboard_data(snapshot,args.bank,native)
         api.require(args.mode!="refresh" or data["review"] is not None,
                     "推荐复检 / 当次复检文件与快照不匹配，请重新运行")
+        data["comparison"] = previous_comparison(data,previous,refresh=args.mode=="refresh")
         excel = None
         if args.excel:
             stage = "Excel 记录导出"
@@ -390,6 +449,7 @@ def main():
         print(json.dumps({"dashboard":str(args.output.resolve()),"mode":args.mode,
                           **({"excel":str(args.excel.resolve())} if args.excel else {}),
                           "valid":sum(b["n"] for b in data["rows"]), "batch":data["batch"],
+                          "comparison":data["comparison"],
                           "native_available":list(native["data"]) if native else [],
                           "native_issues":native["issues"] if native else {},
                           "review_status":dict(Counter(r["status"] for r in data["review"]["rows"])) if data["review"] else {}},

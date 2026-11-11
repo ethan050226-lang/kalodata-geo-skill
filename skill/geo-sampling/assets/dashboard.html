@@ -73,6 +73,7 @@ body:not([data-active-view=overview]) .hero{min-height:0;padding-block:16px}body
 <section id="overview" class="section" data-page aria-label="总览">
 <div id="kpis" class="kpis"></div>
 <div id="brief" class="brief"><span id="headline"></span><a href="#action">查看行动清单 ↗</a></div>
+<article class="card"><div class="section-head"><h3>上次测量对比</h3><span class="label">整批范围</span></div><div id="previous-comparison"></div></article>
 </section>
 <section id="compare" class="compare" data-page aria-labelledby="compare-title" hidden>
 <div class="compare-head"><div><h2 id="compare-title">对照分析</h2><p>当前范围沿用顶部筛选，对照范围在本页独立设置。两组来自同一批回答。</p></div></div>
@@ -139,7 +140,7 @@ body:not([data-active-view=overview]) .hero{min-height:0;padding-block:16px}body
 <article class="card"><h3>Answerbit 平台快照与对照</h3><dl>
 <dt>平台品牌提及率、平均排名、曝光效果分数</dt><dd>直接展示平台返回的值和读取范围。平均排名越小越靠前。曝光效果分数直接取平台值，本看板不重算。平台快照保持读取时的范围，顶部筛选只重算 Skill 指标。</dd>
 <dt>平台引用排行</dt><dd>分别展示平台返回的引用域名和文章引用次数。次数用于看来源分布，官网命中率按回答计。</dd>
-<dt>对照差值</dt><dd>当前范围减对照范围。比例差用百分点，名次差用名。两组可重叠，比较时同时看样本量、筛选条件和分母。分母为零时显示不适用。</dd>
+<dt>对照差值</dt><dd>当前范围减对照范围。比例差用百分点，名次差用名。两组可重叠，比较时同时看样本量、筛选条件和分母。分母为零时显示不适用。总览另有自动上次测量对比，按两批全量范围展示；题库、指标版本或窗口长度不同会提示限制。</dd>
 </dl></article>
 </div></section>
 <footer class="foot"><a id="answerbit-footer" rel="noopener noreferrer" target="_blank">Answerbit 工作台</a><a id="bank-link" rel="noopener noreferrer" target="_blank">飞书一期题库</a></footer>
@@ -357,6 +358,7 @@ function render(){
   const f=filters(), rs=D.rows.filter(r=>matches(r.d,f)), n=total(rs), selected=breakdown(rs);
   $("scope").textContent=describe(f)+` · ${num(n)} 条有效回答`+(f.from>f.to?" · 起始日应早于或等于结束日":"");
   if(activePage==="compare")renderComparison(f,rs);
+  if(activePage==="overview")renderPrevious();
   const un=rs.filter(r=>!r.d[4]), unr=total(un), kh=sum(rs,r=>mentionCount(r));
   const namedCount=n-unr, nh=sum(un,r=>mentionCount(r)), first=sum(rs,r=>r.first);
   const excluded=sum(rs,r=>r.negative_mentions||0), excludedUnnamed=sum(un,r=>r.negative_mentions||0);
@@ -406,6 +408,30 @@ function render(){
   $("quality").innerHTML=`<p>当前范围正式来源字段待核对 <b>${num(missing)}</b> 条，推荐未知 <b>${num(unknown)}</b> 条。</p>
     <p class="definition">本批接口返回 ${num(batch.returned_records)} 条，题库未匹配 ${num(D.issues.unmatched_question||0)} 条，题文或市场歧义 ${num((D.issues.ambiguous_question||0)+(D.issues.market_tag_conflict||0))} 条，回答待确认 ${num(D.issues.answer_unconfirmed||0)} 条。此为全批数据，未匹配项未进入市场筛选。</p>
     <p class="sub">实际启用题单与采样计划未取得，样本覆盖率无法计算。题库版本 ${esc(batch.question_version.slice(0,12))} · ${esc(batch.metric_version)}</p>`;
+}
+function renderPrevious(){
+  const c=D.comparison;
+  if(!c?.previous_batch){
+    $("previous-comparison").innerHTML=empty("暂无可读取的上次成功结果，下次在同一输出位置刷新后自动对比。");
+    return;
+  }
+  const before=new Map(c.previous_metrics.map(r=>[r.id,r]));
+  const value=r=>{
+    if(!r||r.value===null)return "暂无数据";
+    const units={count:" 条",percent:"%",rank:" 名",score:" 分"};
+    const formatted=(r.kind==="count"?num(r.value):r.value.toFixed(2))+units[r.kind];
+    return esc(formatted)+(r.denominator? `<small>（${num(r.numerator)}/${num(r.denominator)}）</small>`:"");
+  };
+  const change=r=>{
+    if(r.change===null)return c.limitations.length?"条件不同，暂不比较":"暂无可比数据";
+    if(Math.abs(r.change)<.005)return "持平";
+    const unit={count:"条",percent:"个百分点",rank:"名",score:"分"}[r.kind];
+    return `${r.change>0?"+":"−"}${r.kind==="count"?num(Math.abs(r.change)):Math.abs(r.change).toFixed(2)} ${unit}`;
+  };
+  const a=c.current_batch,b=c.previous_batch;
+  $("previous-comparison").innerHTML=`<p class="definition">本次 ${esc(a.begin_date)} 至 ${esc(a.end_date)} · 上次 ${esc(b.begin_date)} 至 ${esc(b.end_date)}，成功取数 ${esc(fmtDate(b.fetched_at_utc))}（北京时间）。按两批全量范围比较。</p>`+
+    table(["核心指标","来源","本次","上次","变化"],c.metrics.map(r=>[esc(r.name),esc(r.source),value(r),value(before.get(r.id)),esc(change(r))]))+
+    `<p class="definition">${c.limitations.length?esc(c.limitations.join("、"))+"。":""}比例变化用百分点，平均排名越小越靠前。平台未返回分母时沿用平台数值。上次对比与顶部筛选分开。</p>`;
 }
 const reviewReasons={description:"仅介绍或列举",target:"推荐对象不清",scope:"条件或否定范围不清",conflict:"转述或语义冲突",uncovered:"规则未覆盖",
   read_failed:"详情读取失败",mismatch:"详情或首轮判定与快照不符",task_missing:"平台返回任务不存在",deferred:"旧任务暂缓核查"};
