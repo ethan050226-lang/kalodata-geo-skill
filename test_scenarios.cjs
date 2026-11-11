@@ -34,3 +34,9 @@ assert(context.cardHistory('skill.first_rate',allFilters).includes('+25.00'));
 assert(context.cardHistory('skill.first_rate',{...allFilters,m:['US']}).includes('暂不比较'));
 context.D.comparison.limitations=['题库版本不同'];assert(context.cardHistory('skill.first_rate',allFilters).includes('上次不可比'));
 console.log('Card history scope checks passed');
+
+assert(context.dataReminder({unmatched_question:7},{sentimentUnknown:2,missing:1,n:9}).includes('全批 7'));
+assert(context.dataReminder({unmatched_question:7},{sentimentUnknown:0,missing:0,n:3}).includes('当前筛选口碑与引用字段可判定'));
+assert(context.dataReminder(undefined,{sentimentUnknown:0,missing:0,n:0}).includes('全批异常统计未知'));
+assert(context.dataReminder({},{sentimentUnknown:0,missing:0,n:0}).includes('当前筛选无有效回答'));
+console.log('Scoped reminder and unknown-state checks passed');

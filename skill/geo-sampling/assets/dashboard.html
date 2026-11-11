@@ -87,6 +87,7 @@ main.wrap{max-width:1700px;margin:0 0 0 224px;padding:0 30px 25px}.hero,.hero::a
 @media(max-width:700px){#overview .kpis{grid-template-columns:1fr}.kpi{min-height:0!important;padding:17px!important}.kpi .value{font-size:34px}.card-history{font-size:11px}.matrix-card table{min-width:480px}.matrix-cell{min-width:99px}.overview-grid{gap:13px}.home-actions{grid-template-columns:1fr}.matrix-card .section-head{align-items:flex-start}}
 
 .matrix-card td:first-child{position:sticky;left:0;background:#f8fbff;z-index:1}.matrix-card th:first-child{left:0;z-index:2}
+.data-reminder{margin:15px 0;border:1px solid #d8e3f2;border-radius:10px;background:#edf3fc;color:#4f6483;font-size:12px}.data-reminder>summary{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:11px 15px;cursor:pointer;list-style:none}.data-reminder>summary::-webkit-details-marker{display:none}.reminder-link{white-space:nowrap;color:#255da8;font-weight:600}.reminder-details{padding:4px 15px 15px;border-top:1px solid #d8e3f2}.reminder-details .table-wrap{margin:10px 0;background:white}.data-reminder[open] .reminder-link{color:#536a8c}.named-topic .definition{margin-top:9px}@media(max-width:700px){.data-reminder>summary{align-items:flex-start;padding:11px 12px;gap:8px;font-size:11px}.reminder-details{padding:6px 10px 12px}.reminder-link{font-size:11px}}
 </style>
 </head>
 <body>
@@ -108,8 +109,8 @@ main.wrap{max-width:1700px;margin:0 0 0 224px;padding:0 30px 25px}.hero,.hero::a
 <article class="card finding"><div class="section-head"><h3>核心发现</h3><span class="label">当前样本事实与核查优先级</span></div><p id="headline"></p><p class="definition">以上为当前监测样本现象；优化方向是待验证建议，不代表因果或转化。</p></article>
 <div class="section-head"><h2>优先行动</h2><span class="label">按证据、样本量和问题占比排序</span></div>
 <div id="home-actions" class="home-actions"></div>
-<article class="card data-status"><h3>数据状态</h3><div id="home-status"></div></article>
-<details class="card named-topic"><summary>点名题专题 · 品牌介绍、推荐与口碑</summary><div id="named-results"></div></details>
+<details class="data-reminder" id="data-reminder"><summary><span id="home-status"></span><span class="reminder-link">查看详情 →</span></summary><div id="status-details" class="reminder-details"></div></details>
+
 <article class="card"><div class="section-head"><h3>上次测量对比</h3><span class="label">整批范围</span></div><div id="previous-comparison"></div></article>
 </section>
 <section id="compare" class="compare" data-page aria-labelledby="compare-title" hidden>
@@ -121,6 +122,7 @@ main.wrap{max-width:1700px;margin:0 0 0 224px;padding:0 30px 25px}.hero,.hero::a
 </section>
 <section id="platform" class="section" data-page hidden><div class="section-head"><h2>Answerbit 平台快照</h2><span class="label">平台口径</span></div><div class="card native" id="native"></div></section>
 <section id="brand" class="section" data-page hidden>
+<details class="card named-topic"><summary>点名题专题 · 提及、推荐初判与口碑</summary><p class="definition">只分析题文点名 Kalodata 的回答，随顶部国家、平台、日期、分组、标签及题文状态筛选。推荐为本地规则初判，未经逐条人工确认。选择“未点名”时本专题无数据。</p><div id="named-results"></div></details>
 <div class="section-head"><h2>市场与竞品</h2><span class="label">按市场与题型拆分</span></div>
 <div class="grid">
 <article class="card wide"><div class="section-head"><h3 id="mention-title">品牌提及率</h3><label class="review-reason">查看其他市场 <select id="brand-market"><option value="">样本量最大市场</option></select></label></div><p class="definition">Kalodata 按「未点名、扣除明确负面」计算，竞品按全部正文命中计算。<a href="#metrics/metric-core">查看口径差异</a></p><div id="mention-chart"></div></article>
@@ -447,6 +449,27 @@ function cardHistory(id,f){
   if(!metric||metric.change===null||metric.change===undefined)return "上次未记录同口径指标或无有效分母";
   return `较上次 ${metric.change>0?"+":""}${metric.change.toFixed(2)} 个百分点 · 整批同范围`;
 }
+function dataReminder(issues,{sentimentUnknown,missing,n}){
+  const notes=[];
+  if(!issues)notes.push("全批异常统计未知");
+  else{
+    const unmatched=issues.unmatched_question||0, pending=(issues.ambiguous_question||0)+(issues.market_tag_conflict||0);
+    if(unmatched)notes.push(`全批 ${num(unmatched)} 条题目未匹配`);
+    if(pending)notes.push(`全批 ${num(pending)} 条题号待核对`);
+    const other=Object.entries(issues).filter(([key,value])=>value&&!['unmatched_question','ambiguous_question','market_tag_conflict','citation_unknown'].includes(key));
+    if(issues.citation_unknown)notes.push(`全批引用字段缺失 ${num(issues.citation_unknown)} 条`);
+    if(other.length)notes.push(`全批另有 ${other.length} 类异常`);
+  }
+  if(!n)notes.push("当前筛选无有效回答");
+  else{
+    if(sentimentUnknown)notes.push(`当前筛选口碑未知 ${num(sentimentUnknown)} 条`);
+    if(missing)notes.push(`当前筛选引用字段缺失 ${num(missing)} 条`);
+    if(!sentimentUnknown&&!missing)notes.push("当前筛选口碑与引用字段可判定");
+  }
+  // No independent sampling plan is stored by the Answerbit observation workflow.
+  notes.push("采样覆盖率暂无法计算（未取得计划量）");
+  return "数据提醒："+notes.join("；")+"。";
+}
 function render(){
   const f=filters(), rs=D.rows.filter(r=>matches(r.d,f)), n=total(rs), selected=breakdown(rs);
   $("scope").textContent=describe(f)+` · ${num(n)} 条有效回答`+(f.from>f.to?" · 起始日应早于或等于结束日":"");
@@ -469,10 +492,13 @@ function render(){
   renderMatrix(rs,f);
   renderSentimentSummary(rs);
   const named=rs.filter(r=>r.d[4]===1);
-  $("named-results").innerHTML=namedCount?table(["点名题有效回答","提及率（扣负面）","明确推荐","平台口碑"],[[
-    num(namedCount),ratio(kh-nh,namedCount),ratio(sum(named,r=>r.rec.explicit||0),namedCount),
-    [["positive","正面"],["neutral","中性"],["negative","负面"],["mixed","褒贬并存"],["unknown","未知"]].map(([k,t])=>`${t} ${num(sum(named,r=>r.sent[k]||0))}`).join(" · ")
-  ]]):empty("当前范围没有点名题有效回答。");
+  const namedHits=sum(named,r=>mentionCount(r)),namedNegative=sum(named,r=>r.negative_mentions||0);
+  $("named-results").innerHTML=namedCount?table(["点名题指标","数量与比例","来源与分母"],[
+    ["有效回答",num(namedCount),"当前筛选内点名题的有效回答"],
+    ["提及",ratio(namedHits,namedCount),`正文命中且扣除明确负面 ${num(namedNegative)} 条；负面保留分母`],
+    ...[["explicit","明确推荐初判"],["conditional","条件推荐初判"],["neutral","中立推荐初判"],["no_recommendation","未推荐初判"],["unknown","推荐判断未知"]].map(([key,label])=>[label,ratio(sum(named,r=>r.rec[key]||0),namedCount),"本地规则初判 / 点名题有效回答，非人工确认推荐率"]),
+    ...sentimentTypes.map(([key,label])=>[`Kalodata 口碑：${label}`,ratio(sum(named,r=>r.sent[key]||0),namedCount),"Answerbit 平台字段 / 点名题有效回答"])
+  ]):empty("当前筛选没有点名题有效回答；可在顶部题文状态选择“点名 Kalodata”或“全部”。");
   if(activePage==="platform")native(f);
   $("markets").innerHTML=selected.length?table(["市场 / 点名状态","有效回答","各品牌提及率","各品牌提及份额","首次出现第一","平均首次名次"],
     selected.map(rows=>{
@@ -521,17 +547,19 @@ function render(){
   renderActions(rs);
   const missing=n-known;
   $("quality").innerHTML=`<p>当前范围正式来源字段待核对 <b>${num(missing)}</b> 条，推荐未知 <b>${num(unknown)}</b> 条。</p>
-    <p class="definition">本批接口返回 ${num(batch.returned_records)} 条，题库未匹配 ${num(D.issues.unmatched_question||0)} 条，题文或市场歧义 ${num((D.issues.ambiguous_question||0)+(D.issues.market_tag_conflict||0))} 条，回答待确认 ${num(D.issues.answer_unconfirmed||0)} 条。此为全批数据，未匹配项未进入市场筛选。</p>
+    ${D.issues?`<p class="definition">本批接口返回 ${num(batch.returned_records)} 条，题库未匹配 ${num(D.issues.unmatched_question||0)} 条，题文或市场歧义 ${num((D.issues.ambiguous_question||0)+(D.issues.market_tag_conflict||0))} 条，回答待确认 ${num(D.issues.answer_unconfirmed||0)} 条。此为全批数据，未匹配项未进入市场筛选。</p>`:"<p class=definition>历史快照未保存全批异常统计，数量未知；请重新取数核对。</p>"}
     <p class="sub">实际启用题单与采样计划未取得，样本覆盖率无法计算。题库版本 ${esc(batch.question_version.slice(0,12))} · ${esc(batch.metric_version)}</p>${D.bank_source?`<p class="sub">在线题库修订号 ${esc(D.bank_source.revision)} · 读取时间 ${esc(D.bank_source.read_at)} · ${num(D.bank_source.question_count)} 题</p>`:""}`;
-  const unmatched=(D.issues.unmatched_question||0)+(D.issues.ambiguous_question||0)+(D.issues.market_tag_conflict||0);
+
   const issueNames={unmatched_question:"题库无匹配",ambiguous_question:"题号待确认",market_tag_conflict:"市场标签冲突",
     citation_unknown:"引用字段缺失",answer_unconfirmed:"回答待确认",tag_metadata_incomplete:"标签信息不完整"};
-  $("home-status").innerHTML=`<p class="definition">全批未匹配或待核对 ${num(unmatched)} 条 · 当前口碑未知 ${num(sentimentUnknown)} 条 · 引用字段缺失 ${num(missing)} 条 · 采样覆盖率无法计算</p>
-    <details><summary>查看数据范围与问题</summary>${$("quality").innerHTML}
-    ${table(["全批问题","记录数","核实入口"],Object.entries(D.issues).map(([code,count])=>[
-      esc(issueNames[code]||code),num(count),["unmatched_question","ambiguous_question","market_tag_conflict"].includes(code)?"飞书题库与 Answerbit 用户提问":"Answerbit 大模型回答记录"
-    ]))}
-    <p class="definition">点名判定来源 ${esc(D.prompt_basis||"旧批来源待核对")}。完整异常和任务定位见同批 Excel「数据异常」。题库外记录仅在全批计数，不进入有编号明细。</p></details>`;
+  $("home-status").textContent=dataReminder(D.issues,{sentimentUnknown,missing,n});
+  $("status-details").innerHTML=$("quality").innerHTML+
+    table(["全批异常原因","记录数","影响范围","核查入口"],D.issues?Object.entries(D.issues).map(([code,count])=>[
+      esc(issueNames[code]||code),num(count),"全部取数批次；不随当前筛选缩小",["unmatched_question","ambiguous_question","market_tag_conflict"].includes(code)?"飞书题库与 Answerbit 用户提问":"Answerbit 大模型回答记录"
+    ]):[["历史快照未保存异常统计","未知","全批","重新取数核对，不能视作零异常"]])+
+    table(["当前筛选问题","记录数","影响与核查入口"],[["口碑未知",num(sentimentUnknown),"影响平台口碑判定覆盖；回 Answerbit 核对口碑字段"],["正式来源字段缺失",num(missing),"不进入正式来源可判定分母；回 Answerbit 回答记录核对引用"],["推荐判断未知",num(unknown),"不能作为明确推荐；在问题与行动 → 推荐记录查看题文和原文"]])+
+    `<p class="definition">异常可重叠，数量不相加当作独立回答总数。点名判定来源 ${esc(D.prompt_basis||"旧批来源待核对")}。同批 Excel「数据异常」保留题号、原因及回查字段；题库外记录仅列全批数量，不进入有编号明细。${D.issues&&Object.keys(D.issues).length===0?"本批未记录取数或匹配异常。":""}</p>`;
+
 }
 $("matrix-dimension").addEventListener("change",()=>render());
 let brandMarket="";

@@ -11,4 +11,8 @@ assert.equal(await page.locator('#kpis .value').first().textContent(),expected);
 await page.locator('#matrix-dimension').selectOption('tag');assert(await page.locator('#home-matrix .matrix-cell').count()>0);
 await page.locator('#matrix-dimension').selectOption('group');const cell=page.locator('#home-matrix .matrix-cell').first();const expectedCell=await cell.locator('b').textContent();await cell.click();assert.equal(await page.locator('#kpis .value').first().textContent(),expectedCell);
 await page.goto(fileUrl+'#action');assert(await page.locator('#next .action-item').count()>0);
+await page.goto(fileUrl+'#overview');assert.equal(await page.locator('#overview #named-results').count(),0);assert.equal(await page.locator('#data-reminder').getAttribute('open'),null);
+await page.locator('#data-reminder summary').click();assert(await page.locator('#status-details').isVisible());assert((await page.locator('#home-status').textContent()).includes('数据提醒'));
+await page.goto(fileUrl+'#brand');await page.evaluate(()=>{setFilters('a',{m:[],e:[],g:[],tags:[],named:['1'],tagMode:'all',from:batch.begin_date,to:batch.end_date});render();});await page.locator('.named-topic summary').click();assert(await page.locator('#named-results').isVisible());assert((await page.locator('#named-results').textContent()).includes('初判'));
+await page.evaluate(()=>{setFilters('a',{...filters(),named:['0']});render();});assert((await page.locator('#named-results').textContent()).includes('没有点名题'));
 assert.deepEqual(errors,[]);console.log('Desktop/mobile/navigation checks passed');await browser.close();})().catch(e=>{console.error(e);process.exit(1)});
