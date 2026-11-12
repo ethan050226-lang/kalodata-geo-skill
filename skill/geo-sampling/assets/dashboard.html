@@ -594,21 +594,24 @@ const reviewReasons={description:"仅介绍或列举",target:"推荐对象不清
   read_failed:"详情读取失败",mismatch:"详情或首轮判定与快照不符",task_missing:"平台返回任务不存在",deferred:"旧任务暂缓核查"};
 const recommendationLabels={explicit:"明确推荐",conditional:"条件推荐",neutral:"中立推荐",no_recommendation:"未推荐",unknown:"未知"};
 const hasOriginals=Array.isArray(D.recommendations);
-const localViewer=hasOriginals&&location.protocol==="http:"&&location.hostname==="127.0.0.1";
+const sharedPreview=D.delivery?.mode==="feishu";
+const localViewer=!sharedPreview&&hasOriginals&&location.protocol==="http:"&&location.hostname==="127.0.0.1";
 if(hasOriginals)$("review-heading").textContent="非明确推荐记录";
 $("local-answer-note").hidden=false;
-$("local-answer-note").textContent=localViewer?"点「查看原文」可打开该题号下的这条 Answerbit 回答。":
+$("local-answer-note").textContent=sharedPreview?"飞书共享版不提供本机数据库查询。原文请到 Answerbit 工作台 → 大模型回答记录，按本表题文、日期、平台、分组定位；工作台链接不能直达某条原文。":localViewer?"点「查看原文」可打开该题号下的这条 Answerbit 回答。":
   hasOriginals?"当前 HTML 可直接筛选和对照。查原文时，用同批 SQLite 启动本机查询，再从返回的地址打开看板。":"本批是历史快照，重新取数后可逐条查看本地原文。";
 let pendingPage=0, pendingScope="", pendingReason="", pendingLabel="";
 function reviewTable(records){
   const headers=["飞书题号","题文","市场","平台","回答日期","Answerbit 分组","待确认原因","对比表标签"];
   if(hasOriginals)headers.splice(6,0,"推荐判断");
   if(localViewer)headers.push("本地原文");
+  if(sharedPreview)headers.push("Answerbit 回查");
   return table(headers,records.map(r=>[
     esc(r.q),esc(r.text||"题文待核对"),esc(marketName(r.d[0])),esc(r.d[1]),esc(r.d[2]),esc(groupName(r.d[3])),
     ...(hasOriginals?[esc(recommendationLabels[r.label])]:[]),
     esc(reviewReasons[r.reason||r.status]||(r.label==="unknown"?"待确认":"—")),
     r.status==="ok"?(r.table?"对比表提及":"—"):"未判定",
+    ...(sharedPreview?[`<a href="${esc(D.links.answerbit)}" target="_blank" rel="noopener noreferrer">工作台按题文查找</a>`]:[]),
     ...(localViewer?[`<a href="./answer?task=${encodeURIComponent(r.task)}" target="_blank" rel="noopener noreferrer">查看原文</a>`]:[])
   ]));
 }
@@ -728,8 +731,8 @@ const pages=[...document.querySelectorAll("[data-page]")];
 const navLinks=[...document.querySelectorAll(".page-tabs a")];
 const moduleFor={overview:"overview",brand:"brand",platform:"brand",compare:"brand",action:"action",answers:"action",sources:"sources",metrics:"metrics"};
 const pageNames={overview:"GEO 运营总览",brand:"市场与竞品",platform:"Answerbit 平台快照",compare:"范围对照分析",action:"问题与行动",answers:"推荐判断与记录",sources:"来源与口碑详情",metrics:"指标说明"};
-function showPage(resetScroll=false){
-  const [hash,target]=location.hash.slice(1).split("/"), requested=hash==="analysis"?"brand":hash;
+function showPage(resetScroll=false,route=location.hash.slice(1)){
+  const [hash,target]=route.split("/"), requested=hash==="analysis"?"brand":hash;
   activePage=pages.some(page=>page.id===requested)?requested:"overview";
   for(const page of pages)page.hidden=page.id!==activePage;
   for(const link of navLinks){
@@ -755,6 +758,11 @@ function showPage(resetScroll=false){
   else if(resetScroll)window.scrollTo(0,0);
 }
 window.addEventListener("hashchange",()=>showPage(true));
+// Feishu srcdoc resolves fragment links against its wrapper instead of this document.
+window.addEventListener("click",e=>{
+  const link=e.target.closest('a[href^="#"]');
+  if(sharedPreview&&link){e.preventDefault();e.stopImmediatePropagation();showPage(true,link.getAttribute("href").slice(1));}
+},true);
 $("copy-a").addEventListener("click",()=>{setFilters("b",filters());render();});
 function comparableSet(rows){
   const sets=new Set(rows.map(r=>JSON.stringify(D.competitors[r.d[0]].slice().sort())));
