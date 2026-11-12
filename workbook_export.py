@@ -71,6 +71,10 @@ def export_workbook(snapshot, data):
 
     append(summary, ("项目","内容"))
     batch = data["batch"]
+    if data.get('market_scope'):
+        append(summary, ('运营国家', '、'.join(data['market_scope']['markets'])))
+        append(summary, ('未归属异常', data['market_scope']['unassigned_issues']))
+        append(summary, ('平台快照', data['market_scope']['platform_snapshot']))
     for item in (
         ("数据来源",batch["source"]),("窗口开始",date.fromisoformat(batch["begin_date"])),
         ("窗口结束",date.fromisoformat(batch["end_date"])),("最后成功取数（UTC）",batch["fetched_at_utc"]),
@@ -82,8 +86,10 @@ def export_workbook(snapshot, data):
         append(summary,item)
     source = data.get("bank_source")
     if source:
+        append(summary, ('题库来源', '本地导出，未核实在线最新版' if source['source']=='local-export' else '飞书在线题库'))
         for label, key in (("在线题库修订号","revision"),("题库读取时间（UTC）","read_at"),("有效题数","question_count")):
-            append(summary,(label,source[key]))
+            if key in source:
+                append(summary,(label,source[key]))
     core = data.get("core_mention")
     if core:
         append(summary,("提及率口径","未点名、扣除明确负面；分母保留全部未点名有效回答"))

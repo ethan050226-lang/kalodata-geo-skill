@@ -34,7 +34,7 @@ Key、团队/品牌ID、内部题库地址只存获批私有配置，不写入�
 
 ## 执行入口
 
-仓库命令和管理员配置见[README](../../README.md)。具备获批命令行环境时，完整流程用geo_run.py；本地refresh/snapshot/review用dashboard.py；answerbit.py用于指标查询，local_answers.py用于同批本地原文查询。不要把命令行工具声称为无CLI原生连接器。合成archive流程与真实读取隔离并显著标注。
+仓库命令和管理员配置见[README](../../README.md)。具备获批命令行环境时，完整流程用geo_run.py，并显式提供`--market`国家（可重复）；该入口先裁剪独立数据库，再重算各交付。`--check`仅检查本机缺项，`--local-only`不上传。缺飞书配置时可完成本地分析并标待发布，缺在线题库时本地导出必须标明来源且不发布为最新在线结果。本地refresh/snapshot/review用dashboard.py；answerbit.py用于指标查询，local_answers.py用于同批本地原文查询。不要把命令行工具声称为无CLI原生连接器。合成archive流程与真实读取隔离并显著标注。
 
 每次正式refresh重读窗口内回答并完成推荐判断；含原文的有效记录以任务ID关联题号。历史review仅处理该批首轮未知，保留首轮统计与平台快照；缺原文的旧批需刷新。无可用历史数据就说明，不伪造基线或原文。
 

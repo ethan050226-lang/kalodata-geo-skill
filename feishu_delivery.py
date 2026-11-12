@@ -12,7 +12,7 @@ from dashboard import retained_data, render
 REFERENCE = {'q','text','category','task','d','status','label','reason','table'}
 TOP = {'batch','platform','rows','issues','core_mention','analysis_version','prompt_basis',
        'question_named','question_scope','markets','competitors','tags','groups','neutral',
-       'links','review','recommendations','comparison','bank_source'}
+       'links','review','recommendations','comparison','bank_source','market_scope'}
 FORBIDDEN = {'body','answer','answer_text','raw_answer','raw_response','access_token','app_secret',
              'api_key','apikey','authorization','password','originals'}
 
@@ -30,6 +30,8 @@ def reject_secrets(value):
 
 
 def shared_data(data):
+    from market_scope import validate_data_scope
+    validate_data_scope(data)
     require(set(data) <= TOP, '共享校验 / 出现未审核的新数据字段，请先核查共享范围')
     reject_secrets(data)
     require(data.get('rows') and data.get('batch') and not data.get('last_failure'),

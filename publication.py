@@ -39,6 +39,14 @@ def manifest(snapshot, data):
         for table in sorted(required - {'source_evidence'}):
             rows = [dict(r) for r in db.execute(f'SELECT * FROM {table}')]
             content[table] = sorted(rows, key=lambda r: json.dumps(r, sort_keys=True, ensure_ascii=False))
+        if 'delivery_scope' in tables:
+            from market_scope import validate_data_scope
+            markets = json.loads(db.execute('SELECT markets FROM delivery_scope').fetchone()[0])
+            require(data.get('market_scope',{}).get('markets') == markets, '国家范围 / 看板和数据库范围不同')
+            require({r[0] for r in db.execute('SELECT DISTINCT market FROM question')} <= set(markets),
+                    '国家范围 / 数据库仍含范围外国家')
+            validate_data_scope(data)
+            content['delivery_scope'] = markets
         require(db.execute("SELECT count(*) FROM sample WHERE status='valid'").fetchone()[0]
                 == sum(r['n'] for r in data['rows']), '版本校验 / 有效样本量不一致')
         require(not db.execute("SELECT count(*) FROM issue WHERE coalesce(question_id,'')='' AND coalesce(candidate_question_ids,'')<>''").fetchone()[0],
@@ -77,11 +85,13 @@ def report(data):
     for signal, (check, direction, metric) in plans.items():
         candidates = [r for r in data['rows'] if signal in r.get('evidence', {})]
         if not candidates: continue
-        row = max(candidates, key=lambda r: r['n']); ref = row['evidence'][signal]
+        row = max(candidates, key=lambda r:(r.get('evidence_counts',{}).get(signal,0),r['n'])); ref = row['evidence'][signal]
         actions.append({'priority': f'P{len(actions)+1}', 'fact': check, 'suggestion': direction,
-                        'sample_count': row['n'], 'reference': ref,
+                        'sample_count': row['n'], 'affected_count':row.get('evidence_counts',{}).get(signal), 'reference': ref,
                         'verify': 'Answerbit 工作台 → 大模型回答记录，按题文、平台、日期和分组查找；题号用于飞书题库',
                         'retest': f'同题、同平台和同等窗口复测{metric}，范围构成保持一致'})
+    actions.sort(key=lambda a:(a['affected_count'] or 0,a['sample_count']),reverse=True)
+    for i,action in enumerate(actions,1): action['priority']=f'P{i}'
     core = next(m for m in primary if m['id'] == 'skill.core_mention_rate')
     value = f"{core['value']:.2f}%（{core['numerator']}/{core['denominator']}）" if core['value'] is not None else '不适用（没有可用分母或缺少口径证据）'
     conclusion = f"本批 {sum(r['n'] for r in data['rows'])} 条有效回答，提及率为{value}。"
@@ -149,6 +159,8 @@ def lookup(remote, current):
 
 def stage(remote, data, version, html, state):
     found, records, legacy = lookup(remote, version)
+    countries = lambda m: {json.loads(s)[0] for s in m['scope']}
+    records = [r for r in records if countries(r['manifest']) == countries(version)]
     if found:
         write_atomic(state, json.dumps(found, ensure_ascii=False,sort_keys=True).encode())
         return {'status':'reused', 'receipt':found, 'legacy_files':legacy,

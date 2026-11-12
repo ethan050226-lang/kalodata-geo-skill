@@ -18,3 +18,12 @@ GEO*.html
 GEO*.md
 *.recommendation-review.json
 *.refresh-status.json
+
+# Private runtime configuration, subscription state and browser evidence
+.private/
+private/
+.geo/
+*.status.json
+*.subscription.json
+*.publication.json
+*.har

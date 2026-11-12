@@ -4,7 +4,7 @@
 
 ## 用户运行
 
-Agent先确认运营国家（可多国），引导安全配置品牌级只读Key并说明预计耗时，两项齐备前不真实取数或发布。本次已明确的无需重复问，历史国家配置须确认沿用。交付数据仅含确认国家，HTML内嵌数据与附件也须裁剪；不能裁剪则停止共享。国家自报不替代访问授权。
+Agent先确认运营国家（可多国），引导安全配置品牌级只读Key并说明预计耗时，两项齐备前不真实取数或发布。本次已明确的无需重复问，历史国家配置须确认沿用。交付数据仅含确认国家，HTML内嵌数据与附件也须裁剪；不能裁剪则停止共享。国家自报不替代访问授权。geo_run.py要求显式传入`--market`（可重复）；内部生成裁剪后的SQLite，再重算HTML、Excel和简报。单国交付不嵌入品牌全量平台快照，无法归属国家的异常另注明未纳入。
 
 询问是否需要定时、频率、时间及接收位置。推荐并默认每周一北京时间上午11:30，汇总上一周周一至周日；用户确认后才设置。已有订阅更新原任务，不擅自改成默认时间。详见[定时推送](skill/geo-sampling/references/scheduled-delivery.md)。定时依赖运行Agent已有的持久调度、数据、发布和消息能力；缺项保存待接入，不能称已启用。用户禁止CLI时，不运行本仓库命令行工具。
 
@@ -18,10 +18,10 @@ Agent先确认运营国家（可多国），引导安全配置品牌级只读Key
 
 ## 运行命令
 
-以下仅供获准使用命令行的环境；国家交付裁剪仍由Agent落实，工具取回品牌全量不代表可以全量共享。
+以下仅供获准使用命令行的环境。工具可以在获批本机读取品牌全量，再生成独立的国家副本；分享前仍须核对接收权限。
 
 ```sh
-python3 geo_run.py /path/to/question-bank.xlsx .trial/dashboard.sqlite .trial/GEO运营看板.html --excel .trial/GEO采样明细.xlsx
+python3 geo_run.py /path/to/question-bank.xlsx .trial/dashboard.sqlite .trial/GEO运营看板.html --market US --excel .trial/GEO采样明细.xlsx
 ```
 
 默认最近七个北京时间自然日（含当天），可加`--begin YYYY-MM-DD --end YYYY-MM-DD`；定时默认前七个完整自然日，与手动窗口不同。refresh在Key就绪后先更新题库缓存，再取数；完整读取必需国家页，检查题号、版本和分页。失败保留上一批。未配置在线地址时用本地Excel并标明来源；`--offline-bank`明确用缓存，`--feishu-bank <URL>`临时指定在线题库。
@@ -46,11 +46,17 @@ answerbit.py支持单个`--group-id`和可重复`--tag-id`，按交集计算；�
 
 注意工具差异：dashboard.py流程会将通过校验、唯一匹配的题文和回答原文保存在本地SQLite；单独answerbit.py指标入口计算后丢弃回答原文，其库不能冒充原文查询库。新旧快照不可据此覆盖或混用。
 
+## 配置不足时的行为
+
+`--check`只检查本机前置条件，不请求平台；国家和Key就绪后才读私有品牌及发布配置，输出仅显示缺项名称，不回显实际值。`--local-only`只生成本地结果，不调用飞书发布。
+
+未配置飞书发布时，完整本地分析可返回`local_ready_pending_publication`及同批简报，不能称已上传或交付飞书链接。缺在线题库但存在本地Excel时，明确标注本地导出并阻止飞书发布；两者均缺失则停止。缺Key、品牌资源或有效题号仍停止真实分析，不能猜值。已核实的参数可由运行者在获批私有环境配置，无须在聊天发送。
+
 ## 交付和规范
 
 默认交付已验收飞书链接及同批简报：核心数据表、一段结论、最多三条证据行动。Excel可本地生成，默认不上传。原文通过同批本机库查看；飞书共享版仅保留题文、题号、日期、平台和分组定位，工作台入口不是原文直达。
 
-geo_run.py核对远端版本：reused复用已验收链接；pending_acceptance仍待实际预览和权限验收。证据绑定精确版本后，用`python3 feishu_publish.py <看板.html> <库.sqlite> --accept-proof <证据.json>`验收入账为published，才交付新链接。失败保留上一成功结果，不发布半批；尚无固定链接切换，多人发布使用统一串行环境。
+geo_run.py核对远端版本：reused复用已验收链接；pending_acceptance仍待实际预览和权限验收。证据绑定精确版本后，用`python3 feishu_publish.py <看板.html> <库.sqlite> --accept-proof <证据.json>`验收入账为published，才交付新链接。发布状态按国家集合隔离，避免串用他国上次入口。本地文件提交中断会回滚，未完成的提交标记阻止发布；进程意外中止后须重跑核对，不声称多文件写入具备系统级事务。失败保留上一成功结果，不发布半批；尚无固定链接切换，多人发布使用统一串行环境。
 
 - [Skill执行规程](skill/geo-sampling/SKILL.md)：启动、国家范围、流程及报告。
 - [指标定义](skill/geo-sampling/references/metric-definitions.md)：公式、分母、缺失与可比条件。

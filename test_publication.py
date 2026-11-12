@@ -170,7 +170,7 @@ class PublicationTest(unittest.TestCase):
              patch.dict(os.environ,{'GEO_QUESTION_BANK_URL':'https://example.feishu.cn/wiki/test'}), \
              patch.object(answerbit,'operator_credentials',side_effect=ArchiveError('凭证缺失')), \
              patch('feishu_bank.fetch_bank') as fetch, patch.object(geo_run,'publish') as publish_call:
-            result, code = geo_run.run(self.f.bank,self.f.output,self.source)
+            result, code = geo_run.run(self.f.bank,self.f.output,self.source,markets=['GB'])
         self.assertEqual(code,1); self.assertEqual(result['status'],'failed')
         self.assertIn('凭证缺失',result['reason']); self.assertNotIn('stale',result['reason'])
         self.assertEqual(len(result['affected_batch']),2)
@@ -201,7 +201,8 @@ class PublicationTest(unittest.TestCase):
     def test_default_run_through_acceptance_then_reuse(self):
         import geo_run
         import feishu_publish
-        config = {'state_dir':str(self.root/'end-to-end')}
+        config = {'state_dir':str(self.root/'end-to-end'), 'folder_url':'https://example.feishu.cn/drive/folder/synthetic',
+                  'approved_members':[{'member_type':'openid','member_id':'synthetic-admin'}], 'identity':'bot'}
         def call(path,payload):
             return {'scores':[self.record],'total':1} if path == answerbit.LIST else self.detail
         with patch.object(geo_run,'load_config',return_value=config), \
@@ -212,12 +213,12 @@ class PublicationTest(unittest.TestCase):
              patch.object(dashboard,'platform_snapshot',return_value={'data':{},'issues':{}}), \
              patch.object(feishu_publish,'Drive',return_value=self.remote):
             options = ['--begin',self.f.day,'--end',self.f.day]
-            candidate, code = geo_run.run(self.f.bank,self.f.output,self.source,options)
+            candidate, code = geo_run.run(self.f.bank,self.f.output,self.source,options,markets=['GB'])
             self.assertEqual((code,candidate['status']),(0,'pending_acceptance'))
             published = publish(self.source,self.f.output,config,self.proof(candidate),self.remote)
             self.assertEqual(published['status'],'published')
             writes = self.remote.writes
-            reused, code = geo_run.run(self.f.bank,self.f.output,self.source,options)
+            reused, code = geo_run.run(self.f.bank,self.f.output,self.source,options,markets=['GB'])
             self.assertEqual((code,reused['status']),(0,'reused'))
             self.assertEqual(self.remote.writes,writes)
             self.assertEqual(published['receipt']['report'],reused['receipt']['report'])

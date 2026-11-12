@@ -121,6 +121,10 @@ def load_config():
 
 
 def publish(source, snapshot, config, proof=None, remote=None):
+    _,data,_ = retained_data(source)
+    if data.get('market_scope'):
+        from market_scope import scope_config
+        config = scope_config(config,data['market_scope']['markets'])
     state_dir = Path(config['state_dir']); state_dir.mkdir(parents=True,exist_ok=True,mode=0o700)
     state = state_dir/'last-success.json'
     candidate_path = state_dir/'candidate.json'

@@ -317,7 +317,7 @@ function matches(d,f){
   return includes(f.m,m)&&includes(f.e,e)&&includes(f.g,g||"__unknown")&&includes(f.named||[],String(named))&&day>=f.from&&day<=f.to&&tagMatch;
 }
 function describe(f){
-  return [f.m.length?f.m.map(marketName).join("、"):"全部市场",f.e.length?f.e.join("、"):"全部平台",
+  return [f.m.length?f.m.map(marketName).join("、"):(D.market_scope?"交付国家："+D.market_scope.markets.map(marketName).join("、"):"全部市场"),f.e.length?f.e.join("、"):"全部平台",
     f.g.length?f.g.map(groupName).join("、"):"全部分组",
     f.tags.length?f.tags.map(t=>D.tags[t]).join(f.tagMode==="all"?" ∩ ":" ∪ "):"全部标签",
     f.named?.length?f.named.map(x=>x==="0"?"未点名":"点名").join("、"):"全部题文状态",
@@ -547,15 +547,15 @@ function render(){
   renderActions(rs);
   const missing=n-known;
   $("quality").innerHTML=`<p>当前范围正式来源字段待核对 <b>${num(missing)}</b> 条，推荐未知 <b>${num(unknown)}</b> 条。</p>
-    ${D.issues?`<p class="definition">本批接口返回 ${num(batch.returned_records)} 条，题库未匹配 ${num(D.issues.unmatched_question||0)} 条，题文或市场歧义 ${num((D.issues.ambiguous_question||0)+(D.issues.market_tag_conflict||0))} 条，回答待确认 ${num(D.issues.answer_unconfirmed||0)} 条。此为全批数据，未匹配项未进入市场筛选。</p>`:"<p class=definition>历史快照未保存全批异常统计，数量未知；请重新取数核对。</p>"}
-    <p class="sub">实际启用题单与采样计划未取得，样本覆盖率无法计算。题库版本 ${esc(batch.question_version.slice(0,12))} · ${esc(batch.metric_version)}</p>${D.bank_source?`<p class="sub">在线题库修订号 ${esc(D.bank_source.revision)} · 读取时间 ${esc(D.bank_source.read_at)} · ${num(D.bank_source.question_count)} 题</p>`:""}`;
+    ${D.issues?`<p class="definition">本批接口返回 ${num(batch.returned_records)} 条，题库未匹配 ${num(D.issues.unmatched_question||0)} 条，题文或市场歧义 ${num((D.issues.ambiguous_question||0)+(D.issues.market_tag_conflict||0))} 条，回答待确认 ${num(D.issues.answer_unconfirmed||0)} 条。${D.market_scope?"此为交付国家数据，无法归属国家的异常未纳入。":"此为全批数据，未匹配项未进入市场筛选。"}</p>`:"<p class=definition>历史快照未保存全批异常统计，数量未知；请重新取数核对。</p>"}
+    <p class="sub">实际启用题单与采样计划未取得，样本覆盖率无法计算。题库版本 ${esc(batch.question_version.slice(0,12))} · ${esc(batch.metric_version)}</p>${D.bank_source?`<p class="sub">${D.bank_source.source==="local-export"?"本地导出题库，未核实在线最新版":`在线题库修订号 ${esc(D.bank_source.revision)} · 读取时间 ${esc(D.bank_source.read_at)}`} · ${num(D.bank_source.question_count)} 题</p>`:""}${D.market_scope?`<p class="definition">交付国家：${D.market_scope.markets.map(m=>esc(marketName(m))).join("、")}。${esc(D.market_scope.platform_snapshot)}。${esc(D.market_scope.unassigned_issues)}</p>`:""}`;
 
   const issueNames={unmatched_question:"题库无匹配",ambiguous_question:"题号待确认",market_tag_conflict:"市场标签冲突",
     citation_unknown:"引用字段缺失",answer_unconfirmed:"回答待确认",tag_metadata_incomplete:"标签信息不完整"};
-  $("home-status").textContent=dataReminder(D.issues,{sentimentUnknown,missing,n});
+  $("home-status").textContent=dataReminder(D.issues,{sentimentUnknown,missing,n})+(D.market_scope?" 当前提醒仅针对交付国家；无法归属国家的异常未纳入。":"");
   $("status-details").innerHTML=$("quality").innerHTML+
     table(["全批异常原因","记录数","影响范围","核查入口"],D.issues?Object.entries(D.issues).map(([code,count])=>[
-      esc(issueNames[code]||code),num(count),"全部取数批次；不随当前筛选缩小",["unmatched_question","ambiguous_question","market_tag_conflict"].includes(code)?"飞书题库与 Answerbit 用户提问":"Answerbit 大模型回答记录"
+      esc(issueNames[code]||code),num(count),D.market_scope?"交付国家批次；不随页内筛选缩小":"全部取数批次；不随当前筛选缩小",["unmatched_question","ambiguous_question","market_tag_conflict"].includes(code)?"飞书题库与 Answerbit 用户提问":"Answerbit 大模型回答记录"
     ]):[["历史快照未保存异常统计","未知","全批","重新取数核对，不能视作零异常"]])+
     table(["当前筛选问题","记录数","影响与核查入口"],[["口碑未知",num(sentimentUnknown),"影响平台口碑判定覆盖；回 Answerbit 核对口碑字段"],["正式来源字段缺失",num(missing),"不进入正式来源可判定分母；回 Answerbit 回答记录核对引用"],["推荐判断未知",num(unknown),"不能作为明确推荐；在问题与行动 → 推荐记录查看题文和原文"]])+
     `<p class="definition">异常可重叠，数量不相加当作独立回答总数。点名判定来源 ${esc(D.prompt_basis||"旧批来源待核对")}。同批 Excel「数据异常」保留题号、原因及回查字段；题库外记录仅列全批数量，不进入有编号明细。${D.issues&&Object.keys(D.issues).length===0?"本批未记录取数或匹配异常。":""}</p>`;
@@ -567,7 +567,7 @@ $("brand-market").addEventListener("change",e=>{brandMarket=e.target.value;rende
 function renderPrevious(f){
   const c=D.comparison;
   if(!c?.previous_batch){
-    $("previous-comparison").innerHTML=empty("暂无可读取的上次成功结果，下次在同一输出位置刷新后自动对比。");
+    $("previous-comparison").innerHTML=empty(c?.limitations?.length?c.limitations.join("；"):"暂无可读取的上次成功结果，下次在同一输出位置刷新后自动对比。");
     return;
   }
   const before=new Map(c.previous_metrics.map(r=>[r.id,r]));
@@ -694,7 +694,7 @@ function renderActions(rows){
     }).sort((a,b)=>(rule.low?a.rate-b.rate:b.rate-a.rate)||b.den-a.den);
     return candidates.map(candidate=>({...rule,...candidate}));
   }).sort((a,b)=>
-      ((b.low?1-b.rate:b.rate)*Math.sqrt(b.den)-(a.low?1-a.rate:a.rate)*Math.sqrt(a.den)));
+      ((b.low?b.den-b.hits:b.hits)-(a.low?a.den-a.hits:a.hits))||b.den-a.den);
   const chosen=allActions.filter((item,i)=>allActions.findIndex(other=>other.key===item.key)===i);
   $("action-count").textContent=`${allActions.length} 项可回查行动 · 按顶部范围筛选`;
   const candidates=[...cuts.values()].filter(rs=>!rs[0].d[4]).map(rs=>({

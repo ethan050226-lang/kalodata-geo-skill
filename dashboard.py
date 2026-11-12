@@ -168,6 +168,10 @@ def dashboard_data(snapshot, bank, native):
     with closing(sqlite3.connect(snapshot.resolve().as_uri() + "?mode=ro", uri=True)) as db:
         db.row_factory = sqlite3.Row
         batch = dict(db.execute("SELECT * FROM batch").fetchone())
+        scoped = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='delivery_scope'").fetchone()
+        scope_markets = json.loads(db.execute('SELECT markets FROM delivery_scope').fetchone()[0]) if scoped else None
+        if scope_markets:
+            native = None  # Platform snapshots have independent brand-wide scope, not country scope.
         api.require(batch["question_version"] == sha, "题库校验 / 快照和题库版本不一致")
         api.require(db.execute("PRAGMA quick_check").fetchone()[0] == "ok", "快照校验 / SQLite 文件校验失败")
         has_originals = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sample_answer'").fetchone()
@@ -267,6 +271,7 @@ def dashboard_data(snapshot, bank, native):
                 }
                 for signal, matches in signals.items():
                     if matches:
+                        b.setdefault('evidence_counts',Counter())[signal] += 1
                         b.setdefault("evidence", {}).setdefault(signal, reference)
         expected = db.execute("SELECT count(*) FROM sample WHERE status='valid'").fetchone()[0]
         issues = dict(db.execute("SELECT code,count(*) FROM issue GROUP BY code"))
@@ -288,7 +293,7 @@ def dashboard_data(snapshot, bank, native):
     unnamed = [r for r in buckets.values() if r["d"][4] == 0]
     core_num = sum(r["mentions"].get("Kalodata",0)-r["negative_mentions"] for r in unnamed)
     core_den = sum(r["n"] for r in unnamed)
-    return {"batch":batch, "platform":native, "rows":list(buckets.values()), "issues":issues,
+    result = {"batch":batch, "platform":native, "rows":list(buckets.values()), "issues":issues,
             "core_mention":{"numerator":core_num,"denominator":core_den,
                             "excluded_negative":sum(r["negative_mentions"] for r in unnamed),
                             "value":core_num/core_den if core_den else None},
@@ -298,13 +303,22 @@ def dashboard_data(snapshot, bank, native):
             "question_scope":{"signature":hashlib.sha256(json.dumps(sorted(question_scope)).encode()).hexdigest(),
                               "returned_signature":returned_scope,"verified":bool(has_questions and has_scope),
                               "question_count":len({r[0] for r in question_scope}),"range":"全部返回题目及匹配题库的题目、平台、语言、分组和标签"},
-            "markets":{v:k for k,v in api.MARKETS.items()}, "competitors":{v:market_brands(v) for v in api.MARKETS.values()},
+            "markets":{v:k for k,v in api.MARKETS.items() if not scope_markets or v in scope_markets},
+            "competitors":{v:market_brands(v) for v in api.MARKETS.values() if not scope_markets or v in scope_markets},
             "tags":tag_names, "groups":groups, "neutral":neutral, "links":{"answerbit":SOURCE,"bank":QNA},
             "review":{"rows":review_rows,"version":review["version"],"checked_at":review["checked_at"]} if review else None,
             "recommendations":recommendations}
+    if scope_markets:
+        result['market_scope'] = {'markets':scope_markets, 'platform_snapshot':'未纳入：平台接口为品牌全量口径',
+                                  'unassigned_issues':'无法归属国家的异常未纳入；不能据此认定全批没有未匹配题目'}
+        from market_scope import validate_data_scope
+        validate_data_scope(result)
+    return result
 
 
 def render(data, output):
+    from market_scope import validate_data_scope
+    validate_data_scope(data)
     page = ASSET.read_text()
     api.require(page.count("__GEO_PAYLOAD__") == 1, "渲染 / 看板模板缺少唯一数据占位符")
     api.write_atomic(output, page.replace("__GEO_PAYLOAD__", encode(data)).encode())
@@ -397,6 +411,8 @@ def previous_comparison(data, previous, *, refresh=False):
         delta = row["value"]-value if baseline and not reasons and row["value"] is not None and value is not None else None
         changes.append({**row,"previous":value,"change":delta})
     return {"previous_batch":baseline,"previous_metrics":earlier,"current_batch":batch,
+            "delivery_markets":(data.get('market_scope') or {}).get('markets'),
+            "previous_delivery_markets":(previous.get('market_scope') or {}).get('markets') if previous else None,
             "previous_scope":previous_scope,"current_scope":data.get("question_scope"),
             "previous_policy":previous_policy,"current_policy":data.get("analysis_version"),
             "metrics":changes,"limitations":reasons}
@@ -415,10 +431,13 @@ def main(argv=None, *, status_callback=None):
     parser.add_argument("--fetch-platform", action="store_true")
     parser.add_argument("--defer-unavailable", action="store_true", help="复检时暂缓上轮未读到的任务")
     parser.add_argument("--excel", type=Path, help="导出同批可筛选的 .xlsx 记录")
+    parser.add_argument('--market', action='append', help='已确认的运营国家代码或名称，可重复')
     args = parser.parse_args(argv)
     stage = "配置"
     staging = None
     try:
+        from market_scope import normalize_markets, restrict_snapshot
+        markets = normalize_markets(args.market) if args.market else None
         api.require(args.output.suffix.lower() == ".html" and args.snapshot.suffix == ".sqlite"
                     and len({p.resolve() for p in (args.output,args.bank,args.snapshot)}) == 3,
                     "配置 / 题库、SQLite 与 HTML 路径必须独立")
@@ -431,7 +450,7 @@ def main(argv=None, *, status_callback=None):
         api.require(begin <= end, "配置 / 起始日应早于或等于截止日")
         native = None
         snapshot = args.snapshot
-        if args.mode != "snapshot" or args.fetch_platform:
+        if args.mode != "snapshot" or (args.fetch_platform and not markets):
             stage = "只读凭证"
             print("真实取数需要 Kalodata 品牌级只读 Key。常见一周窗口约 3–8 分钟，平台限流可能延长。"
                   "凭证配置完成后才继续。", file=sys.stderr, flush=True)
@@ -474,7 +493,7 @@ def main(argv=None, *, status_callback=None):
                     except api.ArchiveError as error:
                         if attempt or not str(error).startswith("分页 /"):
                             raise
-        if args.mode == "refresh" or args.fetch_platform:
+        if (args.mode == "refresh" or args.fetch_platform) and not markets:
             stage = "Answerbit 原生图表快照"
             native = platform_snapshot(call,brand,begin,end)
             if previous and native["issues"]:
@@ -482,13 +501,32 @@ def main(argv=None, *, status_callback=None):
                 failed = [path for path, reason in native["issues"].items()
                           if path in available and reason != "响应无可用数据"]
                 api.require(not failed, "原生快照刷新失败 / " + "、".join(failed))
+        scope_changed = False
+        if markets:
+            stage = '运营国家范围校验'
+            # Scope a new temporary copy, including saved originals and review judgments.
+            if staging is None:
+                staging = TemporaryDirectory()
+            scoped_snapshot = Path(staging.name) / 'scoped.sqlite'
+            restrict_snapshot(snapshot, scoped_snapshot, markets)
+            snapshot = scoped_snapshot
+            native = None
+            if previous and previous.get('market_scope',{}).get('markets') != markets:
+                scope_changed = True
+                previous = None  # Never embed a prior full-brand or other-country report.
         stage = "看板校验与渲染"
         data = dashboard_data(snapshot,args.bank,native)
         if bank_source:
-            data["bank_source"] = bank_source
+            data["bank_source"] = dict(bank_source)
+            if markets:
+                data['bank_source'].update(markets=len(markets), question_count=len(data['question_named']))
+        elif args.mode == 'refresh':
+            data['bank_source'] = {'source':'local-export','question_count':len(data['question_named'])}
         api.require(args.mode!="refresh" or data["review"] is not None,
                     "推荐复检 / 当次复检文件与快照不匹配，请重新运行")
         data["comparison"] = previous_comparison(data,previous,refresh=args.mode=="refresh")
+        if scope_changed:
+            data['comparison']['limitations'].append('上次国家范围不同或为未隔离全量，未嵌入旧批数据，需建立本范围基线')
         excel = None
         if args.excel:
             stage = "Excel 记录导出"
@@ -502,23 +540,36 @@ def main(argv=None, *, status_callback=None):
                     api.require(not missing, f"题号对账 / 有 {missing} 条题库候选尚未确认，请用已核对的题库重新取数")
             excel = export_workbook(snapshot,data)
             stage = "看板校验与渲染"
-        if staging:
+        if staging and args.mode == 'refresh':
             api.require(data["recommendations"] is not None,"本地原文库 / 当次原文未入库，请重新运行")
-            html = Path(staging.name) / "dashboard.html"
+        stage = '本地批次提交'
+        with TemporaryDirectory() as directory:
+            html = Path(directory) / 'dashboard.html'
             render(data,html)
-            api.write_atomic(args.snapshot,snapshot.read_bytes())
-            api.write_atomic(sidecar(args.snapshot),sidecar(snapshot).read_bytes())
-            api.write_atomic(args.output,html.read_bytes())
-        else:
-            render(data,args.output)
-        if excel is not None:
-            stage = "Excel 文件写入"
-            api.write_atomic(args.excel,excel)
+            files = {args.output:html.read_bytes()}
+            if staging:
+                files[args.snapshot] = snapshot.read_bytes()
+                files[sidecar(args.snapshot)] = sidecar(snapshot).read_bytes() if sidecar(snapshot).is_file() else None
+            if excel is not None:
+                files[args.excel] = excel
+            backups = {p:p.read_bytes() if p.is_file() else None for p in files}
+            # A crash during the multi-file commit leaves a status marker that blocks publication.
+            api.write_atomic(args.output.with_suffix('.status.json'), b'{"stage":"local_commit_pending"}')
+            try:
+                for path,content in files.items():
+                    if content is None: path.unlink(missing_ok=True)
+                    else: api.write_atomic(path,content)
+            except OSError:
+                for path,content in backups.items():
+                    if content is None: path.unlink(missing_ok=True)
+                    else: api.write_atomic(path,content)
+                raise
         status = args.output.with_suffix(".status.json")
         status.unlink(missing_ok=True)
         print(json.dumps({"dashboard":str(args.output.resolve()),"mode":args.mode,
                           **({"excel":str(args.excel.resolve())} if args.excel else {}),
                           "valid":sum(b["n"] for b in data["rows"]), "batch":data["batch"],
+                          "market_scope":data.get('market_scope'),
                           "comparison":data["comparison"],
                           "native_available":list(native["data"]) if native else [],
                           "native_issues":native["issues"] if native else {},
