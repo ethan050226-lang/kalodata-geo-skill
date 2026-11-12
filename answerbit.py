@@ -551,8 +551,6 @@ def read_snapshot(path, group_id=None, tag_ids=()):
 
 
 def operator_credentials():
-    brand = os.environ.get("ANSWERBIT_BRAND_ID")
-    require(identifier(brand), "凭证 / 请配置本次要读取的 Answerbit 品牌 ID（ANSWERBIT_BRAND_ID）")
     key = os.environ.get("ANSWERBIT_API_KEY")
     if not key:
         require(sys.stdin.isatty(), "凭证 / 请由当前运行者在本机环境配置自己的 Answerbit 只读 Key（ANSWERBIT_API_KEY）")
@@ -564,6 +562,19 @@ def operator_credentials():
             raise ArchiveError("凭证 / 无法安全获取 Key，请在本机环境配置 ANSWERBIT_API_KEY") from None
     require(key and key.isascii() and key.isprintable() and not any(char.isspace() for char in key),
             "凭证 / Key 为空或格式无效，请重新配置当前运行者的只读 Key")
+    brand = os.environ.get("ANSWERBIT_BRAND_ID")
+    if not brand:
+        resources = Path(os.environ.get("ANSWERBIT_RESOURCE_CONFIG") or
+                         Path(__file__).resolve().parent / ".trial/answerbit-resources.json")
+        try:
+            config = json.loads(resources.read_text())
+            require(isinstance(config, dict), "资源配置 / 本机配置格式无效")
+            brand = config.get("brand_id")
+        except FileNotFoundError:
+            pass
+        except (OSError, ValueError):
+            raise ArchiveError("资源配置 / 本机资源配置不可读，请由管理员核对；不显示配置内容") from None
+    require(identifier(brand), "资源配置 / Key 已提供，但本机品牌范围尚未配置，请由管理员配置私有资源文件或 ANSWERBIT_BRAND_ID")
     return key, brand
 
 

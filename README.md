@@ -4,7 +4,7 @@
 
 ## 生成运营看板
 
-准备当前飞书题库导出，安装 `requirements.txt`。在获批的本机环境设置 `ANSWERBIT_BRAND_ID`。运行时隐藏输入只覆盖 Kalodata 的只读 Key，或在当前运行环境配置 `ANSWERBIT_API_KEY`。
+准备当前飞书题库导出，安装 `requirements.txt`。由管理员在本机私有资源文件配置品牌范围（或设置 `ANSWERBIT_BRAND_ID`），实际 ID 不进入公开说明。运行时隐藏输入只覆盖 Kalodata 的只读 Key，或在当前运行环境配置 `ANSWERBIT_API_KEY`。
 
 Agent 启动真实取数前应告知所需 Key 和预计耗时，安全配置完成前暂停。约 1,000–3,000 条记录可先估 3–8 分钟，限流与采样窗口会影响时间。
 
@@ -91,3 +91,7 @@ Python 回归：`python3 -m unittest discover -p 'test_*.py'`。手算与模板�
 首页新增国家与题类提及率矩阵（Answerbit 分组 / 标签切换）、六类平台口碑构成及覆盖率。三项核心卡按可靠历史基线显示变化；筛选后缺少同条件历史数据则明确暂不比较。没有固定样本不足阈值或装饰性趋势。
 
 首页数据提醒默认单行收起，展开可查全批与当前筛选问题。点名题专题移至市场与竞品，推荐指标明确标为本地规则初判，保留数量、分母及未知。
+
+## 私有品牌资源配置
+
+先由用户提供只读 Key，程序通过格式校验后才读取品牌配置、调用接口，不展示资源 ID。默认私有文件为 `.trial/answerbit-resources.json`，也可用 `ANSWERBIT_RESOURCE_CONFIG` 指定。文件结构：`{"brand_id":"你的品牌ID","team_id":"你的团队ID"}`，由管理员一次配置并限制本机文件权限；只有 `brand_id` 用于回答查询。`ANSWERBIT_BRAND_ID` 可覆盖本机文件。缺少 Key 不读取资源文件。其他同事须各自配置或使用公司批准的私有配置分发方式；不能凭 Key 自动推导 ID。公开历史中的旧 ID 不会因本次移除而消失。

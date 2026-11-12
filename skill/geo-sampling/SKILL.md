@@ -7,7 +7,8 @@ description: 读取 Answerbit 已有的 Kalodata 回答记录，对照飞书题�
 
 ## 首次启动与凭证等待
 
-Answerbit 固定使用 Kalodata 团队 `team_id=2117449160448806912` 和品牌 `brand_id=2117451182950580224`。Agent 启动每次真实取数或复检时，在同一个运行进程设置 `ANSWERBIT_BRAND_ID=2117451182950580224`，无需向用户索取这两个 ID。团队 ID 用于核对配置，当前回答读取接口只传品牌 ID。
+Answerbit 的团队与品牌 ID 不写入公开 Skill、对话、常规日志或交付文件。先安全取得当前运行者的品牌级只读 Key，校验非空与格式后，才读取本机私有资源配置并尝试认证取数。资源配置由管理员一次性设置，可用 `ANSWERBIT_BRAND_ID`，或私有 JSON 文件（默认仓库 `.trial/answerbit-resources.json`，也可用 `ANSWERBIT_RESOURCE_CONFIG` 指定）中的 `brand_id`；可留存 `team_id` 作管理定位，但当前读取接口不传团队 ID。不因用户提供 Key 而自动公开 ID，也不从 Key 字符串推导品牌或团队。Key 的真实性、资源可访问性仍须由 Answerbit 响应确认；配置值不代替平台权限。
+
 
 每次准备真实取数或原文复检，先向用户说明需要只覆盖 Kalodata 的 Answerbit 品牌级只读 Key，并给出预计报告时间。首次且未配置凭证时可说明：「请在隐藏输入或本机运行环境配置 Kalodata 品牌级只读 Key，配置后告诉我。以最近一周、约 1,000–3,000 条记录为例，出看板预计约 3–8 分钟，平台限流会延长。」如果窗口更大或已有实际批量进度，按任务量更新估时。
 
