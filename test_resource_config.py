@@ -3,6 +3,8 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+import io
+from contextlib import redirect_stderr
 from unittest.mock import patch
 from answerbit import operator_credentials, question_bank_url
 from archive import ArchiveError
@@ -43,3 +45,12 @@ class PrivateResourceTest(unittest.TestCase):
                 path.write_text(json.dumps({'question_bank_url':'https://private-should-not-be-echoed.test/bank'}))
                 with self.assertRaises(ArchiveError) as error:question_bank_url(key)
                 self.assertNotIn('private-should-not-be-echoed',str(error.exception))
+
+    def test_metrics_cli_also_stops_before_answerbit_without_live_bank(self):
+        import answerbit
+        with patch('sys.argv',['answerbit.py','refresh','bank.xlsx','snapshot.sqlite','--begin','2026-11-01','--end','2026-11-01']), \
+             patch.object(answerbit,'operator_credentials',return_value=('TEST_ONLY','synthetic')), \
+             patch.object(answerbit,'question_bank_url',return_value=None), \
+             patch.object(answerbit,'refresh') as pull,redirect_stderr(io.StringIO()):
+            self.assertEqual(answerbit.main(),1)
+        pull.assert_not_called()

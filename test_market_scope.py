@@ -97,20 +97,20 @@ class CountryDeliveryTest(unittest.TestCase):
         tampered['comparison']={'previous_batch':data['batch'],'delivery_markets':['GB','US'],'previous_delivery_markets':['CN']}
         with self.assertRaisesRegex(ArchiveError,'上次对比'): shared_data(tampered)
 
-    def test_missing_feishu_config_still_generates_local_country_report(self):
+    def test_missing_live_bank_blocks_before_answerbit_even_with_local_export(self):
         with patch.dict(os.environ,{},clear=True), \
              patch.object(answerbit,'operator_credentials',return_value=('TEST_ONLY','synthetic')), \
              patch.object(answerbit,'question_bank_url',return_value=None), \
-             patch.object(dashboard,'PacedRead',return_value=self.call), \
+             patch.object(dashboard,'refresh_answers') as pull, \
              patch.object(geo_run,'load_config',side_effect=ArchiveError('飞书配置缺失')), \
              patch.object(geo_run,'publish') as upload, \
              patch('feishu_bank.fetch_bank') as bank_read, contextlib.redirect_stdout(io.StringIO()):
             result,code = geo_run.run(self.f.bank,self.scoped,self.html,
                 ['--begin',self.f.day,'--end',self.f.day,'--excel',str(self.excel)],markets=['英国'])
-        self.assertEqual((code,result['status']),(0,'local_ready_pending_publication'))
-        self.assertEqual(len(result['blockers']),2)
-        self.assertTrue(self.html.is_file() and self.excel.is_file())
-        self.assertEqual(result['local']['report']['metrics'][0]['denominator'],1)
+        self.assertEqual((code,result['status']),(1,'failed'))
+        self.assertIn('在线题库',result['reason'])
+        self.assertFalse(self.html.exists() or self.excel.exists())
+        pull.assert_not_called()
         upload.assert_not_called(); bank_read.assert_not_called()
         with patch.object(dashboard,'main') as run:
             failure,code = geo_run.run(self.f.bank,self.scoped,self.html)
@@ -194,3 +194,38 @@ class CountryDeliveryTest(unittest.TestCase):
         public=self.html.read_text()
         for marker in ('synthetic-brand','synthetic-team','TEST_ONLY'):
             self.assertNotIn(marker,public)
+
+    def test_all_live_modes_stop_before_answerbit_when_bank_read_fails(self):
+        for mode,extra in (('refresh',[]),('review',[]),('snapshot',['--fetch-platform'])):
+            with self.subTest(mode=mode), \
+                 patch.object(answerbit,'operator_credentials',return_value=('TEST_ONLY','synthetic')), \
+                 patch.object(answerbit,'question_bank_url',return_value='https://example.feishu.cn/wiki/test'), \
+                 patch('feishu_bank.fetch_bank',side_effect=ArchiveError('在线题库读取失败')) as bank, \
+                 patch.object(dashboard,'refresh_answers') as pull, \
+                 patch.object(dashboard,'run_review') as review, \
+                 patch.object(dashboard,'platform_snapshot') as platform, \
+                 contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(dashboard.main([mode,str(self.f.bank),str(self.f.output),str(self.html),*extra]),1)
+                bank.assert_called_once();pull.assert_not_called();review.assert_not_called();platform.assert_not_called()
+
+    def test_history_review_rejects_changed_live_bank_without_rewriting_history(self):
+        import shutil
+        def latest(url,destination):
+            shutil.copyfile(self.f.bank,destination)
+            book=load_workbook(destination);book['英国']['C2']='Changed live question';book.save(destination);book.close()
+            return {'source':'feishu-live','revision':2}
+        old_db,old_bank=self.f.output.read_bytes(),self.f.bank.read_bytes()
+        with patch.object(answerbit,'operator_credentials',return_value=('TEST_ONLY','synthetic')), \
+             patch.object(answerbit,'question_bank_url',return_value='https://example.feishu.cn/wiki/test'), \
+             patch('feishu_bank.fetch_bank',side_effect=latest), \
+             patch.object(dashboard,'run_review') as review,contextlib.redirect_stderr(io.StringIO()) as log:
+            self.assertEqual(dashboard.main(['review',str(self.f.bank),str(self.f.output),str(self.html)]),1)
+        review.assert_not_called()
+        self.assertIn('在线题库已不同于历史题库',log.getvalue())
+        self.assertEqual(old_db,self.f.output.read_bytes());self.assertEqual(old_bank,self.f.bank.read_bytes())
+
+    def test_offline_bank_flag_cannot_bypass_live_gate(self):
+        with patch.object(answerbit,'operator_credentials',return_value=('TEST_ONLY','synthetic')), \
+             patch.object(dashboard,'refresh_answers') as pull,contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(dashboard.main(['refresh',str(self.f.bank),str(self.f.output),str(self.html),'--offline-bank']),1)
+        pull.assert_not_called()

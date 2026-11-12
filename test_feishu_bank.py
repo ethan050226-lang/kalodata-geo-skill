@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 import unittest
-from feishu_bank import fetch_bank
+from feishu_bank import fetch_bank, content_signature
 from answerbit import MARKETS
 from archive import ArchiveError
 
@@ -28,3 +28,14 @@ class BankTest(unittest.TestCase):
                 p=Path(d)/'bank.xlsx';p.write_bytes(b'previous')
                 with self.assertRaises(ArchiveError):fetch_bank('test',p,self.reader(**options))
                 self.assertEqual(p.read_bytes(),b'previous')
+
+    def test_content_comparison_ignores_export_formatting_but_tracks_cell_changes(self):
+        from openpyxl import load_workbook
+        with tempfile.TemporaryDirectory() as d:
+            source=Path(d)/'original.xlsx';fetch_bank('test',source,self.reader())
+            original=content_signature(source)
+            exported=Path(d)/'browser-export.xlsx'
+            book=load_workbook(source);book['美国'].column_dimensions['A'].width=35;book.save(exported);book.close()
+            self.assertEqual(content_signature(exported),original)
+            book=load_workbook(exported);book['美国']['B2']='Changed question';book.save(exported);book.close()
+            self.assertNotEqual(content_signature(exported),original)

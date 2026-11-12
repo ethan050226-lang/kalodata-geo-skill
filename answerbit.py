@@ -621,6 +621,10 @@ def main():
             result = read_snapshot(args.output, args.group_id, args.tag_id)
         else:
             key, brand = operator_credentials()
+            bank_url = question_bank_url(key)
+            require(bank_url, '飞书题库 / 真实取数前必须配置并核对在线题库，不沿用本地缓存')
+            from feishu_bank import fetch_bank
+            fetch_bank(bank_url,args.bank)
             result = refresh(args.bank, args.output, brand, args.begin, args.end,
                              lambda path, payload: request(path, payload, key), args.group_id, args.tag_id,
                              require_issue_numbers=True)

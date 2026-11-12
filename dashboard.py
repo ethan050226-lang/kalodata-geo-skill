@@ -450,7 +450,8 @@ def main(argv=None, *, status_callback=None):
         api.require(begin <= end, "配置 / 起始日应早于或等于截止日")
         native = None
         snapshot = args.snapshot
-        if args.mode != "snapshot" or (args.fetch_platform and not markets):
+        needs_read = args.mode != 'snapshot' or (args.fetch_platform and not markets)
+        if needs_read:
             stage = "只读凭证"
             print("真实取数需要 Kalodata 品牌级只读 Key。常见一周窗口约 3–8 分钟，平台限流可能延长。"
                   "凭证配置完成后才继续。", file=sys.stderr, flush=True)
@@ -458,15 +459,22 @@ def main(argv=None, *, status_callback=None):
             call = PacedRead(key)
         bank_source = None
         bank_url = None
-        if args.mode == 'refresh' and not args.offline_bank:
+        if needs_read:
+            stage = '飞书在线题库读取与校验'
+            api.require(not args.offline_bank, '飞书题库 / 真实取数前必须核对在线题库；离线查看请使用snapshot且不加fetch-platform')
             bank_url = args.feishu_bank or api.question_bank_url(key)
-        if args.mode == "refresh" and bank_url and not args.offline_bank:
-            stage = "飞书在线题库读取与校验"
-            from feishu_bank import fetch_bank
-            bank_source = fetch_bank(bank_url, args.bank)
+            api.require(bank_url, '飞书题库 / 缺少在线题库私有配置，停止Answerbit取数，不沿用本地缓存')
+            from feishu_bank import fetch_bank, content_signature
+            if args.mode == 'refresh':
+                bank_source = fetch_bank(bank_url, args.bank)
+            else:
+                # Verify the live bank without rewriting the historical measurement's bank.
+                with TemporaryDirectory() as directory:
+                    live_bank = Path(directory)/'live-bank.xlsx'
+                    bank_source = fetch_bank(bank_url, live_bank)
+                    api.require(content_signature(live_bank)==content_signature(args.bank),
+                                '飞书题库 / 在线题库已不同于历史题库，请运行refresh建立新批次；旧快照保留')
             print(json.dumps({"question_bank":bank_source}, ensure_ascii=False), file=sys.stderr, flush=True)
-        if args.mode == 'refresh' and not bank_url:
-            api.require(args.bank.is_file(), '飞书题库 / 缺少在线题库配置或本地导出；请在获批私有环境补齐')
         previous = None
         if args.output.is_file():
             try:

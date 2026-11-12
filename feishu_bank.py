@@ -3,6 +3,7 @@ import argparse
 import csv
 from datetime import datetime, timezone
 import io
+import hashlib
 import json
 import os
 import re
@@ -10,7 +11,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
-from zipfile import ZipFile, ZIP_DEFLATED
+from zipfile import ZipFile, ZIP_DEFLATED, BadZipFile
 
 from answerbit import MARKETS, load_bank
 from archive import ArchiveError, require, write_atomic
@@ -37,6 +38,30 @@ def signature(info):
     return (info.get('token'), info.get('revision'),
             [(s.get('sheet_id'), s.get('sheet_name'), s.get('row_count'), s.get('column_count'))
              for s in info.get('sheets', [])])
+
+
+def content_signature(path):
+    """Compare cell contents across browser exports and canonical API exports, ignoring ZIP formatting."""
+    from openpyxl import load_workbook
+    try:
+        book = load_workbook(io.BytesIO(path.read_bytes()),read_only=True,data_only=True,keep_links=False)
+    except (BadZipFile,KeyError,ValueError):
+        raise ArchiveError('飞书题库 / 导出或缓存不可解析，停止核对，旧快照保留') from None
+    contents = {}
+    try:
+        for name in sorted(set(book.sheetnames) & set(MARKETS)):
+            sheet = book[name]; sheet.reset_dimensions()
+            rows = []
+            for row in sheet.iter_rows(values_only=True):
+                values = [None if v=='' else v for v in row]
+                while values and values[-1] is None: values.pop()
+                rows.append(values)
+            while rows and not rows[-1]: rows.pop()
+            contents[name] = rows
+    finally:
+        book.close()
+    require(contents, '飞书题库 / 没有可核对的国家题单')
+    return hashlib.sha256(json.dumps(contents,ensure_ascii=False,sort_keys=True,default=str).encode()).hexdigest()
 
 
 def fetch_bank(url, destination, read=cli_read):

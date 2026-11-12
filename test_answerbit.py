@@ -338,6 +338,8 @@ class AnswerbitTest(unittest.TestCase):
 
         log = io.StringIO()
         with patch("sys.argv",args), patch.object(answerbit,"operator_credentials",return_value=("test","brand")), \
+             patch.object(answerbit,'question_bank_url',return_value='https://example.feishu.cn/wiki/test'), \
+             patch('feishu_bank.fetch_bank',return_value={'source':'feishu-live','revision':1}), \
              patch.object(dashboard,"PacedRead",return_value=list_only), contextlib.redirect_stderr(log):
             self.assertEqual(dashboard.main(),1)
         self.assertIn("3 条有题库候选的异常记录缺少已确认题号",log.getvalue())
@@ -352,6 +354,8 @@ class AnswerbitTest(unittest.TestCase):
         args.extend(["--excel",str(excel)])
         native = {"data":{},"issues":{}}
         with patch("sys.argv",args), patch.object(answerbit,"operator_credentials",return_value=("test","brand")), \
+             patch.object(answerbit,'question_bank_url',return_value='https://example.feishu.cn/wiki/test'), \
+             patch('feishu_bank.fetch_bank',return_value={'source':'feishu-live','revision':1}), \
              patch.object(dashboard,"PacedRead",return_value=call), patch.object(dashboard,"platform_snapshot",return_value=native), \
              contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(dashboard.main(),0)

@@ -20,8 +20,7 @@ def preflight(bank, markets):
     key,_ = answerbit.operator_credentials()  # Do not open private publishing configuration before the Key gate.
     problems = []
     if not answerbit.question_bank_url(key):
-        if bank.is_file(): problems.append('在线题库未配置；仅可使用本地导出，不能发布为最新在线结果')
-        else: problems.append('缺少题库链接或本地导出，请提供到获批私有配置')
+        problems.append('缺少在线题库私有配置；真实取数前必须核对最新版，本地缓存不能替代')
     try:
         config = load_config()
         missing = [k for k in ('folder_url','approved_members','identity') if not config.get(k)]
