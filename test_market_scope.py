@@ -100,6 +100,7 @@ class CountryDeliveryTest(unittest.TestCase):
     def test_missing_feishu_config_still_generates_local_country_report(self):
         with patch.dict(os.environ,{},clear=True), \
              patch.object(answerbit,'operator_credentials',return_value=('TEST_ONLY','synthetic')), \
+             patch.object(answerbit,'question_bank_url',return_value=None), \
              patch.object(dashboard,'PacedRead',return_value=self.call), \
              patch.object(geo_run,'load_config',side_effect=ArchiveError('飞书配置缺失')), \
              patch.object(geo_run,'publish') as upload, \
@@ -169,8 +170,27 @@ class CountryDeliveryTest(unittest.TestCase):
         private.assert_not_called()
         with patch.dict(os.environ,{},clear=True), \
              patch.object(answerbit,'operator_credentials',return_value=('TEST_ONLY','private-brand')), \
+             patch.object(answerbit,'question_bank_url',return_value=None), \
              patch.object(geo_run,'load_config',side_effect=ArchiveError('not ready')):
             checked=geo_run.preflight(self.f.bank,['GB'])
         self.assertEqual(len(checked['blockers']),2)
         self.assertNotIn('private-brand',json.dumps(checked))
         self.assertNotIn('TEST_ONLY',json.dumps(checked))
+
+    def test_private_bank_url_drives_online_refresh_without_environment_url(self):
+        config=self.root/'private-resources.json'
+        url='https://example.feishu.cn/wiki/synthetic-bank'
+        config.write_text(json.dumps({'brand_id':'synthetic-brand','team_id':'synthetic-team','question_bank_url':url}))
+        with patch.dict(os.environ,{'ANSWERBIT_API_KEY':'TEST_ONLY','ANSWERBIT_RESOURCE_CONFIG':str(config)},clear=True), \
+             patch('feishu_bank.fetch_bank',return_value={'source':'feishu-live','revision':1}) as fetch, \
+             patch.object(dashboard,'PacedRead',return_value=self.call), \
+             patch.object(geo_run,'load_config',side_effect=ArchiveError('发布配置未就绪')), \
+             patch.object(geo_run,'publish') as upload, contextlib.redirect_stdout(io.StringIO()):
+            result,code=geo_run.run(self.f.bank,self.scoped,self.html,['--begin',self.f.day,'--end',self.f.day],markets=['GB'])
+        self.assertEqual((code,result['status']),(0,'local_ready_pending_publication'))
+        fetch.assert_called_once_with(url,self.f.bank)
+        self.assertEqual(len(result['blockers']),1)
+        upload.assert_not_called()
+        public=self.html.read_text()
+        for marker in ('synthetic-brand','synthetic-team','TEST_ONLY'):
+            self.assertNotIn(marker,public)

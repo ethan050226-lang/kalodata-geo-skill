@@ -457,12 +457,16 @@ def main(argv=None, *, status_callback=None):
             key,brand = api.operator_credentials()
             call = PacedRead(key)
         bank_source = None
-        bank_url = args.feishu_bank or os.environ.get("GEO_QUESTION_BANK_URL")
+        bank_url = None
+        if args.mode == 'refresh' and not args.offline_bank:
+            bank_url = args.feishu_bank or api.question_bank_url(key)
         if args.mode == "refresh" and bank_url and not args.offline_bank:
             stage = "飞书在线题库读取与校验"
             from feishu_bank import fetch_bank
             bank_source = fetch_bank(bank_url, args.bank)
             print(json.dumps({"question_bank":bank_source}, ensure_ascii=False), file=sys.stderr, flush=True)
+        if args.mode == 'refresh' and not bank_url:
+            api.require(args.bank.is_file(), '飞书题库 / 缺少在线题库配置或本地导出；请在获批私有环境补齐')
         previous = None
         if args.output.is_file():
             try:
@@ -516,6 +520,8 @@ def main(argv=None, *, status_callback=None):
                 previous = None  # Never embed a prior full-brand or other-country report.
         stage = "看板校验与渲染"
         data = dashboard_data(snapshot,args.bank,native)
+        if bank_url:
+            data['links']['bank'] = bank_url
         if bank_source:
             data["bank_source"] = dict(bank_source)
             if markets:

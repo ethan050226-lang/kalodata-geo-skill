@@ -5,7 +5,6 @@ import io
 import json
 from pathlib import Path
 import sqlite3
-import os
 
 from archive import ArchiveError
 import dashboard
@@ -18,9 +17,9 @@ def preflight(bank, markets):
     """Local prerequisite checks only. Never echo identifiers, URLs or credential values."""
     import answerbit
     markets = normalize_markets(markets)
-    answerbit.operator_credentials()  # Do not open private publishing configuration before the Key gate.
+    key,_ = answerbit.operator_credentials()  # Do not open private publishing configuration before the Key gate.
     problems = []
-    if not os.environ.get('GEO_QUESTION_BANK_URL'):
+    if not answerbit.question_bank_url(key):
         if bank.is_file(): problems.append('在线题库未配置；仅可使用本地导出，不能发布为最新在线结果')
         else: problems.append('缺少题库链接或本地导出，请提供到获批私有配置')
     try:
@@ -40,12 +39,6 @@ def run(bank, snapshot, output, options=(), *, markets=(), local_only=False):
         options = list(options)
         for market in markets:
             options.extend(['--market',market])
-        online = bool(os.environ.get('GEO_QUESTION_BANK_URL'))
-        if not online:
-            require_local = bank.is_file()
-            if not require_local:
-                raise ArchiveError('飞书题库 / 未配置在线题库且无本地导出；请提供题库链接或获批Excel，不能猜测题库内容')
-            options.append('--offline-bank')
         errors = []
         with redirect_stdout(io.StringIO()):
             result = dashboard.main(['refresh',str(bank),str(snapshot),str(output),*options],status_callback=errors.append)
@@ -59,6 +52,7 @@ def run(bank, snapshot, output, options=(), *, markets=(), local_only=False):
                 except (ArchiveError,OSError,ValueError): pass
             return failure(config,'取数与数据校验',why,saved.get('requested_window')), 1
         data = dashboard.retained_data(output)[1]
+        online = (data.get('bank_source') or {}).get('source') == 'feishu-live'
         batch = data['batch']
         local = {'dashboard':str(output.resolve()), 'snapshot':str(snapshot.resolve()), 'report':report(data)}
         blockers = []

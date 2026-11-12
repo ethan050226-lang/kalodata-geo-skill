@@ -10,8 +10,8 @@ Agent先确认运营国家（可多国），引导安全配置品牌级只读Key
 
 ## 管理员私有配置
 
-- Answerbit：运行者安全配置ANSWERBIT_API_KEY，或交互终端隐藏输入。品牌范围用ANSWERBIT_BRAND_ID，或私有.trial/answerbit-resources.json；可用ANSWERBIT_RESOURCE_CONFIG改路径。结构为`{"brand_id":"你的品牌ID","team_id":"你的团队ID"}`，只传brand_id查询。Key格式通过后才读资源文件；查询成功不证明Key没有写权限，需在平台核实只读及品牌范围。
-- 在线题库：GEO_QUESTION_BANK_URL；配置拥有知识库及电子表格只读权限的官方lark-cli，必要时用LARK_CLI指定路径。面向核查的题库链接可用GEO_QUESTION_BANK_URL；未配置则隐藏，不提交内部地址。
+- Answerbit：运行者安全配置ANSWERBIT_API_KEY，或交互终端隐藏输入。品牌范围用ANSWERBIT_BRAND_ID，或私有.trial/answerbit-resources.json；可用ANSWERBIT_RESOURCE_CONFIG改路径。结构见[空白私有配置样例](examples/private-resources.example.json)，填写brand_id、team_id和question_bank_url后存入被忽略的私有目录；不要修改或提交已填值的公开样例，只传brand_id查询。Key格式通过后才读资源文件；查询成功不证明Key没有写权限，需在平台核实只读及品牌范围。
+- 在线题库：先读取GEO_QUESTION_BANK_URL，未设置时在Key就绪后读取同一私有资源文件的question_bank_url；配置拥有知识库及电子表格只读权限的官方lark-cli，必要时用LARK_CLI指定路径。面向核查的题库链接可用GEO_QUESTION_BANK_URL；未配置则隐藏，不提交内部地址。
 - 飞书交付：独立授权及私有GEO_FEISHU_CONFIG，配置指定位置与获准接收者，按[飞书交付](skill/geo-sampling/references/feishu-preview.md)验收。
 
 不提交密钥、资源ID、私人配置、真实题库、原文、日志、数据库、Excel或真实HTML。Answerbit与飞书凭证分开，原文SQLite仅留获批本机。
@@ -78,3 +78,5 @@ python3 archive.py query .trial/operator.sqlite
 先查看预检再发布；草稿使用独立路径。同步失败保留本地批次，null表示不适用。
 
 回归检查：`python3 -m unittest discover -p 'test_*.py'`；手算及模板：`node test_scenarios.cjs`；可选浏览器检查：`node test_dashboard_ui.cjs <本地看板.html>`，可设置PLAYWRIGHT_MODULE、CHROME_PATH和SCREENSHOT_DIR。该验证使用独立浏览器，真实看板和截图保持私有。测试不能代替飞书真实运营账号验收。
+
+真实品牌、团队、题库地址仅在获批私有环境配置；GitHub只分发空白样例和读取逻辑。其他运行环境须由管理员安全配置，不能通过公开仓库自动获得本机真实值。Team ID仅作管理定位，不额外传给当前回答接口。

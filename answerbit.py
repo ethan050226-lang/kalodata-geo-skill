@@ -17,6 +17,7 @@ import warnings
 from unicodedata import normalize
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.parse import urlsplit
 from zipfile import BadZipFile
 
 from archive import ArchiveError, URL, citation_flag, domain_hit, host, identifier, read_json, require, write_atomic
@@ -550,6 +551,38 @@ def read_snapshot(path, group_id=None, tag_ids=()):
         }
 
 
+def private_resources(key):
+    require(key and key.isascii() and key.isprintable() and not any(char.isspace() for char in key),
+            '凭证 / 请先安全提供当前运行者的只读Key，再读取私有资源配置')
+    resources = Path(os.environ.get('ANSWERBIT_RESOURCE_CONFIG') or
+                     Path(__file__).resolve().parent / '.trial/answerbit-resources.json')
+    try:
+        config = json.loads(resources.read_text())
+        require(isinstance(config,dict), '资源配置 / 本机配置格式无效')
+        return config
+    except FileNotFoundError:
+        return {}
+    except (OSError,ValueError):
+        raise ArchiveError('资源配置 / 本机资源配置不可读，请由管理员核对；不显示配置内容') from None
+
+
+def question_bank_url(key):
+    require(key and key.isascii() and key.isprintable() and not any(char.isspace() for char in key),
+            '凭证 / 请先安全提供只读Key，再读取题库配置')
+    url = os.environ.get('GEO_QUESTION_BANK_URL') or private_resources(key).get('question_bank_url')
+    if not url:
+        return None
+    require(isinstance(url,str), '飞书题库 / 私有题库地址须为文本，不回显配置内容')
+    try:
+        parsed = urlsplit(url)
+        require(parsed.scheme=='https' and parsed.hostname and parsed.hostname.endswith('.feishu.cn')
+                and parsed.path.startswith(('/wiki/','/sheets/')) and not parsed.username and not parsed.password,
+                '飞书题库 / 私有题库地址格式无效；请管理员核对，不回显实际地址')
+    except (TypeError,ValueError):
+        raise ArchiveError('飞书题库 / 私有题库地址格式无效；请管理员核对') from None
+    return url
+
+
 def operator_credentials():
     key = os.environ.get("ANSWERBIT_API_KEY")
     if not key:
@@ -564,16 +597,7 @@ def operator_credentials():
             "凭证 / Key 为空或格式无效，请重新配置当前运行者的只读 Key")
     brand = os.environ.get("ANSWERBIT_BRAND_ID")
     if not brand:
-        resources = Path(os.environ.get("ANSWERBIT_RESOURCE_CONFIG") or
-                         Path(__file__).resolve().parent / ".trial/answerbit-resources.json")
-        try:
-            config = json.loads(resources.read_text())
-            require(isinstance(config, dict), "资源配置 / 本机配置格式无效")
-            brand = config.get("brand_id")
-        except FileNotFoundError:
-            pass
-        except (OSError, ValueError):
-            raise ArchiveError("资源配置 / 本机资源配置不可读，请由管理员核对；不显示配置内容") from None
+        brand = private_resources(key).get('brand_id')
     require(identifier(brand), "资源配置 / Key 已提供，但本机品牌范围尚未配置，请由管理员配置私有资源文件或 ANSWERBIT_BRAND_ID")
     return key, brand
 
