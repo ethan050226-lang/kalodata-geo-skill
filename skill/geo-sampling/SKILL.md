@@ -1,6 +1,6 @@
 ---
 name: geo-sampling
-description: 读取 Answerbit 已有的 Kalodata 回答记录，对照最新飞书题库计算 GEO 指标，核对版本后交付已验收飞书看板链接与简报；也支持本地快照复盘。
+description: 读取 Answerbit 已有的 Kalodata 回答记录，对照最新飞书题库计算 GEO 指标，交付已验收看板与简报；支持快照复盘，并指导具备原生调度和消息能力的 Agent 按国家定时推送。
 ---
 
 # GEO 采样 Skill / GEO Sampling Skill
@@ -22,7 +22,13 @@ Answerbit 的团队与品牌 ID 不写入公开 Skill、对话、常规日志或
 
 用户明确离线时加 `--offline-bank`；没有在线 URL 配置时仍支持原 Excel 流程，但必须标注本地题库，不宣称已同步最新版。`snapshot` 和 `review` 不自动换题库，避免改写历史口径。单独验证题库可用 `python3 feishu_bank.py <私有目录/题库.xlsx>`，无需 Answerbit Key。首次在线同步额外耗时，按实际进度更新估时。
 
-## 默认输出看板
+## 按国家定时推送
+
+用户要求定时、主动推送或按国家给运营发送时，先按[国家定时推送](references/scheduled-delivery.md)核实运行 Agent 的持久调度、数据读取、已验收发布及消息路由能力，再用原生调度工具创建或更新任务，不能靠本 Skill 文本声称已经后台运行。用户禁止 CLI 时不调用终端、shell、CLI 或改用其他平台的定时器；原生能力不足则报告缺项。
+
+每个接收人须绑定已验证的国家范围和准确的会话/用户标识。普通双人私聊不等于该运营与智能体的会话，群路由须验证成员仅为获准接收者及必要智能体。先完成一次性定时实发测试，再区分报告调度、消息送达和真实数据链路的验收状态。相同任务复用更新，不重复创建。
+
+## 手动运行与交付
 
 运行者提供品牌级只读 Key 后，从仓库根目录运行 `python3 geo_run.py <在线题库缓存.xlsx> <私有目录/dashboard.sqlite> <私有目录/GEO运营看板.html> --excel <私有目录/GEO采样明细.xlsx>`。管理员需先配置在线题库与私有 `GEO_FEISHU_CONFIG`；默认读取北京时间最近七个自然日的全部范围；指定日期时加 `--begin YYYY-MM-DD --end YYYY-MM-DD`。仅本地或离线复盘继续用 `dashboard.py`，不冒充已完成飞书交付。
 
