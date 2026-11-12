@@ -38,6 +38,14 @@ python3 geo_run.py /path/to/question-bank.xlsx .trial/dashboard.sqlite .trial/GE
 
 answerbit.py支持单个`--group-id`和可重复`--tag-id`，按交集计算；多分组用看板。平台分组、标签及飞书分类独立；总体按唯一任务计数。正常与异常明细须匹配已确认题号，无候选记录单列不入指标；有候选但歧义时输出.question-check.xlsx并停止发布。
 
+## 对账与结果字段
+
+题文仅做Unicode规范化和空白归一，不按语义近似强配题号。同一句题文对应多个国家时，须用唯一可区分的市场标签确认；采样网络地区不能当目标市场。可用同批已确认提问ID与相同题文补齐异常题号，冲突时保留候选核查。题库导出文件SHA-256作为本地版本标识；在线版本另保留修订号和内容校验值。
+
+读取返回摘要时，官网链接用`website_links`，分组/标签拆分用`website_links_by_group`和`website_links_by_tag`；内容指标用`content`，范围拆分用`dimensions`；Answerbit分组和标签分别用`answerbit_groups`及`answerbit_tags`。若`content_status=需刷新`或缺相应字段，刷新到独立快照，保留旧批可查；不得将缺字段解释为零。
+
+注意工具差异：dashboard.py流程会将通过校验、唯一匹配的题文和回答原文保存在本地SQLite；单独answerbit.py指标入口计算后丢弃回答原文，其库不能冒充原文查询库。新旧快照不可据此覆盖或混用。
+
 ## 交付和规范
 
 默认交付已验收飞书链接及同批简报：核心数据表、一段结论、最多三条证据行动。Excel可本地生成，默认不上传。原文通过同批本机库查看；飞书共享版仅保留题文、题号、日期、平台和分组定位，工作台入口不是原文直达。
