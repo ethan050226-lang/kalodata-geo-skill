@@ -62,6 +62,7 @@ def refresh_answers(bank, snapshot, brand, begin, end, call):
     # Fetch at most one small wave ahead. Answer bodies stay in memory.
     _, questions, by_text = api.load_bank(bank)
     listed, pending = [], {}
+    detail_hashes = {}
     reviewed = {}
     remaining = iter(())
 
@@ -82,12 +83,21 @@ def refresh_answers(bank, snapshot, brand, begin, end, call):
             if not pending:
                 for task in islice(remaining, 20):
                     pending[task] = executor.submit(call, path, {"brand_id": brand, "task_id": task})
-            return pending.pop(payload["task_id"]).result()
+            detail = pending.pop(payload["task_id"]).result()
+            from publication import digest
+            detail_hashes[payload['task_id']] = digest(detail)
+            return detail
         staged = Path(directory) / "refresh.sqlite"
         report = api.refresh(bank,staged,brand,begin,end,fetch,page_size=500,
                              review_unknown=review_unknown,store_answers=True,require_issue_numbers=True)
         api.require(len(reviewed)==report["content"]["recommendation"]["unknown"],
                     "推荐复检 / 当次未知任务总数未闭合")
+        from publication import SCHEMA, digest
+        with sqlite3.connect(staged) as db:
+            db.execute('CREATE TABLE source_evidence (schema TEXT, brand_sha256 TEXT, content_sha256 TEXT, complete INTEGER)')
+            records = sorted(listed, key=lambda r: str(r['task_id']))
+            db.execute('INSERT INTO source_evidence VALUES (?,?,?,1)',
+                       (SCHEMA, digest(str(brand)), digest({'list':records,'details':detail_hashes})))
         write_review(staged,identity(staged),reviewed)
         api.write_atomic(snapshot,staged.read_bytes())
         api.write_atomic(sidecar(snapshot),sidecar(staged).read_bytes())
@@ -392,7 +402,7 @@ def previous_comparison(data, previous, *, refresh=False):
             "metrics":changes,"limitations":reasons}
 
 
-def main():
+def main(argv=None, *, status_callback=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("refresh","snapshot","review"))
     parser.add_argument("bank", type=Path)
@@ -405,7 +415,7 @@ def main():
     parser.add_argument("--fetch-platform", action="store_true")
     parser.add_argument("--defer-unavailable", action="store_true", help="复检时暂缓上轮未读到的任务")
     parser.add_argument("--excel", type=Path, help="导出同批可筛选的 .xlsx 记录")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     stage = "配置"
     staging = None
     try:
@@ -518,6 +528,8 @@ def main():
     except (api.ArchiveError, OSError, sqlite3.Error, ValueError, KeyError) as error:
         why = str(error) if isinstance(error, api.ArchiveError) else "文件、数据库或响应结构异常"
         status = {"stage":stage,"error":why,"attempt":datetime.now(CHINA).isoformat(timespec="seconds"),
+                  "requested_window":[args.begin or str(datetime.now(CHINA).date()-timedelta(days=6)),
+                                      args.end or str(datetime.now(CHINA).date())],
                   "retained":str(args.output.resolve()) if args.output.is_file() else None,
                   "last_success":None}
         if isinstance(error,api.QuestionNumberError):
@@ -539,6 +551,7 @@ def main():
                 api.write_atomic(args.output, (before + DATA_MARKER + encode(old_data) + "</script>" + after).encode())
             except (OSError, ValueError, IndexError, KeyError):
                 pass
+        if status_callback is not None: status_callback(status)
         print(json.dumps(status,ensure_ascii=False),file=sys.stderr)
         return 1
     finally:

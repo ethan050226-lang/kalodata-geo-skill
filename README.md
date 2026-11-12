@@ -2,17 +2,21 @@
 
 支持 Answerbit 真实只读分析，也提供独立的合成数据试跑。使用 Python 3.9+ 和 Python 内置的 SQLite（SQLite 3.30+）。
 
-## 生成运营看板
+## 默认交付飞书看板
 
 准备当前飞书题库导出，安装 `requirements.txt`。由管理员在本机私有资源文件配置品牌范围（或设置 `ANSWERBIT_BRAND_ID`），实际 ID 不进入公开说明。运行时隐藏输入只覆盖 Kalodata 的只读 Key，或在当前运行环境配置 `ANSWERBIT_API_KEY`。
 
 Agent 启动真实取数前应告知所需 Key 和预计耗时，安全配置完成前暂停。约 1,000–3,000 条记录可先估 3–8 分钟，限流与采样窗口会影响时间。
 
 ```sh
-python3 dashboard.py refresh /path/to/question-bank.xlsx .trial/dashboard.sqlite .trial/GEO运营看板.html --excel .trial/GEO采样明细.xlsx
+python3 geo_run.py /path/to/question-bank.xlsx .trial/dashboard.sqlite .trial/GEO运营看板.html --excel .trial/GEO采样明细.xlsx
 ```
 
-默认交付同批简短报告、`GEO运营看板.html` 和 `GEO采样明细.xlsx`。报告写在对话内，按核心数据表、一段结论与判断、最多三个优先行动项组织。核心表包含「提及率」，可同时采用 Answerbit 平台快照，并标明各自来源。飞书会话支持附件且获准交付时，两个文件作为当前用户可下载的产物。HTML 在浏览器里离线筛选和对照。Excel 可按题号、日期、市场、平台、分组和标签筛选，并有单独的异常表。两份文件保留必要的回查字段，含原文的 SQLite 留在获批本机。
+管理员先在私有环境配置最新题库 `GEO_QUESTION_BANK_URL` 和 `GEO_FEISHU_CONFIG`，详见[飞书交付流程](skill/geo-sampling/references/feishu-preview.md)。默认交付已验收飞书预览链接和同批简短报告：核心数据表、一段结论与判断、最多三个带证据的优先行动。Excel 仍可本地生成，默认不上传或发附件；用户明确要求并确认适合共享后再交付。SQLite 原文只留获批本机。仅本地分析继续用 `python3 dashboard.py refresh ...`，不冒充飞书交付完成。
+
+`geo_run.py` 完整读取与校验后核对远端版本。版本相同且权限、访问及回读校验均通过时返回 `reused`；有变化返回 `pending_acceptance`。后者必须由 Agent 在飞书实际测试筛选、矩阵、页面、对照、图表、指标说明与权限，保存逐版本证据，再用 `feishu_publish.py <本地看板.html> <本地.sqlite> --accept-proof <证据.json>` 入账为 `published`，之后才返回新链接。没有浏览器或授权时明确待验收，不伪造通过。
+
+版本同时检查窗口、品牌、题库、实际范围、样本集合、原始响应内容校验值、数据库判定、口碑/来源/状态、规则与模板。相同样本 ID 或条数不能证明相同版本。历史信息缺失、远端查重或上传失败均保留上一成功入口。使用已记录的上一入口时注明是否重新核实访问。
 
 再次刷新同一输出位置时，会自动与上一次成功 HTML 的整批数据对比。平台快照优先，缺项时使用 Skill 自算指标。首次运行注明无历史数据，题库、题目范围、分析口径或窗口长度不同会提示可比限制。失败尝试不更新上次基线。
 
@@ -30,7 +34,9 @@ python3 dashboard.py refresh /path/to/question-bank.xlsx .trial/dashboard.sqlite
 
 ## 飞书内预览
 
-用户要求飞书内交付时，先用 `python3 feishu_delivery.py <本地成功看板.html> <共享看板.html>` 生成不含回答原文和本机查询入口的共享版，再上传公司批准的云空间目录。逐个检查文件的链接分享及协作者；不能假设沿用文件夹权限。完成交互与权限验收后再返回飞书入口。完整步骤与自动更新边界见[飞书预览交付](skill/geo-sampling/references/feishu-preview.md)。当前提供共享准备和嵌入式导航兼容，上传须由具备权限的飞书 CLI 或网页完成；未配置授权不声称已自动发布。原文在 Answerbit 工作台按题文、日期、平台和分组回查。
+共享版仅含汇总、题文和定位字段，原文在 Answerbit 工作台按题文、日期、平台和分组回查。`feishu_delivery.py` 可单独准备共享文件；`feishu_publish.py` 负责远端核对、候选上传及验收入账。新文件先上传无业务数据的占位，权限收紧并检查通过后才填入真实内容，避免平台默认链接分享暴露看板。已验收清单回读后才更新本机成功索引。
+
+当前按每次 Skill 运行触发，无定时任务；不保证无人值守，因为实际预览和真实账号验收仍需具备浏览器的 Agent 完成。已有飞书应用若缺 scope 将明确停止；本机测试不代替真实发布。远端固定入口切换尚未实现，每个验收版本有独立链接。多人发布先使用统一串行运行环境，不同时从不同机器写同一目录。
 
 ## 合成试跑
 
