@@ -18,10 +18,12 @@ from archive import ArchiveError, require, write_atomic
 
 
 def cli_read(args):
+    identity = os.environ.get('GEO_FEISHU_BANK_IDENTITY') or 'bot'
+    require(identity in ('bot','user'), '飞书题库 / 读取身份须为已获批的 bot 或 user；不得自动借用其他身份')
     cli = os.environ.get('LARK_CLI') or shutil.which('lark-cli')
     require(cli, '飞书题库 / 当前 Agent 尚未配置题库读取工具，请由 Agent 检查已有官方飞书工具；无需用户提供程序组件')
     try:
-        result = subprocess.run([cli, *args, '--as', 'bot', '--format', 'json'],
+        result = subprocess.run([cli, *args, '--as', identity, '--format', 'json'],
                                 capture_output=True, text=True, timeout=120)
         payload = json.loads(result.stdout if result.returncode == 0 else result.stderr)
     except (OSError, ValueError, subprocess.TimeoutExpired):
@@ -29,8 +31,17 @@ def cli_read(args):
     if result.returncode != 0 or payload.get('ok') is not True:
         error = payload.get('error', {})
         scopes = ', '.join(error.get('missing_scopes', []))
-        reason = ('当前 Agent 尚未获准读取飞书题库；请由 Agent 区分账号授权、应用权限与文件阅读权限，需要企业管理员审批时先报告并等待用户决定，不要求用户提供权限代码'
-                  if scopes else '当前 Agent 暂时无法读取在线题库；请由 Agent 核对登录、文件阅读权限及网络，不把所有失败都当成缺权限')
+        subtype = error.get('subtype')
+        if subtype == 'app_scope_not_applied' or scopes and identity == 'bot':
+            reason = ('当前 Agent 读取题库失败：当前飞书应用尚未开通题库读取权限；按题库连接指引核对官方开通页的精确只读项，'
+                      '免审也先征得用户确认，不勾选一并开通其他权限；需要企业审批时先报告并等待用户决定；不要反复个人登录')
+        elif identity == 'user' and subtype in ('token_missing','token_expired','invalid_token'):
+            reason = '当前 Agent 的用户身份尚未授权或登录已失效；先核对已有应用权限，再引导本人完成官方最小授权，不在聊天索取令牌'
+        elif identity == 'user' and (subtype == 'missing_scope' or scopes):
+            reason = '当前 Agent 的用户授权尚未覆盖题库读取；先核对已有应用权限，再补所需的最小用户授权，不自动更换账号'
+        else:
+            reason = ('当前 Agent 暂时无法读取在线题库；请核对已配置身份、文件可阅读权限、知识库链接解析及网络，'
+                      '不把所有失败都当成缺权限')
         details = f'；管理员核对信息：{scopes}' if scopes else ''
         raise ArchiveError(f"飞书题库 / {reason}；错误码 {error.get('code', '未知')}{details}；停止后续取数，旧数据保留")
     return payload['data']

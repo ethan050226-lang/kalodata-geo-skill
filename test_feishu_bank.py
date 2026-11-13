@@ -10,6 +10,43 @@ from answerbit import MARKETS
 from archive import ArchiveError
 
 class BankTest(unittest.TestCase):
+    def test_reuses_configured_identity_without_login_or_switching(self):
+        from feishu_bank import cli_read
+        success=SimpleNamespace(returncode=0,stdout=json.dumps({'ok':True,'data':{'revision':8}}))
+        for configured,expected in ((None,'bot'),('bot','bot'),('user','user')):
+            env={} if configured is None else {'GEO_FEISHU_BANK_IDENTITY':configured}
+            with patch.dict('os.environ',env,clear=True), \
+                 patch('feishu_bank.shutil.which',return_value='synthetic-cli'), \
+                 patch('feishu_bank.subprocess.run',return_value=success) as run:
+                self.assertEqual(cli_read(['sheets','+workbook-info'])['revision'],8)
+                self.assertEqual(run.call_count,1)
+                self.assertEqual(run.call_args.args[0],
+                    ['synthetic-cli','sheets','+workbook-info','--as',expected,'--format','json'])
+
+    def test_invalid_identity_stops_before_any_command(self):
+        from feishu_bank import cli_read
+        with patch.dict('os.environ',{'GEO_FEISHU_BANK_IDENTITY':'auto'},clear=True), \
+             patch('feishu_bank.subprocess.run') as run:
+            with self.assertRaisesRegex(ArchiveError,'读取身份'):
+                cli_read(['sheets','+workbook-info'])
+            run.assert_not_called()
+
+    def test_app_scope_and_user_login_failures_have_different_next_steps(self):
+        from feishu_bank import cli_read
+        cases=(('app_scope_not_applied','当前飞书应用尚未开通','不要反复个人登录'),
+               ('token_missing','用户身份尚未授权','已有应用权限'),
+               ('missing_scope','用户授权尚未覆盖','已有应用权限'))
+        for subtype,reason,next_step in cases:
+            denied=SimpleNamespace(returncode=1,stderr=json.dumps({'ok':False,'error':{
+                'code':'99991672','subtype':subtype,'missing_scopes':['sheets:spreadsheet:read']}}))
+            with patch.dict('os.environ',{'GEO_FEISHU_BANK_IDENTITY':'user'},clear=True), \
+                 patch('feishu_bank.shutil.which',return_value='synthetic-cli'), \
+                 patch('feishu_bank.subprocess.run',return_value=denied) as run:
+                with self.assertRaises(ArchiveError) as caught:
+                    cli_read(['sheets','+workbook-info'])
+                self.assertIn(reason,str(caught.exception));self.assertIn(next_step,str(caught.exception))
+                self.assertEqual(run.call_count,1)
+
     def test_missing_excel_component_names_agent_as_handler_before_any_read(self):
         import answerbit
         original = builtins.__import__
