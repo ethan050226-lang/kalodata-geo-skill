@@ -11,7 +11,8 @@ Agent先确认运营国家（可多国），引导安全配置品牌级只读Key
 ## 管理员私有配置
 
 - Answerbit：运行者安全配置ANSWERBIT_API_KEY，或交互终端隐藏输入。品牌范围用ANSWERBIT_BRAND_ID，或私有.trial/answerbit-resources.json；可用ANSWERBIT_RESOURCE_CONFIG改路径。结构见[空白私有配置样例](examples/private-resources.example.json)，填写brand_id、team_id和question_bank_url后存入被忽略的私有目录；不要修改或提交已填值的公开样例，只传brand_id查询。Key格式通过后才读资源文件；查询成功不证明Key没有写权限，需在平台核实只读及品牌范围。
-- 在线题库：先读取GEO_QUESTION_BANK_URL，未设置时在Key就绪后读取同一私有资源文件的question_bank_url；配置拥有知识库及电子表格只读权限的官方lark-cli，必要时用LARK_CLI指定路径。面向核查的题库链接可用GEO_QUESTION_BANK_URL；未配置则隐藏，不提交内部地址。
+- 在线题库：先读取GEO_QUESTION_BANK_URL，未设置时在Key就绪后读取同一私有资源文件的question_bank_url；用户已允许题库读取使用CLI时，可复用拥有知识库及电子表格只读权限的官方lark-cli，必要时用LARK_CLI指定路径。仅放开题库读取，不自动放开其他飞书操作的CLI限制。面向核查的题库链接可用GEO_QUESTION_BANK_URL；未配置则隐藏，不提交内部地址。
+- 权限审批：任何需企业管理员审批的权限，先按[权限申请前置报告](skill/geo-sampling/SKILL.md#权限申请前置报告)向用户说明具体权限、用途、资源范围、缺项与替代方式；用户决定前不发起申请、扩权或为权限生效发布应用版本。复用既有权限不等于已验证实时题库可读，仍需实际读取验收。
 - 飞书交付：独立授权及私有GEO_FEISHU_CONFIG，配置指定位置与获准接收者，按[飞书交付](skill/geo-sampling/references/feishu-preview.md)验收。
 
 不提交密钥、资源ID、私人配置、真实题库、原文、日志、数据库、Excel或真实HTML。Answerbit与飞书凭证分开，原文SQLite仅留获批本机。
