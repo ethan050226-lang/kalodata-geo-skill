@@ -19,6 +19,8 @@ def make_server(snapshot, output):
     db_uri = snapshot.resolve().as_uri() + "?mode=ro"
     route = "/" + token_urlsafe(24) + "/"
     indexed = {r["task"]:r["q"] for r in data["recommendations"]}
+    indexed.update({r['task']:r['q'] for r in (data.get('quality') or {}).get('records',[])})
+    indexed.update({r['reference_task']:r['q'] for r in (data.get('quality') or {}).get('records',[]) if r['reference_task']})
 
     def check_batch(db):
         db.row_factory = sqlite3.Row
@@ -68,7 +70,7 @@ def make_server(snapshot, output):
                         SELECT a.prompt,a.body,s.question_id,s.task_date,s.platform,q.market,g.group_name
                         FROM sample_answer a JOIN sample s USING(task_id) JOIN question q USING(question_id)
                         LEFT JOIN sample_group g USING(task_id)
-                        WHERE a.task_id=? AND s.question_id=? AND s.status='valid'
+                        WHERE a.task_id=? AND s.question_id=?
                     """, (task, indexed[task])).fetchone()
             except (ValueError, sqlite3.Error):
                 self.message(409, "本地原文库已变更或无法读取，请重新打开最新看板。")

@@ -26,6 +26,8 @@ def manifest(snapshot, data):
         tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         required = {'sample', 'question', 'sample_answer', 'sample_question', 'sample_group',
                     'sample_tag', 'sample_website', 'sample_content', 'issue', 'retrieval_scope', 'source_evidence'}
+        if data.get('quality') is not None:
+            required.add('sample_quality')
         require(required <= tables, '版本校验 / 历史批次缺少完整来源校验信息，不能判为相同版本；请重新取数')
         db.row_factory = sqlite3.Row
         batch = dict(db.execute('SELECT * FROM batch').fetchone())
@@ -107,6 +109,10 @@ def report(data):
             'comparison': {k:comparison.get(k) for k in ('previous_batch','current_batch','limitations')},
             'conclusion': conclusion,
             'limitations': {'issues': data.get('issues'), 'sampling_coverage': '缺少独立计划量，无法计算',
+                            'answer_quality': {'checked':data['quality']['checked'],
+                                               'comparable':data['quality']['comparable'],
+                                               'excluded':len(data['quality']['records']),
+                                               'version':data['quality']['version']} if data.get('quality') else '旧批未检测，需刷新',
                             'recommendation': '本地规则初判，不等于人工确认',
                             'unknown_reputation': sum(r['sent'].get('unknown', 0) for r in data['rows'])}}
 

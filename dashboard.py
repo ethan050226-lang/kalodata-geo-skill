@@ -26,7 +26,7 @@ ASSET = Path(__file__).resolve().parent / "skill/geo-sampling/assets/dashboard.h
 SOURCE = "https://answerbit.qq.com/zh-CN/dashboard/home"
 QNA = os.environ.get("GEO_QUESTION_BANK_URL", "")
 DATA_MARKER = '<script id="geo-data" type="application/json">'
-ANALYSIS_VERSION = "geo-core/2-unnamed-negative"
+ANALYSIS_VERSION = "geo-core/3-answer-quality"
 
 
 class PacedRead:
@@ -187,11 +187,31 @@ def dashboard_data(snapshot, bank, native):
         for row in db.execute("SELECT task_id,tag_id,tag_name FROM sample_tag ORDER BY tag_id"):
             tags[row["task_id"]].append(row["tag_id"])
             tag_names[row["tag_id"]] = row["tag_name"]
+        quality = None
+        has_quality = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sample_quality'").fetchone()
+        if has_quality:
+            from answer_quality import VERSION as QUALITY_VERSION
+            quality = {'version':QUALITY_VERSION, 'checked':db.execute('SELECT count(*) FROM sample_quality').fetchone()[0],
+                       'comparable':db.execute('SELECT count(*) FROM sample_quality WHERE reference_units IS NOT NULL').fetchone()[0],
+                       'records':[]}
+            for row in db.execute('''
+                SELECT v.*,s.question_id,s.platform,s.task_date,q.market,q.category,p.prompt,g.group_id,g.group_name
+                FROM sample_quality v JOIN sample s USING(task_id) JOIN question q USING(question_id)
+                JOIN sample_question p USING(task_id) LEFT JOIN sample_group g USING(task_id)
+                WHERE v.status<>'accepted' ORDER BY s.task_date,s.task_id
+            '''):
+                dim = (row['market'],row['platform'],row['task_date'],row['group_id'] or '',
+                       named_prompt(row['prompt']),tuple(tags[row['task_id']]))
+                quality['records'].append(dict(q=row['question_id'],text=row['prompt'],task=row['task_id'],d=dim,
+                    category=row['category'],**{k:row[k] for k in ('status','reason','units','reference_task','reference_units','ratio')}))
         sites = defaultdict(dict)
         for row in db.execute("SELECT * FROM sample_website"):
             sites[row["task_id"]][row["brand"]] = [row["body_hit"], row["formal_hit"]]
         buckets = {}
         groups = {}
+        if quality:
+            for row in db.execute('SELECT group_id,group_name FROM sample_group'):
+                groups[row['group_id'] or ''] = row['group_name'] or '分组未知'
         neutral = []
         valid = 0
         valid_tasks = set()
@@ -297,7 +317,7 @@ def dashboard_data(snapshot, bank, native):
             "core_mention":{"numerator":core_num,"denominator":core_den,
                             "excluded_negative":sum(r["negative_mentions"] for r in unnamed),
                             "value":core_num/core_den if core_den else None},
-            "analysis_version":ANALYSIS_VERSION,
+            "analysis_version":ANALYSIS_VERSION if has_quality else "geo-core/2-unnamed-negative",
             "prompt_basis":"Answerbit 返回题文" if prompt_join else "唯一匹配的题库题文回算（旧批）",
             "question_named":{r[0]:r[4] for r in question_scope},
             "question_scope":{"signature":hashlib.sha256(json.dumps(sorted(question_scope)).encode()).hexdigest(),
@@ -307,7 +327,7 @@ def dashboard_data(snapshot, bank, native):
             "competitors":{v:market_brands(v) for v in api.MARKETS.values() if not scope_markets or v in scope_markets},
             "tags":tag_names, "groups":groups, "neutral":neutral, "links":{"answerbit":SOURCE,"bank":QNA},
             "review":{"rows":review_rows,"version":review["version"],"checked_at":review["checked_at"]} if review else None,
-            "recommendations":recommendations}
+            "recommendations":recommendations,"quality":quality}
     if scope_markets:
         result['market_scope'] = {'markets':scope_markets, 'platform_snapshot':'未纳入：平台接口为品牌全量口径',
                                   'unassigned_issues':'无法归属国家的异常未纳入；不能据此认定全批没有未匹配题目'}

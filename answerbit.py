@@ -24,6 +24,7 @@ from archive import ArchiveError, URL, citation_flag, domain_hit, host, identifi
 from content_metrics import (KALODATA, first_ranks, recommendation, reputation_label,
                              strip_opening_echo, summarize_content, named_prompt)
 from workbook_export import write_question_check
+from answer_quality import assess as assess_quality
 
 BASE = "https://answerbit.qq.com"
 LIST = "/geo/task/get"
@@ -35,7 +36,7 @@ MARKETS = dict(zip(
     ("美国", "英国", "德国", "法国", "中国", "泰国", "越南", "印尼", "马来西亚", "日本", "韩国"),
     ("US", "GB", "DE", "FR", "CN", "TH", "VN", "ID", "MY", "JP", "KR"),
 ))
-VERSION = "answerbit-observed/3"
+VERSION = "answerbit-observed/4-quality"
 WEBSITES = (("Kalodata", "kalodata.com"), ("FastMoss", "fastmoss.com"))
 BODY_URL = re.compile(r"""(?:[a-z][a-z0-9+.-]*:)?//[^\s<>"'\x60\[\]）】，。；！？、]+""", re.I)
 BARE_URL = re.compile(
@@ -308,8 +309,7 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
         if missing:
             raise QuestionNumberError(missing)
     samples, groups, tags, websites, content, prompts = [], [], [], [], [], []
-    originals = []
-    valid_count = 0
+    originals, quality_inputs, review_candidates = [], [], []
     for row, (number, problem) in zip(records,matches):
         if problem:
             continue
@@ -334,11 +334,14 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
                     and (not list_prompt_id or not detail_prompt_id or list_prompt_id == detail_prompt_id)
                     and (detail_state is None or type(detail_state) is int and detail_state == 2),
                     f"详情 / 题号 {number} 任务 {task} 与列表不一致，请回 Answerbit 核对")
+            quality_inputs.append(dict(task=task, prompt=detail_question, body=body,
+                key=(number,question_text(detail_question),platform,language,row.get('zone'),
+                     str(detail.get('terminal',row.get('terminal'))),
+                     str(detail.get('answer_mode',row.get('answer_mode'))))))
+            if store_answers:
+                originals.append((task, detail_question, body if isinstance(body,str) else ''))
             if isinstance(body, str) and body.strip():
                 status = "valid"
-                valid_count += 1
-                if store_answers:
-                    originals.append((task, detail_question, body))
                 urls = [item.get("url") if isinstance(item, dict) else None
                         for item in links] if isinstance(links, list) else None
                 reputation = detail.get("brand_reputation")
@@ -351,7 +354,7 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
                 content.append((task, json.dumps(ranks), label, code, sentiment,
                                 detail_question if label == "neutral" else None, reputation_issue))
                 if label == "unknown" and review_unknown is not None:
-                    review_unknown(task,body,detail_question,questions[number][0])
+                    review_candidates.append((task,body,detail_question,questions[number][0]))
                 flags = website_flags(body, urls)
                 websites.extend((task, *result) for result in flags)
                 mentioned, official = int(KALODATA in ranks), {name: formal for name, _, formal in flags}["Kalodata"]
@@ -367,9 +370,25 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
         zone = row.get("zone")
         samples.append((task, number, platform, language, day, zone if identifier(zone) else None,
                         status, mentioned, official, form))
+    quality = assess_quality(quality_inputs)
+    excluded = {task for task,item in quality.items() if item['status'] != 'accepted'}
+    samples = [(*r[:6],'data_anomaly',None,None,None) if r[0] in excluded else r for r in samples]
+    content = [r for r in content if r[0] not in excluded]
+    websites = [r for r in websites if r[0] not in excluded]
+    issues = [r for r in issues if not (r[0] in excluded and r[4] in ('answer_unconfirmed','citation_unknown'))]
+    prompt_texts = {r[0]:r[1] for r in prompts}
+    for task,number,platform,_,day,*_ in samples:
+        if task in excluded:
+            item = quality[task]
+            issues.append((task,number,platform,day,'quality_'+item['status'],
+                           'Answerbit 大模型回答记录 / '+item['reason'],prompt_texts[task],None,'原文质量检查'))
+    for candidate in review_candidates:
+        if candidate[0] not in excluded:
+            review_unknown(*candidate)
+    valid_count = sum(r[6] == 'valid' for r in samples)
     require(samples, "题号对账 / 无记录能唯一匹配飞书题库，请核对题文、市场标签和题库版本；已有本地库保留")
     require(valid_count > 0,
-            "取数 / 当前窗口没有可判定的有效回答，请回 Answerbit 核对分析状态；已有本地库保留")
+            f"取数 / 当前窗口没有可判定的有效回答；数据异常 {len(excluded)} 条，请回 Answerbit 核对分析状态及原文；已有本地库保留")
 
     with tempfile.TemporaryDirectory() as directory:
         db_path = Path(directory) / "answerbit.sqlite"
@@ -414,6 +433,10 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
                     prompt TEXT NOT NULL, named_prompt INTEGER NOT NULL CHECK(named_prompt IN (0,1))
                 );
                 CREATE TABLE retrieval_scope (signature TEXT NOT NULL);
+                CREATE TABLE sample_quality (
+                    task_id TEXT PRIMARY KEY REFERENCES sample(task_id), status TEXT, reason TEXT,
+                    units INTEGER, reference_task TEXT, reference_units INTEGER, ratio REAL, version TEXT
+                );
             """)
             db.execute("INSERT INTO batch VALUES (?, ?, ?, ?, ?, ?, ?)",
                        ("Answerbit", begin, end, datetime.now(timezone.utc).isoformat(), version, VERSION, len(records)))
@@ -425,6 +448,9 @@ def refresh(bank, output, brand, begin, end, call, group_id=None, tag_ids=(), *,
             db.executemany("INSERT INTO sample_content VALUES (?, ?, ?, ?, ?, ?, ?)", content)
             db.executemany("INSERT INTO sample_question VALUES (?, ?, ?)", prompts)
             db.execute("INSERT INTO retrieval_scope VALUES (?)",(observed_scope(records),))
+            db.executemany('INSERT INTO sample_quality VALUES (?,?,?,?,?,?,?,?)',
+                [(task,*(item[k] for k in ('status','reason','units','reference_task','reference_units','ratio','version')))
+                 for task,item in quality.items()])
             db.executemany("INSERT INTO issue VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", issues)
             if store_answers:
                 db.execute("""CREATE TABLE sample_answer (
@@ -441,7 +467,7 @@ def read_snapshot(path, group_id=None, tag_ids=()):
         db.row_factory = sqlite3.Row
         batch = dict(db.execute("SELECT * FROM batch").fetchone())
         version = batch["metric_version"]
-        require(version in ("answerbit-observed/1", "answerbit-observed/2", VERSION),
+        require(version in ("answerbit-observed/1", "answerbit-observed/2", "answerbit-observed/3", VERSION),
                 "本地库 / 指标版本不受支持，请重新刷新")
         has_forms = version != "answerbit-observed/1"
         form = "q.prompt_brand_form" if has_forms else "NULL"

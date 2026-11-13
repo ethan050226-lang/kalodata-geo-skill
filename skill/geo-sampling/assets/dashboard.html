@@ -145,6 +145,7 @@ main.wrap{max-width:1700px;margin:0 0 0 224px;padding:0 30px 25px}.hero,.hero::a
 <div class="filter-frame"><div class="filter-heading"><b>记录筛选</b><span>与顶部查看范围同步 · 同维度可多选</span></div>
 <form class="filter pick-grid" id="filter-review" aria-label="推荐记录筛选"></form></div>
 <div id="review-pending"></div></article>
+<article class="card wide"><h3>数据异常 · 已排除的回答</h3><p class="definition">随顶部筛选更新。报错、空白、仅拒答、明确截断及同题同模型明显缩水的回答不进入 Skill 指标的分子和分母。缩水为本地规则初判，不等于已确认平台故障。<a href="#metrics/metric-quality">查看判断规则</a></p><div id="answer-quality"></div></article>
 </div></section>
 <section id="action" class="section action-module" data-page hidden>
 <div class="section-head"><div><h2>问题与行动</h2><p class="sub">从当前样本挑选可回查的线索，每项给出优化和复测步骤。</p></div><span id="action-count" class="label">随筛选更新</span></div>
@@ -155,6 +156,7 @@ main.wrap{max-width:1700px;margin:0 0 0 224px;padding:0 30px 25px}.hero,.hero::a
 <div class="section-head"><h2 id="metrics-title">指标说明</h2><span class="label">看什么 · 怎么算 · 注意什么</span></div><div class="grid">
 <article class="card wide"><h3>样本与题文</h3><dl>
 <dt id="metric-samples">有效回答与题库匹配</dt><dd><p><b>看什么</b> 本次可用于计算的回答量和未纳入范围。</p><p><b>怎么算</b> 按唯一 Answerbit 任务 ID 去重，题目须唯一匹配飞书编号、任务完成分析且正文有效。</p><p><b>注意什么</b> 题库外记录单列数量，题号歧义需核对。采样覆盖率还需独立计划量，缺少计划时无法计算。</p></dd>
+<dt id="metric-quality">回答原文质量检查</dt><dd><p><b>看什么</b> 报错、空白、仅复述题文、仅拒答、明确截断及明显缩水的异常回答。</p><p><b>怎么算</b> 异常记录标为“数据异常”，从全部 Skill 指标的有效样本分子和分母排除，保留题号、题文、原文及原因。同一题文、题号、平台、语言、地区及已知终端/模式内比较文本单位数（中日韩泰字符按字，其余按连续词计）。2 条时以较长回答为参考；3 条及以上取接近中位长度的回答。参考至少 200 单位，当前不超过参考的 35% 且减少至少 150 单位，标为疑似缩水。</p><p><b>注意什么</b> 数值为可复核的筛查阈值，不是业务质量标准。长度差异可能是模型自然波动，不能据此证明缩水原因。无同条件参考时不凭“短”排除；旧批未检查显示需刷新。平台原生快照不套用此过滤；全批无有效回答时停止刷新并保留上一批。</p></dd>
 <dt id="metric-prompt">题文点名判定</dt><dd><p><b>看什么</b> 题目是否已经提示 Kalodata。</p><p><b>怎么算</b> 检查 Answerbit 返回的题文，按审核别名 Kalodata、Kalo Data、Kalo-Data、カロデータ及全半角等价写法判定。</p><p><b>注意什么</b> 题库编号用于定位；旧批缺少返回题文时按唯一匹配的题库题文回算并注明来源。点名状态来自题文，不按回答是否提及判定。</p></dd>
 </dl></article>
 <article class="card"><h3>品牌表现</h3><dl>
@@ -209,7 +211,7 @@ if(D.review){
 }
 const groupPairs=Object.entries(D.groups).filter(([k])=>k).map(([k,v])=>[k,v]);
 const tagPairs=Object.entries(D.tags), ns=([,a],[,b])=>a.localeCompare(b,"zh-CN");
-const enginePairs=[...new Set(D.rows.map(r=>r.d[1]))].sort().map(x=>[x,x]);
+const enginePairs=[...new Set([...D.rows,...(D.quality?.records||[])].map(r=>r.d[1]))].sort().map(x=>[x,x]);
 const dimensions=[
   ["m","市场",Object.entries(D.markets)],
   ["e","平台",enginePairs],
@@ -449,7 +451,7 @@ function cardHistory(id,f){
   if(!metric||metric.change===null||metric.change===undefined)return "上次未记录同口径指标或无有效分母";
   return `较上次 ${metric.change>0?"+":""}${metric.change.toFixed(2)} 个百分点 · 整批同范围`;
 }
-function dataReminder(issues,{sentimentUnknown,missing,n}){
+function dataReminder(issues,{sentimentUnknown,missing,n,qualityExcluded=null}){
   const notes=[];
   if(!issues)notes.push("全批异常统计未知");
   else{
@@ -467,6 +469,8 @@ function dataReminder(issues,{sentimentUnknown,missing,n}){
     if(!sentimentUnknown&&!missing)notes.push("当前筛选口碑与引用字段可判定");
   }
   // No independent sampling plan is stored by the Answerbit observation workflow.
+  if(qualityExcluded===null)notes.push("原文质量未检查，需刷新");
+  else if(qualityExcluded)notes.push(`当前筛选数据异常 ${num(qualityExcluded)} 条，已排除`);
   notes.push("采样覆盖率暂无法计算（未取得计划量）");
   return "数据提醒："+notes.join("；")+"。";
 }
@@ -545,14 +549,17 @@ function render(){
     empty(n?`规则未检出中立推荐。当前范围推荐未知 ${num(unknown)} 条。`:"当前筛选没有有效回答。");
   if(activePage==="answers")renderReview(f,unknown);
   renderActions(rs);
+  const qualityRows=(D.quality?.records||[]).filter(r=>matches(r.d,f));
+  renderQuality(qualityRows);
   const missing=n-known;
   $("quality").innerHTML=`<p>当前范围正式来源字段待核对 <b>${num(missing)}</b> 条，推荐未知 <b>${num(unknown)}</b> 条。</p>
     ${D.issues?`<p class="definition">本批接口返回 ${num(batch.returned_records)} 条，题库未匹配 ${num(D.issues.unmatched_question||0)} 条，题文或市场歧义 ${num((D.issues.ambiguous_question||0)+(D.issues.market_tag_conflict||0))} 条，回答待确认 ${num(D.issues.answer_unconfirmed||0)} 条。${D.market_scope?"此为交付国家数据，无法归属国家的异常未纳入。":"此为全批数据，未匹配项未进入市场筛选。"}</p>`:"<p class=definition>历史快照未保存全批异常统计，数量未知；请重新取数核对。</p>"}
     <p class="sub">实际启用题单与采样计划未取得，样本覆盖率无法计算。题库版本 ${esc(batch.question_version.slice(0,12))} · ${esc(batch.metric_version)}</p>${D.bank_source?`<p class="sub">${D.bank_source.source==="local-export"?"本地导出题库，未核实在线最新版":`在线题库修订号 ${esc(D.bank_source.revision)} · 读取时间 ${esc(D.bank_source.read_at)}`} · ${num(D.bank_source.question_count)} 题</p>`:""}${D.market_scope?`<p class="definition">交付国家：${D.market_scope.markets.map(m=>esc(marketName(m))).join("、")}。${esc(D.market_scope.platform_snapshot)}。${esc(D.market_scope.unassigned_issues)}</p>`:""}`;
 
   const issueNames={unmatched_question:"题库无匹配",ambiguous_question:"题号待确认",market_tag_conflict:"市场标签冲突",
-    citation_unknown:"引用字段缺失",answer_unconfirmed:"回答待确认",tag_metadata_incomplete:"标签信息不完整"};
-  $("home-status").textContent=dataReminder(D.issues,{sentimentUnknown,missing,n})+(D.market_scope?" 当前提醒仅针对交付国家；无法归属国家的异常未纳入。":"");
+    citation_unknown:"引用字段缺失",answer_unconfirmed:"回答待确认",tag_metadata_incomplete:"标签信息不完整",
+    quality_invalid:"数据异常：无效原文",quality_shrunken:"数据异常：疑似缩水"};
+  $("home-status").textContent=dataReminder(D.issues,{sentimentUnknown,missing,n,qualityExcluded:D.quality?qualityRows.length:null})+(D.market_scope?" 当前提醒仅针对交付国家；无法归属国家的异常未纳入。":"");
   $("status-details").innerHTML=$("quality").innerHTML+
     table(["全批异常原因","记录数","影响范围","核查入口"],D.issues?Object.entries(D.issues).map(([code,count])=>[
       esc(issueNames[code]||code),num(count),D.market_scope?"交付国家批次；不随页内筛选缩小":"全部取数批次；不随当前筛选缩小",["unmatched_question","ambiguous_question","market_tag_conflict"].includes(code)?"飞书题库与 Answerbit 用户提问":"Answerbit 大模型回答记录"
@@ -596,6 +603,23 @@ const recommendationLabels={explicit:"明确推荐",conditional:"条件推荐",n
 const hasOriginals=Array.isArray(D.recommendations);
 const sharedPreview=D.delivery?.mode==="feishu";
 const localViewer=!sharedPreview&&hasOriginals&&location.protocol==="http:"&&location.hostname==="127.0.0.1";
+let qualityPage=0,qualityScope="";
+function renderQuality(records){
+  if(!D.quality){$("answer-quality").innerHTML=empty("旧批未保存原文质量检查，需刷新；不能视为零异常。");return;}
+  const signature=JSON.stringify(records.map(r=>r.task));
+  if(signature!==qualityScope){qualityScope=signature;qualityPage=0;}
+  const coverage=`<p class="definition">本批检查原文 ${num(D.quality.checked)} 条，其中 ${num(D.quality.comparable)} 条有可用长度参考；这是整批检测范围，不随顶部筛选重算。没有参考的回答无法排查相对缩水。</p>`;
+  if(!records.length){$("answer-quality").innerHTML=coverage+empty("当前筛选规则未检出数据异常；不等于已人工确认全部正常。");return;}
+  const size=25,start=qualityPage*size;
+  const locate=r=>localViewer?`<a href="./answer?task=${encodeURIComponent(r.task)}" target="_blank" rel="noopener noreferrer">查看原文</a>${r.reference_task?` · <a href="./answer?task=${encodeURIComponent(r.reference_task)}" target="_blank" rel="noopener noreferrer">对照原文</a>`:""}`:`<a href="${esc(D.links.answerbit)}" target="_blank" rel="noopener noreferrer">工作台按题文查找</a>`;
+  $("answer-quality").innerHTML=coverage+`<p class="definition">当前筛选 ${num(records.length)} 条数据异常，已从指标排除；本地库保留原文，Excel“回答质量”保留同批判定。</p>`+table(["题号与提问","市场 / 平台 / 日期","分组 / 标签","异常原因","文本对照","回查"],records.slice(start,start+size).map(r=>[
+    `<strong>${esc(r.q)}</strong><br>${esc(r.text)}`,esc([marketName(r.d[0]),r.d[1],r.d[2]].join(" / ")),
+    esc(groupName(r.d[3])+" / "+r.d[5].map(t=>D.tags[t]||t).join("、")),esc(r.reason),
+    `${num(r.units)} 单位${r.reference_units?` / 参考 ${num(r.reference_units)} · ${(100*r.ratio).toFixed(1)}%<br><small>对照任务 ${esc(r.reference_task)}</small>`:""}`,locate(r)
+  ]))+`<div class="pager"><button id="quality-prev" ${qualityPage===0?"disabled":""}>上一页</button><span>${num(start+1)}–${num(Math.min(start+size,records.length))} / ${num(records.length)}</span><button id="quality-next" ${start+size>=records.length?"disabled":""}>下一页</button></div>`;
+  $("quality-prev").onclick=()=>{qualityPage--;renderQuality(records);};
+  $("quality-next").onclick=()=>{qualityPage++;renderQuality(records);};
+}
 if(hasOriginals)$("review-heading").textContent="非明确推荐记录";
 $("local-answer-note").hidden=false;
 $("local-answer-note").textContent=sharedPreview?"飞书共享版不提供本机数据库查询。原文请到 Answerbit 工作台 → 大模型回答记录，按本表题文、日期、平台、分组定位；工作台链接不能直达某条原文。":localViewer?"点「查看原文」可打开该题号下的这条 Answerbit 回答。":

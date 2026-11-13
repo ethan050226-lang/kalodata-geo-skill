@@ -10,6 +10,8 @@ Agent先确认运营国家（可多国），引导安全配置品牌级只读Key
 
 ## 管理员私有配置
 
+原文质量筛查已接入每次真实刷新：无效和同题同模型明显缩水的回答标为“数据异常”，不进入Skill自算指标的有效样本；异常原因、编号和对照记录在看板“回答表现”和Excel“回答质量”中查看，本地原文保留。筛查阈值与限制见[指标定义](skill/geo-sampling/references/metric-definitions.md#回答原文质量检查)，平台原生快照仍按平台口径。
+
 - Answerbit：运行者安全配置ANSWERBIT_API_KEY，或交互终端隐藏输入。品牌范围用ANSWERBIT_BRAND_ID，或私有.trial/answerbit-resources.json；可用ANSWERBIT_RESOURCE_CONFIG改路径。结构见[空白私有配置样例](examples/private-resources.example.json)，填写brand_id、team_id和question_bank_url后存入被忽略的私有目录；不要修改或提交已填值的公开样例，只传brand_id查询。Key格式通过后才读资源文件；查询成功不证明Key没有写权限，需在平台核实只读及品牌范围。
 - 在线题库：先读取GEO_QUESTION_BANK_URL，未设置时在Key就绪后读取同一私有资源文件的question_bank_url；复用拥有知识库及电子表格只读权限的官方lark-cli，必要时用LARK_CLI指定路径。题库保持只读。面向核查的题库链接可用GEO_QUESTION_BANK_URL；未配置则隐藏，不提交内部地址。
 - 权限审批：任何需企业管理员审批的权限，先按[权限申请前置报告](skill/geo-sampling/SKILL.md#权限申请前置报告)向用户说明具体权限、用途、资源范围、缺项与替代方式；用户决定前不发起申请、扩权或为权限生效发布应用版本。复用既有权限不等于已验证实时题库可读，仍需实际读取验收。

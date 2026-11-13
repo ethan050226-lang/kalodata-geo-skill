@@ -39,6 +39,8 @@ assert(context.dataReminder({unmatched_question:7},{sentimentUnknown:2,missing:1
 assert(context.dataReminder({unmatched_question:7},{sentimentUnknown:0,missing:0,n:3}).includes('当前筛选口碑与引用字段可判定'));
 assert(context.dataReminder(undefined,{sentimentUnknown:0,missing:0,n:0}).includes('全批异常统计未知'));
 assert(context.dataReminder({},{sentimentUnknown:0,missing:0,n:0}).includes('当前筛选无有效回答'));
+assert(context.dataReminder({quality_shrunken:2},{sentimentUnknown:0,missing:0,n:3,qualityExcluded:2}).includes('当前筛选数据异常 2 条，已排除'));
+assert(context.dataReminder({},{sentimentUnknown:0,missing:0,n:3}).includes('原文质量未检查'));
 console.log('Scoped reminder and unknown-state checks passed');
 
 // Run the real preview route handler: local-mode HTML embedded by Feishu must work too.

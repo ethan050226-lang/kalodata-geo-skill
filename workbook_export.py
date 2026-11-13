@@ -154,7 +154,7 @@ def export_workbook(snapshot, data):
                               "负面排除" if sentiment=="negative" else "计入")
             append(records, (row["question_id"],date.fromisoformat(row["task_date"]),data["markets"].get(row["market"],row["market"]),
                 row["platform"],row["group_name"] or "分组未知","、".join(tags[task]) or ("无标签" if row["tags_known"] else "未知"),
-                task,"有效" if valid else "待确认","点名" if named else "未点名",
+                task,"有效" if valid else "数据异常" if row['status']=='data_anomaly' else "待确认","点名" if named else "未点名",
                 labels.get(reviewed.get(task,row["recommendation"])) if valid else None,
                 sentiments[sentiment] if valid else None,
                 " → ".join(sorted(ranks,key=ranks.get)),
@@ -170,6 +170,24 @@ def export_workbook(snapshot, data):
             status = f"已匹配（{row['match_basis']}）" if row["match_basis"] else "已匹配"
             append(issues,(row["question_id"],status,row["question_text"],
                            date.fromisoformat(row["task_date"]),row["platform"],row["task_id"],row["code"],row["check_at"]))
+        if 'sample_quality' in tables:
+            quality = book.create_sheet('回答质量')
+            append(quality,('飞书题号','Answerbit 题文','回答日期','市场','平台','任务 ID','质量判断','原因',
+                            '文本单位数','对照任务 ID','对照文本单位数','相对长度','规则版本'))
+            for row in db.execute('''
+                SELECT v.*,s.question_id,s.task_date,s.platform,q.market,p.prompt
+                FROM sample_quality v JOIN sample s USING(task_id) JOIN question q USING(question_id)
+                JOIN sample_question p USING(task_id) ORDER BY s.task_date,s.task_id
+            '''):
+                append(quality,(row['question_id'],row['prompt'],date.fromisoformat(row['task_date']),
+                    data['markets'].get(row['market'],row['market']),row['platform'],row['task_id'],
+                    '纳入统计' if row['status']=='accepted' else '数据异常',row['reason'],row['units'],
+                    row['reference_task'],row['reference_units'],row['ratio'],row['version']))
+            style(quality,(23,52,14,12,16,24,16,47,15,24,18,14,22),filters=True)
+            append(summary,('原文质量检查','已检查；数据异常从所有 Skill 有效样本分子和分母中排除，原文保留本地'))
+            append(summary,('原文质量规则','同题、同平台、同语言、同地区及已知终端/模式内比较；缩水为规则初判，详见指标说明'))
+        else:
+            append(summary,('原文质量检查','旧批未检查，需刷新；不能视为无异常'))
     style(summary,(26,82))
     style(records,(23,14,12,16,24,32,24,12,12,14,14,34,16,16,16,16,20,52),filters=True)
     style(issues,(23,27,48,14,16,24,29,36),filters=True)

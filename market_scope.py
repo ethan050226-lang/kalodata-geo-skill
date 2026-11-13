@@ -50,9 +50,12 @@ def restrict_snapshot(source, target, markets):
             db.execute('DELETE FROM sample WHERE question_id NOT IN (SELECT question_id FROM question)')
             db.execute("DELETE FROM issue WHERE coalesce(question_id,'') NOT IN (SELECT question_id FROM question)")
             tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-            for table in ('sample_group','sample_tag','sample_website','sample_content','sample_question','sample_answer'):
+            for table in ('sample_group','sample_tag','sample_website','sample_content','sample_question','sample_answer','sample_quality'):
                 if table in tables:
                     db.execute(f'DELETE FROM {table} WHERE task_id NOT IN (SELECT task_id FROM sample)')
+            if 'sample_quality' in tables:
+                db.execute('UPDATE sample_quality SET reference_task=NULL,reference_units=NULL,ratio=NULL '
+                           'WHERE reference_task NOT IN (SELECT task_id FROM sample)')
             require(db.execute("SELECT count(*) FROM sample WHERE status='valid'").fetchone()[0] > 0,
                     '运营国家 / 所选国家没有有效回答，保留上一批')
             count = db.execute('SELECT count(*) FROM (SELECT task_id FROM sample UNION SELECT task_id FROM issue)').fetchone()[0]
@@ -90,6 +93,7 @@ def validate_data_scope(data):
             require(ref['d'][0] in markets, '国家范围 / 证据包含其他国家')
     references = list(data.get('neutral') or []) + list(data.get('recommendations') or [])
     references += (data.get('review') or {}).get('rows',[])
+    references += (data.get('quality') or {}).get('records',[])
     require(all(ref['d'][0] in markets for ref in references), '国家范围 / 题单包含其他国家')
     comparison = data.get('comparison') or {}
     if comparison.get('previous_batch'):

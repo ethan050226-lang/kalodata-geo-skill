@@ -75,7 +75,7 @@ class CountryDeliveryTest(unittest.TestCase):
         self.assertEqual(manifest(self.scoped,data)['sample_count'],1)
         with sqlite3.connect(self.scoped) as db:
             self.assertEqual(db.execute('SELECT body FROM sample_answer').fetchone()[0],'Kalodata. GB_ORIGINAL')
-        self.assertEqual(cells.count('英国'),1)
+        self.assertEqual(cells.count('英国'),2)  # Record and its quality-check row.
 
     def test_invalid_empty_and_cross_country_candidate_block_delivery(self):
         for markets in ([],['XX']):

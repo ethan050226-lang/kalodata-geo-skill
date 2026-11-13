@@ -12,7 +12,7 @@ from dashboard import retained_data, render
 REFERENCE = {'q','text','category','task','d','status','label','reason','table'}
 TOP = {'batch','platform','rows','issues','core_mention','analysis_version','prompt_basis',
        'question_named','question_scope','markets','competitors','tags','groups','neutral',
-       'links','review','recommendations','comparison','bank_source','market_scope'}
+       'links','review','recommendations','comparison','bank_source','market_scope','quality'}
 FORBIDDEN = {'body','answer','answer_text','raw_answer','raw_response','access_token','app_secret',
              'api_key','apikey','authorization','password','originals'}
 
@@ -45,6 +45,12 @@ def shared_data(data):
             require(all(set(row)<=REFERENCE for row in result[name]),'共享校验 / 回查记录包含未审核字段')
     if result.get('review'):
         require(all(set(row)<=REFERENCE for row in result['review']['rows']), '共享校验 / 推荐记录包含未审核字段')
+    if result.get('quality'):
+        allowed = {'version','checked','comparable','records'}
+        fields = REFERENCE | {'units','reference_task','reference_units','ratio'}
+        require(set(result['quality']) <= allowed and
+                all(set(row)<=fields for row in result['quality']['records']),
+                '共享校验 / 回答质量记录包含未审核字段')
     require(sum(r['n'] for r in result['rows'])>0,'共享校验 / 无有效回答')
     result['delivery']={'mode':'feishu','originals':'answerbit-only',
                         'preview_validation':'pending','operator_access_validation':'pending'}
