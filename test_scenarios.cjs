@@ -40,3 +40,16 @@ assert(context.dataReminder({unmatched_question:7},{sentimentUnknown:0,missing:0
 assert(context.dataReminder(undefined,{sentimentUnknown:0,missing:0,n:0}).includes('全批异常统计未知'));
 assert(context.dataReminder({},{sentimentUnknown:0,missing:0,n:0}).includes('当前筛选无有效回答'));
 console.log('Scoped reminder and unknown-state checks passed');
+
+// Run the real preview route handler: local-mode HTML embedded by Feishu must work too.
+const navigationCode=html.slice(html.indexOf('window.addEventListener("click",e=>{'),html.indexOf('$("copy-a").addEventListener'));
+for(const [shared,embedded,internal] of [[false,true,true],[true,true,true],[false,false,true],[false,true,false]]){
+  let handler,route=null,prevented=false;
+  const top={},window={top,self:embedded?{}:top,addEventListener:(_,fn)=>handler=fn};
+  const context={window,sharedPreview:shared,showPage:(_,value)=>route=value};
+  vm.runInNewContext(navigationCode,context);
+  handler({target:{closest:()=>internal?{getAttribute:()=>"#metrics/metric-core"}:null},preventDefault:()=>prevented=true,stopImmediatePropagation:()=>{}});
+  assert.equal(prevented,internal&&(shared||embedded));
+  assert.equal(route,internal&&(shared||embedded)?'metrics/metric-core':null);
+}
+console.log('Embedded navigation works with and without sharing metadata');
