@@ -6,21 +6,21 @@
 
 Agent先确认运营国家（可多国），引导安全配置品牌级只读Key并说明预计耗时，两项齐备前不真实取数或发布。本次已明确的无需重复问，历史国家配置须确认沿用。交付数据仅含确认国家，HTML内嵌数据与附件也须裁剪；不能裁剪则停止共享。国家自报不替代访问授权。geo_run.py要求显式传入`--market`（可重复）；内部生成裁剪后的SQLite，再重算HTML、Excel和简报。单国交付不嵌入品牌全量平台快照，无法归属国家的异常另注明未纳入。
 
-询问是否需要定时、频率、时间及接收位置。推荐并默认每周一北京时间上午11:30，汇总上一周周一至周日；用户确认后才设置。已有订阅更新原任务，不擅自改成默认时间。详见[定时推送](skill/geo-sampling/references/scheduled-delivery.md)。定时依赖运行Agent已有的持久调度、数据、发布和消息能力；缺项保存待接入，不能称已启用。用户禁止CLI时，不运行本仓库命令行工具。
+询问是否需要定时、频率、时间及接收位置。推荐并默认每周一北京时间上午11:30，汇总上一周周一至周日；用户确认后才设置。已有订阅更新原任务，不擅自改成默认时间。详见[定时推送](skill/geo-sampling/references/scheduled-delivery.md)。定时依赖运行Agent已有的持久调度、数据、发布和消息能力；缺项保存待接入，不能称已启用。本Skill允许使用官方lark-cli和仓库Python工具执行；新增权限仍须按下文报告。
 
 ## 管理员私有配置
 
 - Answerbit：运行者安全配置ANSWERBIT_API_KEY，或交互终端隐藏输入。品牌范围用ANSWERBIT_BRAND_ID，或私有.trial/answerbit-resources.json；可用ANSWERBIT_RESOURCE_CONFIG改路径。结构见[空白私有配置样例](examples/private-resources.example.json)，填写brand_id、team_id和question_bank_url后存入被忽略的私有目录；不要修改或提交已填值的公开样例，只传brand_id查询。Key格式通过后才读资源文件；查询成功不证明Key没有写权限，需在平台核实只读及品牌范围。
-- 在线题库：先读取GEO_QUESTION_BANK_URL，未设置时在Key就绪后读取同一私有资源文件的question_bank_url；用户已允许题库读取使用CLI时，可复用拥有知识库及电子表格只读权限的官方lark-cli，必要时用LARK_CLI指定路径。仅放开题库读取，不自动放开其他飞书操作的CLI限制。面向核查的题库链接可用GEO_QUESTION_BANK_URL；未配置则隐藏，不提交内部地址。
+- 在线题库：先读取GEO_QUESTION_BANK_URL，未设置时在Key就绪后读取同一私有资源文件的question_bank_url；复用拥有知识库及电子表格只读权限的官方lark-cli，必要时用LARK_CLI指定路径。题库保持只读。面向核查的题库链接可用GEO_QUESTION_BANK_URL；未配置则隐藏，不提交内部地址。
 - 权限审批：任何需企业管理员审批的权限，先按[权限申请前置报告](skill/geo-sampling/SKILL.md#权限申请前置报告)向用户说明具体权限、用途、资源范围、缺项与替代方式；用户决定前不发起申请、扩权或为权限生效发布应用版本。复用既有权限不等于已验证实时题库可读，仍需实际读取验收。
 - 题库只读授权由用户提供：缺少访问权时，将指定飞书题库以“可阅读”权限共享给当前Agent或其已配置应用，或完成对应只读授权。Agent负责连接配置、实读验收及后续复用；文件访问权和应用读取权限分别核验，需要企业管理员审批时先向用户报告，不以文件分享成功冒充接通。品牌信息先查私有配置，Excel读取组件由Agent处理。缺项按[中文提示规则](skill/geo-sampling/SKILL.md#一次性题库接入与缺项提示)说明问题、处理人及下一步，不要求用户提供变量名、权限代码或程序库。
-- 飞书交付：独立授权及私有GEO_FEISHU_CONFIG，配置指定位置与获准接收者，按[飞书交付](skill/geo-sampling/references/feishu-preview.md)验收。
+- 飞书交付：独立授权及私有GEO_FEISHU_CONFIG，配置指定位置与获准接收者，按[飞书交付](skill/geo-sampling/references/feishu-preview.md)验收。identity可省略或留空，默认bot，既有user配置保持不变；它只影响发布，不阻止本地生成。
 
 不提交密钥、资源ID、私人配置、真实题库、原文、日志、数据库、Excel或真实HTML。Answerbit与飞书凭证分开，原文SQLite仅留获批本机。
 
 ## 运行命令
 
-以下仅供获准使用命令行的环境。工具可以在获批本机读取品牌全量，再生成独立的国家副本；分享前仍须核对接收权限。
+完整运行使用以下入口，不停留在--check预检。工具可以在获批本机读取品牌全量，再生成独立的国家副本；分享前仍须核对接收权限。
 
 ```sh
 python3 geo_run.py /path/to/question-bank.xlsx .trial/dashboard.sqlite .trial/GEO运营看板.html --market US --excel .trial/GEO采样明细.xlsx
@@ -50,9 +50,9 @@ answerbit.py支持单个`--group-id`和可重复`--tag-id`，按交集计算；�
 
 ## 配置不足时的行为
 
-`--check`只检查本机前置条件，不请求平台，也不代替每次取数前对飞书题库的实际核对；国家和Key就绪后才读私有品牌及发布配置，输出仅显示缺项名称，不回显实际值。`--local-only`只生成本地结果，不调用飞书发布。
+`--check`只检查本机前置条件，不请求平台，也不代替完整运行或每次取数前对飞书题库的实际核对；国家和Key就绪后才读私有品牌及发布配置，输出仅显示缺项名称，不回显实际值。blockers只列真实取数前置缺项，publication_warnings单列发布提示，不能据发布提示停止本地分析。`--local-only`只生成本地结果，不调用飞书发布。
 
-未配置飞书发布时，完整本地分析可返回`local_ready_pending_publication`及同批简报，不能称已上传或交付飞书链接。缺在线题库或在线核对失败时，即使本地有Excel也停止真实取数；已有快照仍可纯离线查看。缺Key、品牌资源或有效题号仍停止真实分析，不能猜值。已核实的参数可由运行者在获批私有环境配置，无须在聊天发送。
+未配置飞书发布、上传失败或验收失败时，完整本地分析返回`local_ready_pending_publication`，交付已校验HTML及同批简报，不能称已上传或交付飞书链接。已验收飞书入口保持原样。缺在线题库或在线核对失败时，即使本地有Excel也停止真实取数；已有快照仍可纯离线查看。缺Key、品牌资源或有效题号仍停止真实分析，不能猜值。已核实的参数可由运行者在获批私有环境配置，无须在聊天发送。
 
 ## 交付和规范
 

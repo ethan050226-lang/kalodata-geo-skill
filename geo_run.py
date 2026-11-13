@@ -18,16 +18,18 @@ def preflight(bank, markets):
     import answerbit
     markets = normalize_markets(markets)
     key,_ = answerbit.operator_credentials()  # Do not open private publishing configuration before the Key gate.
-    problems = []
+    problems = []; publication_warnings = []
     if not answerbit.question_bank_url(key):
         problems.append('缺少在线题库私有配置；真实取数前必须核对最新版，本地缓存不能替代')
     try:
         config = load_config()
-        missing = [k for k in ('folder_url','approved_members','identity') if not config.get(k)]
-        if missing: problems.append('飞书发布配置待补：'+'、'.join(missing))
+        missing = [k for k in ('folder_url','approved_members') if not config.get(k)]
+        if missing: publication_warnings.append('飞书发布配置待补：'+'、'.join(missing))
     except (ArchiveError,OSError,ValueError):
-        problems.append('飞书发布未配置或不可读；本地分析可独立运行')
+        publication_warnings.append('飞书发布未配置或不可读；本地分析可独立运行')
     return {'status':'preflight_only','markets':markets,'blockers':problems,
+            'publication_warnings':publication_warnings,
+            'next_step':'补齐取数前置条件后再刷新' if problems else '继续完整刷新；发布缺项不阻止已校验的本地看板交付',
             'verified':'仅核对本机配置；未请求Answerbit或飞书，平台权限和实时访问尚未验证'}
 
 
@@ -61,7 +63,7 @@ def run(bank, snapshot, output, options=(), *, markets=(), local_only=False):
             return {'status':'local_ready','local':local,'publication':'用户选择仅本地，不上传飞书'}, 0
         try:
             config = scope_config(load_config(), markets)
-            missing = [name for name in ('folder_url','approved_members','identity') if not config.get(name)]
+            missing = [name for name in ('folder_url','approved_members') if not config.get(name)]
             if missing:
                 blockers.append('飞书发布配置待补：'+ '、'.join(missing)+'；仅在获批私有环境配置，不发送实际值到聊天')
         except (ArchiveError,OSError,ValueError) as error:
@@ -69,7 +71,12 @@ def run(bank, snapshot, output, options=(), *, markets=(), local_only=False):
         if blockers:
             return {'status':'local_ready_pending_publication', 'local':local, 'blockers':blockers,
                     'publication':'未上传，未替换上一成功飞书版本；请管理员配置独立发布授权，勿在聊天发送凭证'}, 0
-        return publish(output,snapshot,config), 0
+        try:
+            return publish(output,snapshot,config), 0
+        except (ArchiveError,OSError,ValueError,KeyError,TypeError,sqlite3.Error) as error:
+            why = str(error) if isinstance(error,ArchiveError) else '飞书发布配置、文件或响应异常'
+            return {'status':'local_ready_pending_publication','local':local,
+                    'publication':failure(config,'飞书查重、上传或验收',why,batch)}, 0
     except (ArchiveError,OSError,ValueError,KeyError,TypeError,sqlite3.Error) as error:
         why = str(error) if isinstance(error,ArchiveError) else '本地配置、文件或数据库异常，保留上一成功入口'
         return failure(config,'自动交付',why,batch), 1

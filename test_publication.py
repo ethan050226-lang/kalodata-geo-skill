@@ -231,3 +231,14 @@ class PublicationTest(unittest.TestCase):
             result = SimpleNamespace(returncode=0,stdout=stdout,stderr='')
             with patch('feishu_publish.subprocess.run',return_value=result), self.assertRaises(ArchiveError):
                 drive.call(['drive','files','list'])
+
+    def test_publishing_identity_defaults_without_asking_for_a_technical_field(self):
+        config={'folder_url':'https://example.feishu.cn/drive/folder/synthetic',
+                'approved_members':[{'member_type':'openid','member_id':'synthetic-admin'}]}
+        with patch('feishu_publish.shutil.which',return_value='synthetic-cli'):
+            for value in (None,''):
+                with self.subTest(identity=value):
+                    self.assertEqual(Drive(dict(config,identity=value)).identity,'bot')
+            self.assertEqual(Drive(config).identity,'bot')
+            self.assertEqual(Drive(dict(config,identity='user')).identity,'user')
+            with self.assertRaises(ArchiveError): Drive(dict(config,identity='invalid'))

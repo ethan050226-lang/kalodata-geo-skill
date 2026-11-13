@@ -29,7 +29,7 @@ class Drive:
         self.host, self.folder = url.hostname, url.path.rsplit('/',1)[-1]
         self.allowed = {(r['member_type'], r['member_id']) for r in config['approved_members']}
         require(self.allowed, '飞书配置 / 请配置已批准管理员及应用成员的精确身份，不用姓名作权限判定')
-        self.identity = config.get('identity', 'bot')
+        self.identity = config.get('identity') or 'bot'
         require(self.identity in ('bot','user'), '飞书配置 / 身份只允许 bot 或 user')
 
     def call(self, args, cwd=None):

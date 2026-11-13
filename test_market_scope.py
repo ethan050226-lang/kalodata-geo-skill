@@ -4,6 +4,7 @@ import contextlib
 import io
 import json
 import os
+from pathlib import Path
 import sqlite3
 import unittest
 from unittest.mock import patch
@@ -173,9 +174,45 @@ class CountryDeliveryTest(unittest.TestCase):
              patch.object(answerbit,'question_bank_url',return_value=None), \
              patch.object(geo_run,'load_config',side_effect=ArchiveError('not ready')):
             checked=geo_run.preflight(self.f.bank,['GB'])
-        self.assertEqual(len(checked['blockers']),2)
+        self.assertEqual(len(checked['blockers']),1)
+        self.assertEqual(len(checked['publication_warnings']),1)
         self.assertNotIn('private-brand',json.dumps(checked))
         self.assertNotIn('TEST_ONLY',json.dumps(checked))
+
+    def test_missing_publishing_identity_is_optional_in_preflight(self):
+        config={'state_dir':str(self.root/'publication'),
+                'folder_url':'https://example.feishu.cn/drive/folder/synthetic',
+                'approved_members':[{'member_type':'openid','member_id':'synthetic-admin'}]}
+        with patch.object(answerbit,'operator_credentials',return_value=('TEST_ONLY','synthetic')), \
+             patch.object(answerbit,'question_bank_url',return_value='https://example.feishu.cn/wiki/test'), \
+             patch.object(geo_run,'load_config',return_value=config):
+            result=geo_run.preflight(self.f.bank,['GB'])
+        self.assertEqual(result['blockers'],[])
+        self.assertEqual(result['publication_warnings'],[])
+        self.assertEqual(result['status'],'preflight_only')
+
+    def test_upload_failure_keeps_valid_local_dashboard_and_previous_publication(self):
+        config={'state_dir':str(self.root/'publication'),
+                'folder_url':'https://example.feishu.cn/drive/folder/synthetic',
+                'approved_members':[{'member_type':'openid','member_id':'synthetic-admin'}]}
+        state=Path(scope_config(config,['GB'])['state_dir'])/'last-success.json'
+        state.parent.mkdir(parents=True)
+        state.write_text(json.dumps({'url':'https://example.feishu.cn/file/previous'}))
+        previous=state.read_bytes()
+        with patch.object(answerbit,'operator_credentials',return_value=('TEST_ONLY','synthetic')), \
+             patch.object(answerbit,'question_bank_url',return_value='https://example.feishu.cn/wiki/test'), \
+             patch('feishu_bank.fetch_bank',return_value={'source':'feishu-live','revision':1}), \
+             patch.object(dashboard,'PacedRead',return_value=self.call), \
+             patch.object(geo_run,'load_config',return_value=config), \
+             patch.object(geo_run,'publish',side_effect=ArchiveError('飞书上传失败')) as upload:
+            result,code=geo_run.run(self.f.bank,self.scoped,self.html,
+                ['--begin',self.f.day,'--end',self.f.day,'--excel',str(self.excel)],markets=['GB'])
+        upload.assert_called_once()
+        self.assertEqual((code,result['status']),(0,'local_ready_pending_publication'))
+        self.assertTrue(self.html.is_file() and self.scoped.is_file() and self.excel.is_file())
+        self.assertEqual(result['local']['report']['batch'],dashboard.retained_data(self.html)[1]['batch'])
+        self.assertEqual(result['publication']['status'],'failed')
+        self.assertEqual(state.read_bytes(),previous)
 
     def test_private_bank_url_drives_online_refresh_without_environment_url(self):
         config=self.root/'private-resources.json'
