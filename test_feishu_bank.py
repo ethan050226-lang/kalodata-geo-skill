@@ -1,11 +1,46 @@
 import tempfile
 from pathlib import Path
 import unittest
+import builtins
+import json
+from types import SimpleNamespace
+from unittest.mock import patch
 from feishu_bank import fetch_bank, content_signature
 from answerbit import MARKETS
 from archive import ArchiveError
 
 class BankTest(unittest.TestCase):
+    def test_missing_excel_component_names_agent_as_handler_before_any_read(self):
+        import answerbit
+        original = builtins.__import__
+        def no_excel(name, *args, **kwargs):
+            if name == 'openpyxl' or name.startswith('openpyxl.'):
+                raise ImportError('synthetic missing component')
+            return original(name, *args, **kwargs)
+        with patch('builtins.__import__',side_effect=no_excel), patch('feishu_bank.cli_read') as remote:
+            for action in (lambda:answerbit.load_bank(Path('unused.xlsx')),
+                           lambda:content_signature(Path('unused.xlsx')),
+                           lambda:fetch_bank('unused',Path('unused.xlsx'),remote)):
+                with self.assertRaisesRegex(ArchiveError,'请由 Agent.*无需用户提供组件'):
+                    action()
+            remote.assert_not_called()
+
+    def test_read_permission_message_is_plain_and_preserves_admin_details(self):
+        from feishu_bank import cli_read
+        for scopes in (['sheets:spreadsheet:readonly'],[]):
+            result=SimpleNamespace(returncode=1,stderr=json.dumps({'error':{'code':'denied','missing_scopes':scopes}}))
+            with patch('feishu_bank.shutil.which',return_value='synthetic-cli'), \
+                 patch('feishu_bank.subprocess.run',return_value=result), \
+                 self.assertRaises(ArchiveError) as caught:
+                cli_read(['sheets','+workbook-info'])
+            message=str(caught.exception)
+            self.assertIn('当前 Agent',message)
+            if scopes:
+                self.assertIn('先报告并等待用户决定',message)
+                self.assertIn('管理员核对信息：sheets:spreadsheet:readonly',message)
+            else:
+                self.assertIn('不把所有失败都当成缺权限',message)
+
     def reader(self, changed=False, truncated=False):
         count=0
         def read(args):

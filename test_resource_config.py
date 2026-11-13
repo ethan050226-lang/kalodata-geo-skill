@@ -10,6 +10,17 @@ from answerbit import operator_credentials, question_bank_url
 from archive import ArchiveError
 
 class PrivateResourceTest(unittest.TestCase):
+    def test_missing_brand_guides_agent_to_private_config_without_asking_for_variable(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'resources.json';path.write_text('{}')
+            with patch.dict(os.environ,{'ANSWERBIT_API_KEY':'TEST_ONLY','ANSWERBIT_RESOURCE_CONFIG':str(path)},clear=True), \
+                 self.assertRaises(ArchiveError) as caught:
+                operator_credentials()
+            message=str(caught.exception)
+            self.assertIn('请由 Agent 先检查已保存的私有配置',message)
+            self.assertNotIn('ANSWERBIT_BRAND_ID',message)
+            self.assertNotIn('TEST_ONLY',message)
+
     def test_key_is_required_before_private_file_is_read(self):
         with patch.dict(os.environ,{},clear=True),patch('sys.stdin.isatty',return_value=False),patch.object(Path,'read_text') as read:
             with self.assertRaises(ArchiveError):operator_credentials()

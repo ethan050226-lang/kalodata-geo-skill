@@ -114,7 +114,7 @@ def load_bank(path):
     try:
         from openpyxl import load_workbook
     except ImportError:
-        raise ArchiveError("题库 / 请先安装 requirements.txt 中的 Excel 读取依赖") from None
+        raise ArchiveError("题库读取 / 当前 Agent 缺少读取 Excel 的程序组件，请由 Agent 检查运行环境并按项目依赖处理，无需用户提供组件") from None
     content = path.read_bytes()
     try:
         book = load_workbook(io.BytesIO(content), read_only=True, data_only=True, keep_links=False)
@@ -598,7 +598,7 @@ def operator_credentials():
     brand = os.environ.get("ANSWERBIT_BRAND_ID")
     if not brand:
         brand = private_resources(key).get('brand_id')
-    require(identifier(brand), "资源配置 / Key 已提供，但本机品牌范围尚未配置，请由管理员配置私有资源文件或 ANSWERBIT_BRAND_ID")
+    require(identifier(brand), "资源配置 / 已收到只读 Key，但尚未找到 Kalodata 品牌 ID；请由 Agent 先检查已保存的私有配置，确实缺少时再请项目管理员安全补齐，不在聊天回显实际值")
     return key, brand
 
 

@@ -19,7 +19,7 @@ from archive import ArchiveError, require, write_atomic
 
 def cli_read(args):
     cli = os.environ.get('LARK_CLI') or shutil.which('lark-cli')
-    require(cli, '飞书题库 / 未找到 lark-cli，请安装飞书官方 CLI 并配置只读权限')
+    require(cli, '飞书题库 / 当前 Agent 尚未配置题库读取工具，请由 Agent 检查已有官方飞书工具；无需用户提供程序组件')
     try:
         result = subprocess.run([cli, *args, '--as', 'bot', '--format', 'json'],
                                 capture_output=True, text=True, timeout=120)
@@ -29,8 +29,10 @@ def cli_read(args):
     if result.returncode != 0 or payload.get('ok') is not True:
         error = payload.get('error', {})
         scopes = ', '.join(error.get('missing_scopes', []))
-        raise ArchiveError(f"飞书题库 / 读取失败，错误码 {error.get('code', '未知')}；"
-                           f"缺少权限 {scopes or '请核对应用文档阅读权限或本机钥匙串'}；旧数据保留")
+        reason = ('当前 Agent 尚未获准读取飞书题库；请由 Agent 区分账号授权、应用权限与文件阅读权限，需要企业管理员审批时先报告并等待用户决定，不要求用户提供权限代码'
+                  if scopes else '当前 Agent 暂时无法读取在线题库；请由 Agent 核对登录、文件阅读权限及网络，不把所有失败都当成缺权限')
+        details = f'；管理员核对信息：{scopes}' if scopes else ''
+        raise ArchiveError(f"飞书题库 / {reason}；错误码 {error.get('code', '未知')}{details}；停止后续取数，旧数据保留")
     return payload['data']
 
 
@@ -42,7 +44,10 @@ def signature(info):
 
 def content_signature(path):
     """Compare cell contents across browser exports and canonical API exports, ignoring ZIP formatting."""
-    from openpyxl import load_workbook
+    try:
+        from openpyxl import load_workbook
+    except ImportError:
+        raise ArchiveError('题库读取 / 当前 Agent 缺少读取 Excel 的程序组件，请由 Agent 检查运行环境并按项目依赖处理，无需用户提供组件') from None
     try:
         book = load_workbook(io.BytesIO(path.read_bytes()),read_only=True,data_only=True,keep_links=False)
     except (BadZipFile,KeyError,ValueError):
@@ -66,8 +71,11 @@ def content_signature(path):
 
 def fetch_bank(url, destination, read=cli_read):
     """Validate every country sheet before atomically replacing the local bank."""
-    from openpyxl import Workbook
-    from openpyxl.utils import get_column_letter
+    try:
+        from openpyxl import Workbook
+        from openpyxl.utils import get_column_letter
+    except ImportError:
+        raise ArchiveError('题库读取 / 当前 Agent 缺少读取 Excel 的程序组件，请由 Agent 检查运行环境并按项目依赖处理，无需用户提供组件') from None
     before = read(['sheets', '+workbook-info', '--url', url])
     require(before.get('revision') is not None, '飞书题库 / 缺少修订号，无法校验读取期间变更')
     sheets = [s for s in before.get('sheets', []) if s.get('sheet_name') in MARKETS]
