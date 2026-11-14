@@ -36,7 +36,7 @@ MARKETS = dict(zip(
     ("美国", "英国", "德国", "法国", "中国", "泰国", "越南", "印尼", "马来西亚", "日本", "韩国"),
     ("US", "GB", "DE", "FR", "CN", "TH", "VN", "ID", "MY", "JP", "KR"),
 ))
-VERSION = "answerbit-observed/4-quality"
+VERSION = "answerbit-observed/5-quality"
 WEBSITES = (("Kalodata", "kalodata.com"), ("FastMoss", "fastmoss.com"))
 BODY_URL = re.compile(r"""(?:[a-z][a-z0-9+.-]*:)?//[^\s<>"'\x60\[\]）】，。；！？、]+""", re.I)
 BARE_URL = re.compile(

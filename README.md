@@ -12,7 +12,7 @@ Agent先确认运营国家（可多国），引导安全配置品牌级只读Key
 
 题库连接先执行[自动检查、复用和开通指引](skill/geo-sampling/references/feishu-connection.md)。优先复用公司现有获批连接，默认应用身份；已有获批用户连接可在私有运行环境设置`GEO_FEISHU_BANK_IDENTITY=user`，不再被固定切回bot。该设置仅控制题库读取，与发布身份分开。程序不会自动登录、切换账号或申请权限；缺项由Agent按实际原因引导，一次实际全量读取通过后继续完整刷新。
 
-原文质量筛查已接入每次真实刷新：无效和同题同模型明显缩水的回答标为“数据异常”，不进入Skill自算指标的有效样本；异常原因、编号和对照记录在看板“回答表现”和Excel“回答质量”中查看，本地原文保留。筛查阈值与限制见[指标定义](skill/geo-sampling/references/metric-definitions.md#回答原文质量检查)，平台原生快照仍按平台口径。
+原文质量筛查已接入每次真实刷新：纯报错、纯拒答、明确不完整及有同条件缺项证据的疑似缩水标为“数据异常”，不进入Skill自算指标；仅长度下降仍纳入统计并单列待核查，避免误排完整短回答。原因、编号、对照及原始规则版本在看板“回答表现→原文质量”和Excel“回答质量”中查看，原文只留本地。支持范围与限制见[指标定义](skill/geo-sampling/references/metric-definitions.md#回答原文质量检查)。新旧筛查版本不自动计算变化，平台原生快照仍按平台口径。
 
 - Answerbit：运行者安全配置ANSWERBIT_API_KEY，或交互终端隐藏输入。品牌范围用ANSWERBIT_BRAND_ID，或私有.trial/answerbit-resources.json；可用ANSWERBIT_RESOURCE_CONFIG改路径。结构见[空白私有配置样例](examples/private-resources.example.json)，填写brand_id、team_id和question_bank_url后存入被忽略的私有目录；不要修改或提交已填值的公开样例，只传brand_id查询。Key格式通过后才读资源文件；查询成功不证明Key没有写权限，需在平台核实只读及品牌范围。
 - 在线题库：先读取GEO_QUESTION_BANK_URL，未设置时在Key就绪后读取同一私有资源文件的question_bank_url；复用拥有知识库及电子表格只读权限的官方lark-cli，必要时用LARK_CLI指定路径。题库保持只读。面向核查的题库链接可用GEO_QUESTION_BANK_URL；未配置则隐藏，不提交内部地址。

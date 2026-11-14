@@ -145,7 +145,7 @@ main.wrap{max-width:1700px;margin:0 0 0 224px;padding:0 30px 25px}.hero,.hero::a
 <div class="filter-frame"><div class="filter-heading"><b>记录筛选</b><span>与顶部查看范围同步 · 同维度可多选</span></div>
 <form class="filter pick-grid" id="filter-review" aria-label="推荐记录筛选"></form></div>
 <div id="review-pending"></div></article>
-<article class="card wide"><h3>数据异常 · 已排除的回答</h3><p class="definition">随顶部筛选更新。报错、空白、仅拒答、明确截断及同题同模型明显缩水的回答不进入 Skill 指标的分子和分母。缩水为本地规则初判，不等于已确认平台故障。<a href="#metrics/metric-quality">查看判断规则</a></p><div id="answer-quality"></div></article>
+<article class="card wide"><h3>原文质量 · 异常与待核查</h3><p class="definition">随顶部筛选更新。纯报错、空白、仅拒答、明确截断及有缺项证据的疑似缩水不进入 Skill 指标。仅长度下降仍纳入统计，单列待核查。规则初判不等于已确认平台故障。<a href="#metrics/metric-quality">查看判断规则</a></p><div id="answer-quality"></div></article>
 </div></section>
 <section id="action" class="section action-module" data-page hidden>
 <div class="section-head"><div><h2>问题与行动</h2><p class="sub">从当前样本挑选可回查的线索，每项给出优化和复测步骤。</p></div><span id="action-count" class="label">随筛选更新</span></div>
@@ -156,7 +156,7 @@ main.wrap{max-width:1700px;margin:0 0 0 224px;padding:0 30px 25px}.hero,.hero::a
 <div class="section-head"><h2 id="metrics-title">指标说明</h2><span class="label">看什么 · 怎么算 · 注意什么</span></div><div class="grid">
 <article class="card wide"><h3>样本与题文</h3><dl>
 <dt id="metric-samples">有效回答与题库匹配</dt><dd><p><b>看什么</b> 本次可用于计算的回答量和未纳入范围。</p><p><b>怎么算</b> 按唯一 Answerbit 任务 ID 去重，题目须唯一匹配飞书编号、任务完成分析且正文有效。</p><p><b>注意什么</b> 题库外记录单列数量，题号歧义需核对。采样覆盖率还需独立计划量，缺少计划时无法计算。</p></dd>
-<dt id="metric-quality">回答原文质量检查</dt><dd><p><b>看什么</b> 报错、空白、仅复述题文、仅拒答、明确截断及明显缩水的异常回答。</p><p><b>怎么算</b> 异常记录标为“数据异常”，从全部 Skill 指标的有效样本分子和分母排除，保留题号、题文、原文及原因。同一题文、题号、平台、语言、地区及已知终端/模式内比较文本单位数（中日韩泰字符按字，其余按连续词计）。2 条时以较长回答为参考；3 条及以上取接近中位长度的回答。参考至少 200 单位，当前不超过参考的 35% 且减少至少 150 单位，标为疑似缩水。</p><p><b>注意什么</b> 数值为可复核的筛查阈值，不是业务质量标准。长度差异可能是模型自然波动，不能据此证明缩水原因。无同条件参考时不凭“短”排除；旧批未检查显示需刷新。平台原生快照不套用此过滤；全批无有效回答时停止刷新并保留上一批。</p></dd>
+<dt id="metric-quality">回答原文质量检查</dt><dd><p><b>看什么</b> 纯报错、空白、仅复述题文、纯拒答、明确截断，以及有缺项证据的疑似缩水。</p><p><b>怎么算</b> 仅长度下降仍纳入统计。先按同题号、题文、平台、语言、地区及已知终端/模式找参考：2条取较长回答，3条及以上取接近中位长度的回答；参考至少200文本单位，当前不超过35%且减少至少150单位时提示长度待核查。只有题文明示的至少两项要求均未检出、而同组参考具备对应信号时，才标数据异常并从所有Skill分子分母排除；优先以具备信号的较长回答作参考，防止多数不完整短回答成为参考。首版仅核对中英文明确要求的限制说明（估算、限制、核验等措辞）与来源链接（HTTP(S)/www）。</p><p><b>注意什么</b> 这不是通用语义完整性判断。未覆盖语言或要求、仅缺一项、参考也缺项时，仅提示长度待核查。纯拒答按已测试的中、英、日、韩、德、法、越、泰、印尼、马来语写法整段匹配，有有效后续内容时保留；错误JSON带有效数据/分析字段时不按纯报错排除。所有规则均可能漏检，不能证明平台故障。旧批保留原规则版本，新旧口径只并列；全批无有效回答时停止刷新并保留上一批。</p></dd>
 <dt id="metric-prompt">题文点名判定</dt><dd><p><b>看什么</b> 题目是否已经提示 Kalodata。</p><p><b>怎么算</b> 检查 Answerbit 返回的题文，按审核别名 Kalodata、Kalo Data、Kalo-Data、カロデータ及全半角等价写法判定。</p><p><b>注意什么</b> 题库编号用于定位；旧批缺少返回题文时按唯一匹配的题库题文回算并注明来源。点名状态来自题文，不按回答是否提及判定。</p></dd>
 </dl></article>
 <article class="card"><h3>品牌表现</h3><dl>
@@ -559,7 +559,7 @@ function render(){
   const issueNames={unmatched_question:"题库无匹配",ambiguous_question:"题号待确认",market_tag_conflict:"市场标签冲突",
     citation_unknown:"引用字段缺失",answer_unconfirmed:"回答待确认",tag_metadata_incomplete:"标签信息不完整",
     quality_invalid:"数据异常：无效原文",quality_shrunken:"数据异常：疑似缩水"};
-  $("home-status").textContent=dataReminder(D.issues,{sentimentUnknown,missing,n,qualityExcluded:D.quality?qualityRows.length:null})+(D.market_scope?" 当前提醒仅针对交付国家；无法归属国家的异常未纳入。":"");
+  $("home-status").textContent=dataReminder(D.issues,{sentimentUnknown,missing,n,qualityExcluded:D.quality?qualityRows.filter(r=>r.status!=="accepted").length:null})+(D.market_scope?" 当前提醒仅针对交付国家；无法归属国家的异常未纳入。":"");
   $("status-details").innerHTML=$("quality").innerHTML+
     table(["全批异常原因","记录数","影响范围","核查入口"],D.issues?Object.entries(D.issues).map(([code,count])=>[
       esc(issueNames[code]||code),num(count),D.market_scope?"交付国家批次；不随页内筛选缩小":"全部取数批次；不随当前筛选缩小",["unmatched_question","ambiguous_question","market_tag_conflict"].includes(code)?"飞书题库与 Answerbit 用户提问":"Answerbit 大模型回答记录"
@@ -609,12 +609,13 @@ function renderQuality(records){
   const signature=JSON.stringify(records.map(r=>r.task));
   if(signature!==qualityScope){qualityScope=signature;qualityPage=0;}
   const coverage=`<p class="definition">本批检查原文 ${num(D.quality.checked)} 条，其中 ${num(D.quality.comparable)} 条有可用长度参考；这是整批检测范围，不随顶部筛选重算。没有参考的回答无法排查相对缩水。</p>`;
-  if(!records.length){$("answer-quality").innerHTML=coverage+empty("当前筛选规则未检出数据异常；不等于已人工确认全部正常。");return;}
+  if(!records.length){$("answer-quality").innerHTML=coverage+empty("当前筛选规则未检出数据异常或长度待核查记录；不等于已人工确认全部正常。");return;}
   const size=25,start=qualityPage*size;
   const locate=r=>localViewer?`<a href="./answer?task=${encodeURIComponent(r.task)}" target="_blank" rel="noopener noreferrer">查看原文</a>${r.reference_task?` · <a href="./answer?task=${encodeURIComponent(r.reference_task)}" target="_blank" rel="noopener noreferrer">对照原文</a>`:""}`:`<a href="${esc(D.links.answerbit)}" target="_blank" rel="noopener noreferrer">工作台按题文查找</a>`;
-  $("answer-quality").innerHTML=coverage+`<p class="definition">当前筛选 ${num(records.length)} 条数据异常，已从指标排除；本地库保留原文，Excel“回答质量”保留同批判定。</p>`+table(["题号与提问","市场 / 平台 / 日期","分组 / 标签","异常原因","文本对照","回查"],records.slice(start,start+size).map(r=>[
+  const excluded=records.filter(r=>r.status!=="accepted").length;
+  $("answer-quality").innerHTML=coverage+`<p class="definition">当前筛选 ${num(excluded)} 条数据异常已排除，${num(records.length-excluded)} 条仅长度待核查仍纳入统计；本地库保留原文，Excel“回答质量”保留同批判定。</p>`+table(["题号与提问","市场 / 平台 / 日期","分组 / 标签","判断与原因","文本对照","回查"],records.slice(start,start+size).map(r=>[
     `<strong>${esc(r.q)}</strong><br>${esc(r.text)}`,esc([marketName(r.d[0]),r.d[1],r.d[2]].join(" / ")),
-    esc(groupName(r.d[3])+" / "+r.d[5].map(t=>D.tags[t]||t).join("、")),esc(r.reason),
+    esc(groupName(r.d[3])+" / "+r.d[5].map(t=>D.tags[t]||t).join("、")),`<strong>${r.status==="accepted"?"长度待核查 · 仍纳入统计":"数据异常 · 已排除"}</strong><br>${esc(r.reason)}`,
     `${num(r.units)} 单位${r.reference_units?` / 参考 ${num(r.reference_units)} · ${(100*r.ratio).toFixed(1)}%<br><small>对照任务 ${esc(r.reference_task)}</small>`:""}`,locate(r)
   ]))+`<div class="pager"><button id="quality-prev" ${qualityPage===0?"disabled":""}>上一页</button><span>${num(start+1)}–${num(Math.min(start+size,records.length))} / ${num(records.length)}</span><button id="quality-next" ${start+size>=records.length?"disabled":""}>下一页</button></div>`;
   $("quality-prev").onclick=()=>{qualityPage--;renderQuality(records);};

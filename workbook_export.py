@@ -181,11 +181,11 @@ def export_workbook(snapshot, data):
             '''):
                 append(quality,(row['question_id'],row['prompt'],date.fromisoformat(row['task_date']),
                     data['markets'].get(row['market'],row['market']),row['platform'],row['task_id'],
-                    '纳入统计' if row['status']=='accepted' else '数据异常',row['reason'],row['units'],
+                    ('纳入统计（长度待核查）' if row['reason'] else '纳入统计') if row['status']=='accepted' else '数据异常',row['reason'],row['units'],
                     row['reference_task'],row['reference_units'],row['ratio'],row['version']))
             style(quality,(23,52,14,12,16,24,16,47,15,24,18,14,22),filters=True)
             append(summary,('原文质量检查','已检查；数据异常从所有 Skill 有效样本分子和分母中排除，原文保留本地'))
-            append(summary,('原文质量规则','同题、同平台、同语言、同地区及已知终端/模式内比较；缩水为规则初判，详见指标说明'))
+            append(summary,('原文质量规则','仅长度变化不排除；同条件参考与明确要求缺项同时成立才判疑似缩水，详见指标说明'))
         else:
             append(summary,('原文质量检查','旧批未检查，需刷新；不能视为无异常'))
     style(summary,(26,82))

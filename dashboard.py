@@ -26,7 +26,7 @@ ASSET = Path(__file__).resolve().parent / "skill/geo-sampling/assets/dashboard.h
 SOURCE = "https://answerbit.qq.com/zh-CN/dashboard/home"
 QNA = os.environ.get("GEO_QUESTION_BANK_URL", "")
 DATA_MARKER = '<script id="geo-data" type="application/json">'
-ANALYSIS_VERSION = "geo-core/3-answer-quality"
+ANALYSIS_VERSION = "geo-core/4-answer-quality"
 
 
 class PacedRead:
@@ -191,14 +191,15 @@ def dashboard_data(snapshot, bank, native):
         has_quality = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sample_quality'").fetchone()
         if has_quality:
             from answer_quality import VERSION as QUALITY_VERSION
-            quality = {'version':QUALITY_VERSION, 'checked':db.execute('SELECT count(*) FROM sample_quality').fetchone()[0],
+            quality = {'version':','.join(row[0] for row in db.execute('SELECT DISTINCT version FROM sample_quality ORDER BY version')),
+                       'checked':db.execute('SELECT count(*) FROM sample_quality').fetchone()[0],
                        'comparable':db.execute('SELECT count(*) FROM sample_quality WHERE reference_units IS NOT NULL').fetchone()[0],
                        'records':[]}
             for row in db.execute('''
                 SELECT v.*,s.question_id,s.platform,s.task_date,q.market,q.category,p.prompt,g.group_id,g.group_name
                 FROM sample_quality v JOIN sample s USING(task_id) JOIN question q USING(question_id)
                 JOIN sample_question p USING(task_id) LEFT JOIN sample_group g USING(task_id)
-                WHERE v.status<>'accepted' ORDER BY s.task_date,s.task_id
+                WHERE v.status<>'accepted' OR v.reason IS NOT NULL ORDER BY s.task_date,s.task_id
             '''):
                 dim = (row['market'],row['platform'],row['task_date'],row['group_id'] or '',
                        named_prompt(row['prompt']),tuple(tags[row['task_id']]))
@@ -317,7 +318,9 @@ def dashboard_data(snapshot, bank, native):
             "core_mention":{"numerator":core_num,"denominator":core_den,
                             "excluded_negative":sum(r["negative_mentions"] for r in unnamed),
                             "value":core_num/core_den if core_den else None},
-            "analysis_version":ANALYSIS_VERSION if has_quality else "geo-core/2-unnamed-negative",
+            "analysis_version":(ANALYSIS_VERSION if quality['version']==QUALITY_VERSION else
+                                "geo-core/3-answer-quality" if quality['version']=='answer-quality/1' else
+                                'geo-core/unknown-quality:'+quality['version']) if has_quality else "geo-core/2-unnamed-negative",
             "prompt_basis":"Answerbit 返回题文" if prompt_join else "唯一匹配的题库题文回算（旧批）",
             "question_named":{r[0]:r[4] for r in question_scope},
             "question_scope":{"signature":hashlib.sha256(json.dumps(sorted(question_scope)).encode()).hexdigest(),

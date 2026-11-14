@@ -39,7 +39,8 @@ class QualityTest(unittest.TestCase):
         long = 'Kalodata supports product research and competitor analysis. ' * 40
         short = 'Try FastMoss or EchoTik. Start with a low budget.'
         data = quality.assess([self.row('long', long), self.row('short', short)])
-        self.assertEqual(data['short']['status'], 'shrunken')
+        self.assertEqual(data['short']['status'], 'accepted')
+        self.assertIn('仍纳入统计',data['short']['reason'])
         self.assertEqual(data['short']['reference_task'], 'long')
         self.assertEqual(data['long']['status'], 'accepted')
         other = self.row('other', short, ('other-question', 'perplexity', 'en', 'US'))
@@ -55,7 +56,7 @@ class QualityTest(unittest.TestCase):
         fixture = fixtures.AnswerbitTest(); fixture.setUp(); self.addCleanup(fixture.doCleanups)
         template = fixture.records()[0]
         bodies = {'good':'Kalodata supports product research and competitor analysis. ' * 40,
-                  'small':'Try FastMoss or EchoTik. Start with a low budget.',
+                  'small':'Some output [response truncated]',
                   'error':'Request failed: HTTP 503', 'empty':''}
         records = [dict(deepcopy(template), task_id=task) for task in bodies]
         def call(path, payload):
@@ -113,8 +114,94 @@ class QualityTest(unittest.TestCase):
         long='可以通过数据研究商品，比较竞品，寻找适合的达人。'*25
         short='可先从免费工具了解市场，再比较付费方案。'
         result=quality.assess([self.row('a',long),self.row('b',short)])
-        self.assertEqual(result['b']['status'],'shrunken')
+        self.assertEqual(result['b']['status'],'accepted')
+        self.assertIn('仍纳入统计',result['b']['reason'])
         self.assertEqual(quality.assess([self.row('b',short)])['b']['status'],'accepted')
+
+    def test_multilingual_pure_refusals_but_not_useful_followup(self):
+        refusals = ['申し訳ありませんが、この質問には回答できません。',
+                    '죄송하지만 이 질문에 답변할 수 없습니다.',
+                    'Leider kann ich diese Anfrage nicht beantworten.',
+                    'Désolé, je ne peux pas répondre à cette demande.',
+                    'Xin lỗi, tôi không thể trả lời câu hỏi này.',
+                    'ขออภัย ฉันไม่สามารถตอบคำถามนี้ได้',
+                    'Maaf, saya tidak dapat menjawab pertanyaan ini.',
+                    'Maaf, saya tidak dapat menjawab soalan ini.']
+        for body in refusals:
+            with self.subTest(body=body):
+                self.assertEqual(quality.assess([self.row('x',body)])['x']['status'],'invalid')
+                self.assertEqual(quality.assess([self.row('x',body+'\nUse Kalodata estimates for research.')])['x']['status'],'accepted')
+
+    def test_error_envelopes_not_json_data_or_error_discussion(self):
+        for body in ('{"error":"upstream failed","message":"try again"}',
+                     '```json\n{"error":{"message":"timeout"},"data":null}\n```',
+                     '糟糕，出了点问题，请稍后重试。', 'HTTP 503 Service unavailable'):
+            with self.subTest(body=body):
+                self.assertEqual(quality.assess([self.row('x',body)])['x']['status'],'invalid')
+        for body in ('{"error":"timeout","analysis":"Kalodata supports product research"}',
+                     '{"error":null,"data":[{"product":"Kalodata"}]}',
+                     'HTTP 503 means the service is temporarily unavailable. Use cached research instead.',
+                     'Request failed: HTTP 503. Kalodata supports product research.'):
+            with self.subTest(body=body):
+                self.assertEqual(quality.assess([self.row('x',body)])['x']['status'],'accepted')
+
+    def test_short_incomplete_only_excluded_with_missing_requested_evidence(self):
+        prompt='Explain the limitations of the tools and provide source links.'
+        long=('Kalodata estimates require verification; see https://example.org/docs. ')*45
+        incomplete='Kalodata and FastMoss are analytics tools.'
+        concise='Kalodata uses estimates, not settlement data. Source: https://example.org/docs.'
+        rows=[dict(self.row('long',long),prompt=prompt),dict(self.row('short',incomplete),prompt=prompt)]
+        result=quality.assess(rows)
+        self.assertEqual(result['short']['status'],'shrunken')
+        self.assertIn('来源链接',result['short']['reason'])
+        self.assertIn('限制说明',result['short']['reason'])
+        result=quality.assess(rows+[dict(self.row('concise',concise),prompt=prompt)])
+        self.assertEqual(result['short']['status'],'shrunken')
+        self.assertEqual(result['concise']['status'],'accepted')
+        self.assertIn('仍纳入统计',result['concise']['reason'])
+        # Most peers being short must not erase explicit missing-request evidence.
+        result=quality.assess(rows+[dict(rows[1],task='short2')])
+        self.assertEqual(result['short2']['status'],'shrunken')
+        # A long peer that also omits the requested parts is not evidence of completeness.
+        rows[0]['body']='Kalodata supports product research. '*100
+        self.assertEqual(quality.assess(rows)['short']['status'],'accepted')
+
+    def test_complete_concise_answer_and_unrelated_reference_are_not_excluded(self):
+        prompt='说明工具的局限，并提供来源链接。'
+        long='数据为估算值，需核实。来源：https://example.org/docs。'*80
+        short='Kalodata 是估算数据，仅作参考：https://example.org/docs。'
+        rows=[dict(self.row('a',long),prompt=prompt),dict(self.row('b',short),prompt=prompt)]
+        self.assertEqual(quality.assess(rows)['b']['status'],'accepted')
+        rows[1]['body']='可用 Kalodata。'
+        self.assertEqual(quality.assess(rows)['b']['status'],'shrunken')
+        rows[1]['key']=('other-question','perplexity','zh','CN')
+        self.assertEqual(quality.assess(rows)['b']['status'],'accepted')
+
+    def test_length_warning_keeps_metrics_and_actual_historical_rule_version(self):
+        fixture=fixtures.AnswerbitTest();fixture.setUp();self.addCleanup(fixture.doCleanups)
+        template=fixture.records()[0]
+        bodies={'long':'Kalodata supports product research. '*70,'short':'Use Kalodata for research.'}
+        def call(path,payload):
+            if path==answerbit.LIST:return {'scores':[dict(template,task_id=t) for t in bodies],'total':len(bodies)}
+            return dict(prompt=template['query_str'],platform=template['platform'],language=template['language'],
+                        date=fixture.day,llm_output=bodies[payload['task_id']],links=[],brand_reputation=1)
+        dashboard.refresh_answers(fixture.bank,fixture.output,'synthetic',fixture.day,fixture.day,call)
+        current=dashboard.dashboard_data(fixture.output,fixture.bank,None)
+        self.assertEqual(current['core_mention']['denominator'],2)
+        self.assertEqual(current['core_mention']['numerator'],2)
+        self.assertEqual([(r['task'],r['status']) for r in current['quality']['records']],[('short','accepted')])
+        self.assertEqual(shared_data(current)['quality'],current['quality'])
+        book=load_workbook(BytesIO(export_workbook(fixture.output,current)));self.addCleanup(book.close)
+        self.assertIn('纳入统计（长度待核查）',[r[6] for r in list(book['回答质量'].values)[1:]])
+        with sqlite3.connect(fixture.output) as db:
+            db.execute("UPDATE sample_quality SET version='answer-quality/1'")
+            db.execute("UPDATE batch SET metric_version='answerbit-observed/4-quality'")
+        old=dashboard.dashboard_data(fixture.output,fixture.bank,None)
+        self.assertEqual(old['quality']['version'],'answer-quality/1')
+        self.assertEqual(old['analysis_version'],'geo-core/3-answer-quality')
+        comparison=dashboard.previous_comparison(current,old,refresh=True)
+        self.assertTrue(all(r['change'] is None for r in comparison['metrics']))
+        self.assertIn('分析口径不同或上次未记录口径',comparison['limitations'])
 
 
 if __name__ == '__main__': unittest.main()
