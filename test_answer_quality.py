@@ -177,6 +177,16 @@ class QualityTest(unittest.TestCase):
         rows[1]['key']=('other-question','perplexity','zh','CN')
         self.assertEqual(quality.assess(rows)['b']['status'],'accepted')
 
+    def test_negated_requests_are_not_omission_evidence(self):
+        long='Kalodata estimates require verification. https://example.org/docs. '*70
+        for prompt in ('Explain limitations; do not provide source links.',
+                       "Explain limitations; don't provide source links.",
+                       '说明限制；不要提供来源链接。'):
+            with self.subTest(prompt=prompt):
+                rows=[dict(self.row('long',long),prompt=prompt),
+                      dict(self.row('short','Kalodata is a research tool.'),prompt=prompt)]
+                self.assertEqual(quality.assess(rows)['short']['status'],'accepted')
+
     def test_length_warning_keeps_metrics_and_actual_historical_rule_version(self):
         fixture=fixtures.AnswerbitTest();fixture.setUp();self.addCleanup(fixture.doCleanups)
         template=fixture.records()[0]

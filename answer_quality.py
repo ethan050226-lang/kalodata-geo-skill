@@ -40,6 +40,7 @@ REQUIREMENTS = (
                         r'(?:提供|附上|给出|列出)[^。！？\n]{0,20}(?:来源|链接|出处)', re.I),
      re.compile(r'https?://|www\.', re.I)),
 )
+NEGATED_REQUEST = re.compile(r"\b(?:do not|don't|without|not required|no need)\b|不要|无需|不必|不用|不需要",re.I)
 
 
 def error_envelope(text):
@@ -86,7 +87,9 @@ def assess(records):
             continue
         lengths = [results[r['task']]['units'] for r in rows]
         baseline = max(lengths) if len(rows) == 2 else median(lengths)
-        requested = [(label,body) for label,prompt,body in REQUIREMENTS if prompt.search(rows[0]['prompt'])]
+        prompt = rows[0]['prompt']
+        requested = [] if NEGATED_REQUEST.search(prompt) else [
+            (label,body) for label,pattern,body in REQUIREMENTS if pattern.search(prompt)]
         complete = [r for r in rows if len(requested)>=2 and
                     all(pattern.search(r['body']) for _,pattern in requested)]
         # A majority of incomplete short peers must not become the completeness reference.
