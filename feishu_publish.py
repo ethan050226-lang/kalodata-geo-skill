@@ -12,7 +12,7 @@ import tempfile
 from urllib.parse import urlsplit
 
 from archive import ArchiveError, require, write_atomic
-from dashboard import retained_data, render
+from dashboard import ANALYSIS_VERSION, retained_data, render
 from feishu_delivery import shared_data
 from publication import manifest, stage, accept
 
@@ -127,6 +127,8 @@ def load_config():
 
 def publish(source, snapshot, config, proof=None, remote=None):
     _,data,_ = retained_data(source)
+    require(data.get('analysis_version') == ANALYSIS_VERSION,
+            '发布校验 / 历史批次口径需刷新；不能把历史交互预览作为当前口径的正式看板发布')
     if data.get('market_scope'):
         from market_scope import scope_config
         config = scope_config(config,data['market_scope']['markets'])

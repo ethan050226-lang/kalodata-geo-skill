@@ -331,3 +331,12 @@ class PublicationTest(unittest.TestCase):
         with self.assertRaisesRegex(ArchiveError,'源数据或模板已变化'):
             publish(self.source,self.f.output,config,proof,self.remote)
         self.assertFalse((Path(config['state_dir'])/'last-success.json').exists())
+
+    def test_legacy_analysis_cannot_publish_a_report_that_disagrees_with_current_metrics(self):
+        old=deepcopy(self.data);old['analysis_version']='historical-policy'
+        dashboard.render(old,self.source)
+        config={'state_dir':str(self.root/'publication'),'sharing_scope':'tenant_readable'}
+        with self.assertRaisesRegex(ArchiveError,'历史批次口径需刷新'):
+            publish(self.source,self.f.output,config,remote=self.remote)
+        self.assertEqual(self.remote.writes,0)
+        self.assertFalse((Path(config['state_dir'])/'last-success.json').exists())
