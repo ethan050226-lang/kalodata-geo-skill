@@ -55,3 +55,16 @@ for(const [shared,embedded,internal] of [[false,true,true],[true,true,true],[fal
   assert.equal(route,internal&&(shared||embedded)?'metrics/metric-core':null);
 }
 console.log('Embedded navigation works with and without sharing metadata');
+
+// Shared history warnings appear once; distinct metric changes stay on their own cards.
+const historyCode=html.slice(html.indexOf('  const histories='),html.indexOf('  renderMatrix(rs,f);'));
+for(const values of [['不可比','不可比','不可比'],['+1 pp','-2 pp','不可比']]){
+  const cards=values.map(()=>({content:'',insertAdjacentHTML(_position,text){this.content+=text;}}));
+  const status={hidden:true,textContent:''};let index=0;
+  vm.runInNewContext(historyCode,{$:id=>id==='kpis'?{children:cards}:status,cardHistory:()=>values[index++],esc:String,f:{}});
+  const shared=new Set(values).size===1;
+  assert.equal(status.hidden,!shared);
+  assert.equal(status.textContent,shared?values[0]:'');
+  assert.equal(cards.filter(card=>card.content).length,shared?0:3);
+}
+console.log('Shared and distinct history display checks passed');
