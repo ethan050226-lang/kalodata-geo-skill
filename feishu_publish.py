@@ -62,11 +62,16 @@ class Drive:
             require(token and token not in seen, '飞书查重 / 分页未取全或游标重复')
             seen.add(token)
 
-    def verify_file(self, token, kind='file'):
+    def verify_file(self, token, kind='file', sharing_scope='admins_only'):
         require(isinstance(token,str) and re.fullmatch(r'[A-Za-z0-9]+',token), '飞书权限 / 文件标识无效')
+        require(sharing_scope in ('admins_only','tenant_readable'), '飞书权限 / 不支持的分享范围')
         public = self.call(['drive','+permission-get-setting','--token',token,'--type',kind]).get('permission_public',{})
-        require(public.get('link_share_entity') == 'closed' and public.get('external_access') is False,
-                '飞书权限 / 链接分享未关闭或外部访问未禁用；到文件分享设置收紧后重试，未发布业务数据')
+        expected = 'tenant_readable' if sharing_scope == 'tenant_readable' else 'closed'
+        require(public.get('link_share_entity') == expected and public.get('external_access') is False,
+                '飞书权限 / 链接分享范围不符或外部访问未禁用；核对本文件设置后重试，未切换成功入口')
+        if sharing_scope == 'tenant_readable':
+            require(public.get('share_entity') == 'only_full_access',
+                    '飞书权限 / 公司内只读看板须仅允许管理员管理协作者，未切换成功入口')
         # Check both direct and inherited folder grants; never silently allow a group/team.
         for resource, resource_type in ((self.folder,'folder'),(token,kind)):
             members = self.call(['drive','+member-list','--token',resource,'--type',resource_type])
@@ -125,12 +130,17 @@ def publish(source, snapshot, config, proof=None, remote=None):
     if data.get('market_scope'):
         from market_scope import scope_config
         config = scope_config(config,data['market_scope']['markets'])
+    sharing_scope = config.get('sharing_scope','admins_only')
+    require(sharing_scope in ('admins_only','tenant_readable'), '飞书配置 / 分享范围只支持管理员或公司内只读')
     state_dir = Path(config['state_dir']); state_dir.mkdir(parents=True,exist_ok=True,mode=0o700)
     state = state_dir/'last-success.json'
     candidate_path = state_dir/'candidate.json'
     remote = remote or Drive(config)
     if proof is not None:
         candidate = json.loads(candidate_path.read_text())
+        require(candidate.get('sharing_scope','admins_only') == sharing_scope,
+                '飞书验收 / 候选与当前分享范围不同，停止发布')
+        require(candidate.get('manifest') == manifest(snapshot,data), '飞书验收 / 源数据或模板已变化，须重新准备候选')
         result = accept(remote,candidate,proof,state)
     else:
         require(not source.with_suffix('.status.json').exists(), '发布校验 / 最新取数失败，停止发布')
@@ -140,9 +150,10 @@ def publish(source, snapshot, config, proof=None, remote=None):
         version = manifest(snapshot,data)
         shared = shared_data(data)
         shared['delivery']['measurement_version'] = version['version']
+        shared['delivery']['sharing_scope'] = sharing_scope
         with tempfile.TemporaryDirectory() as directory:
             html = Path(directory)/'share.html'; render(shared,html)
-            result = stage(remote,data,version,html.read_bytes(),state)
+            result = stage(remote,data,version,html.read_bytes(),state,sharing_scope=sharing_scope)
         if result['status'] == 'pending_acceptance':
             write_atomic(candidate_path,json.dumps(result,ensure_ascii=False).encode())
     return result

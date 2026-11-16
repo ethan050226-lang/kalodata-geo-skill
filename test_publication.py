@@ -18,7 +18,7 @@ from publication import CHECKS, manifest, stage, accept, report
 
 class Remote:
     def __init__(self):
-        self.files = {}; self.names = {}; self.writes = 0; self.fail = None
+        self.files = {}; self.names = {}; self.writes = 0; self.fail = None; self.sharing = {}
 
     def list_files(self):
         if self.fail == 'lookup': raise ArchiveError('查重失败')
@@ -28,8 +28,9 @@ class Remote:
         if self.fail == 'download': raise ArchiveError('无法访问')
         return self.files[token]
 
-    def verify_file(self, token):
+    def verify_file(self, token, sharing_scope='admins_only'):
         if self.fail == 'permission': raise ArchiveError('权限检查失败')
+        if self.sharing.get(token,'admins_only') != sharing_scope: raise ArchiveError('分享范围不符')
 
     def upload_private(self, body, name):
         if self.fail == 'upload': raise ArchiveError('上传中断')
@@ -242,3 +243,91 @@ class PublicationTest(unittest.TestCase):
             self.assertEqual(Drive(config).identity,'bot')
             self.assertEqual(Drive(dict(config,identity='user')).identity,'user')
             with self.assertRaises(ArchiveError): Drive(dict(config,identity='invalid'))
+
+    def tenant_proof(self, candidate):
+        proof = self.proof(candidate)
+        proof.update(access_scope='tenant_verified',operator={
+            'account':'synthetic-operator','checked_at':'2026-11-01T01:00:00Z',
+            'checks':dict.fromkeys(CHECKS,True),
+            'external_account':'synthetic-external','external_denied':True})
+        return proof
+
+    def test_company_link_needs_permission_and_independent_account_checks(self):
+        candidate = stage(self.remote,self.data,self.version,b'synthetic shared html',self.state,
+                          sharing_scope='tenant_readable')
+        proof = self.tenant_proof(candidate)
+        with self.assertRaisesRegex(ArchiveError,'分享范围'): accept(self.remote,candidate,proof,self.state)
+        self.assertFalse(self.state.exists())
+        self.remote.sharing[candidate['file_token']] = 'tenant_readable'
+        for field,value in [('account',proof['account']),('external_denied',False),('external_account','')]:
+            invalid = deepcopy(proof); invalid['operator'][field] = value
+            with self.subTest(field=field), self.assertRaises(ArchiveError):
+                accept(self.remote,candidate,invalid,self.state)
+            self.assertFalse(self.state.exists())
+        invalid = deepcopy(proof); invalid['operator']['checks']['navigation'] = False
+        with self.assertRaises(ArchiveError): accept(self.remote,candidate,invalid,self.state)
+        result = accept(self.remote,candidate,proof,self.state)
+        self.assertEqual(result['status'],'published')
+        receipts=[t for t,n in self.remote.names.items() if n.endswith('.json')]
+        self.assertTrue(receipts)
+        self.assertTrue(all(self.remote.sharing.get(t,'admins_only') == 'admins_only' for t in receipts))
+        writes=self.remote.writes
+        reused=stage(self.remote,self.data,self.version,b'synthetic shared html',self.state,
+                     sharing_scope='tenant_readable')
+        self.assertEqual(reused['status'],'reused');self.assertEqual(self.remote.writes,writes)
+
+    def test_different_sharing_policies_never_reuse_or_overwrite_each_other(self):
+        private=self.candidate();accept(self.remote,private,self.proof(private),self.state)
+        previous=self.state.read_bytes()
+        company=stage(self.remote,self.data,self.version,b'company html',self.state,sharing_scope='tenant_readable')
+        self.assertEqual(company['status'],'pending_acceptance')
+        self.assertNotEqual(company['file_token'],private['file_token'])
+        self.assertEqual(self.state.read_bytes(),previous)
+        with self.assertRaises(ArchiveError): accept(self.remote,company,self.proof(company),self.state)
+        self.assertEqual(self.state.read_bytes(),previous)
+        for mode in ('anyone_readable','tenant_editable','invalid'):
+            writes=self.remote.writes
+            with self.assertRaises(ArchiveError):
+                stage(self.remote,self.data,self.version,b'html',self.state,sharing_scope=mode)
+            self.assertEqual(self.remote.writes,writes)
+
+    def test_company_mode_still_rejects_external_access_and_private_manifest_exposure(self):
+        drive=object.__new__(Drive);drive.folder='folder';drive.allowed={('openid','admin')}
+        members={'items':[{'member_type':'openid','member_id':'admin'}]}
+        public={'permission_public':{'link_share_entity':'tenant_readable','external_access':False,
+                                     'share_entity':'only_full_access'}}
+        with patch.object(drive,'call',side_effect=[public,members,members]):
+            drive.verify_file('file',sharing_scope='tenant_readable')
+        for mode,external in [('tenant_readable',True),('tenant_readable',None),('anyone_readable',False),('tenant_editable',False)]:
+            response={'permission_public':{'link_share_entity':mode,'external_access':external}}
+            with patch.object(drive,'call',return_value=response),self.assertRaises(ArchiveError):
+                drive.verify_file('file',sharing_scope='tenant_readable')
+        with patch.object(drive,'call',return_value=public),self.assertRaises(ArchiveError):
+            drive.verify_file('receipt')
+        for management in ('anyone','same_tenant',None):
+            unsafe=deepcopy(public);unsafe['permission_public']['share_entity']=management
+            with patch.object(drive,'call',return_value=unsafe),self.assertRaises(ArchiveError):
+                drive.verify_file('file',sharing_scope='tenant_readable')
+
+    def test_company_receipt_visibility_change_stops_reuse(self):
+        candidate=stage(self.remote,self.data,self.version,b'html',self.state,sharing_scope='tenant_readable')
+        self.remote.sharing[candidate['file_token']]='tenant_readable'
+        accept(self.remote,candidate,self.tenant_proof(candidate),self.state)
+        previous=self.state.read_bytes();writes=self.remote.writes
+        receipt=next(t for t,n in self.remote.names.items() if n.endswith('.json'))
+        self.remote.sharing[receipt]='tenant_readable'
+        with self.assertRaises(ArchiveError):
+            stage(self.remote,self.data,self.version,b'html',self.state,sharing_scope='tenant_readable')
+        self.assertEqual(self.remote.writes,writes);self.assertEqual(self.state.read_bytes(),previous)
+
+    def test_accept_rechecks_config_and_source_before_publishing(self):
+        config={'state_dir':str(self.root/'publication'),'sharing_scope':'tenant_readable'}
+        candidate=publish(self.source,self.f.output,config,remote=self.remote)
+        proof=self.tenant_proof(candidate)
+        self.remote.sharing[candidate['file_token']]='tenant_readable'
+        with self.assertRaisesRegex(ArchiveError,'分享范围不同'):
+            publish(self.source,self.f.output,dict(config,sharing_scope='admins_only'),proof,self.remote)
+        self.detail['llm_output']+=' changed source';self.refresh()
+        with self.assertRaisesRegex(ArchiveError,'源数据或模板已变化'):
+            publish(self.source,self.f.output,config,proof,self.remote)
+        self.assertFalse((Path(config['state_dir'])/'last-success.json').exists())

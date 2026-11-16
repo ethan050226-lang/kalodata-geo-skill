@@ -129,7 +129,11 @@ def valid_receipt(receipt):
             and receipt.get('file_token') and receipt.get('url') and receipt.get('accepted_at')
             and receipt.get('report',{}).get('batch'), '飞书查重 / 已验收记录缺少完整校验信息')
     proof = receipt.get('proof', {})
-    require(set(proof) == {'file_token','html_sha256','checks','account','checked_at','access_scope'},
+    sharing_scope = receipt.get('sharing_scope','admins_only')
+    require(sharing_scope in ('admins_only','tenant_readable'), '飞书验收 / 未审核的分享范围')
+    proof_fields = {'file_token','html_sha256','checks','account','checked_at','access_scope'}
+    if sharing_scope == 'tenant_readable': proof_fields.add('operator')
+    require(set(proof) == proof_fields,
             '飞书验收 / 验收证据包含未审核字段')
     from feishu_delivery import reject_secrets
     reject_secrets(receipt)
@@ -137,51 +141,66 @@ def valid_receipt(receipt):
             and proof.get('html_sha256') == receipt['html_sha256']
             and all(proof.get('checks', {}).get(k) is True for k in CHECKS)
             and proof.get('account') and proof.get('checked_at')
-            and proof.get('access_scope') in ('admins_only','operators_verified'), '飞书验收 / 缺少逐版本交互和账号验收证据')
+            and proof.get('access_scope') in (('tenant_verified',) if sharing_scope == 'tenant_readable'
+                                            else ('admins_only','operators_verified')),
+            '飞书验收 / 缺少逐版本交互和账号验收证据')
+    if sharing_scope == 'tenant_readable':
+        operator = proof['operator']
+        require(isinstance(operator,dict) and set(operator) == {'account','checked_at','checks','external_account','external_denied'}
+                and operator.get('account') and operator['account'] != proof['account'] and operator.get('checked_at')
+                and isinstance(operator.get('checks'),dict)
+                and all(operator['checks'].get(k) is True for k in CHECKS)
+                and operator.get('external_account') and operator['external_account'] not in (proof['account'],operator['account'])
+                and operator.get('external_denied') is True,
+                '飞书验收 / 公司内分享须由另一位真实运营账号测试交互，并验证公司外访问被拒绝')
     expected = dict(receipt['manifest']); version = expected.pop('version')
     require(version == digest(expected), '飞书查重 / 版本清单校验失败')
 
 
-def lookup(remote, current):
+def lookup(remote, current, sharing_scope='admins_only'):
     """Read the complete remote catalogue before any write. Never use names as equality proof."""
     files = remote.list_files()
     records, legacy = [], []
     for file in files:
         if file['name'].startswith('geo-accepted-') and file['name'].endswith('.json'):
+            remote.verify_file(file['token'])
             receipt = json.loads(remote.download(file['token']))
             valid_receipt(receipt)
             records.append(receipt)
         elif file['name'].endswith('.html') and not file['name'].startswith('geo-pending-'):
             legacy.append(file['name'])
-    matches = [r for r in records if r['manifest'] == current]
+    matches = [r for r in records if r['manifest'] == current and r.get('sharing_scope','admins_only') == sharing_scope]
     for found in sorted(matches, key=lambda r:r['accepted_at'], reverse=True):
         require(found['url'] == remote.url(found['file_token']), '飞书查重 / 链接与文件标识不一致')
-        remote.verify_file(found['file_token'])
+        remote.verify_file(found['file_token'],sharing_scope=sharing_scope)
         require(hashlib.sha256(remote.download(found['file_token'])).hexdigest() == found['html_sha256'],
                 '飞书查重 / 旧链接文件内容已变化，不得复用')
         return found, records, legacy
     return None, records, legacy
 
 
-def stage(remote, data, version, html, state):
-    found, records, legacy = lookup(remote, version)
+def stage(remote, data, version, html, state, sharing_scope='admins_only'):
+    require(sharing_scope in ('admins_only','tenant_readable'), '飞书发布 / 未审核的分享范围')
+    found, records, legacy = lookup(remote, version,sharing_scope)
     countries = lambda m: {json.loads(s)[0] for s in m['scope']}
-    records = [r for r in records if countries(r['manifest']) == countries(version)]
+    records = [r for r in records if countries(r['manifest']) == countries(version)
+               and r.get('sharing_scope','admins_only') == sharing_scope]
     if found:
         write_atomic(state, json.dumps(found, ensure_ascii=False,sort_keys=True).encode())
         return {'status':'reused', 'receipt':found, 'legacy_files':legacy,
                 'checked_at':datetime.now(timezone.utc).isoformat()}
     if records:
         previous = max(records,key=lambda r:r['accepted_at'])
-        remote.verify_file(previous['file_token'])
+        remote.verify_file(previous['file_token'],sharing_scope=sharing_scope)
         require(hashlib.sha256(remote.download(previous['file_token'])).hexdigest() == previous['html_sha256'],
                 '飞书查重 / 上一已验收文件发生变化，请核查后再发布')
         write_atomic(state,json.dumps(previous,ensure_ascii=False,sort_keys=True).encode())
-    token = remote.upload_private(html, 'geo-pending-'+version['version']+'.html')
+    suffix = '-'+sharing_scope if sharing_scope != 'admins_only' else ''
+    token = remote.upload_private(html, 'geo-pending-'+version['version']+suffix+'.html')
     remote.verify_file(token)
     sha = hashlib.sha256(html).hexdigest()
     require(hashlib.sha256(remote.download(token)).hexdigest() == sha, '飞书完整性 / 上传后内容校验失败')
-    return {'status':'pending_acceptance', 'file_token':token, 'url':remote.url(token),
+    return {'status':'pending_acceptance', 'file_token':token, 'url':remote.url(token), 'sharing_scope':sharing_scope,
             'manifest':version, 'html_sha256':sha, 'report':report(data), 'legacy_files':legacy,
             'previous': max(records,key=lambda r:r['accepted_at']) if records else None}
 
@@ -189,14 +208,17 @@ def stage(remote, data, version, html, state):
 def accept(remote, candidate, proof, state):
     require(candidate.get('status') == 'pending_acceptance', '飞书验收 / 没有待验收版本')
     receipt = {k:candidate[k] for k in ('manifest','file_token','url','html_sha256','report')}
+    sharing_scope = candidate.get('sharing_scope','admins_only')
+    receipt['sharing_scope'] = sharing_scope
     receipt.update(schema=SCHEMA, accepted=True, accepted_at=datetime.now(timezone.utc).isoformat(), proof=proof)
     valid_receipt(receipt)
     require(receipt['url'] == remote.url(receipt['file_token']), '飞书验收 / 链接与文件标识不一致')
-    remote.verify_file(receipt['file_token'])
+    remote.verify_file(receipt['file_token'],sharing_scope=sharing_scope)
     require(hashlib.sha256(remote.download(receipt['file_token'])).hexdigest() == receipt['html_sha256'],
             '飞书验收 / 验收期间文件变化，保留上次入口')
     body = json.dumps(receipt, ensure_ascii=False, sort_keys=True).encode()
-    token = remote.upload_private(body, 'geo-accepted-'+candidate['manifest']['version']+'.json')
+    suffix = '-'+sharing_scope if sharing_scope != 'admins_only' else ''
+    token = remote.upload_private(body, 'geo-accepted-'+candidate['manifest']['version']+suffix+'.json')
     remote.verify_file(token)
     require(remote.download(token) == body, '飞书验收 / 已验收记录回读失败，未切换入口')
     write_atomic(state, body)
