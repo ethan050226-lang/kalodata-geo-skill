@@ -6,10 +6,11 @@ import json
 from pathlib import Path
 import sqlite3
 
-from archive import require, write_atomic
+from archive import ArchiveError, require, write_atomic
 from recommendation_review import VERSION as REVIEW_VERSION
 
 SCHEMA = 'geo-publication/1'
+REGISTRY_SCHEMA = 'geo-publication-registry/1'
 CHECKS = ('market', 'platform', 'date', 'group', 'tag', 'matrix', 'navigation',
           'comparison', 'charts', 'metric_guide', 'desktop', 'narrow_screen', 'permissions')
 
@@ -157,44 +158,112 @@ def valid_receipt(receipt):
     require(version == digest(expected), '飞书查重 / 版本清单校验失败')
 
 
-def lookup(remote, current, sharing_scope='admins_only'):
-    """Read the complete remote catalogue before any write. Never use names as equality proof."""
-    files = remote.list_files()
-    records, legacy = [], []
-    for file in files:
-        if file['name'].startswith('geo-accepted-') and file['name'].endswith('.json'):
-            remote.verify_file(file['token'])
-            receipt = json.loads(remote.download(file['token']))
-            valid_receipt(receipt)
-            records.append(receipt)
-        elif file['name'].endswith('.html') and not file['name'].startswith('geo-pending-'):
-            legacy.append(file['name'])
-    matches = [r for r in records if r['manifest'] == current and r.get('sharing_scope','admins_only') == sharing_scope]
-    for found in sorted(matches, key=lambda r:r['accepted_at'], reverse=True):
-        require(found['url'] == remote.url(found['file_token']), '飞书查重 / 链接与文件标识不一致')
-        remote.verify_file(found['file_token'],sharing_scope=sharing_scope)
-        require(hashlib.sha256(remote.download(found['file_token'])).hexdigest() == found['html_sha256'],
-                '飞书查重 / 旧链接文件内容已变化，不得复用')
-        return found, records, legacy
-    return None, records, legacy
+def read_registry(remote, state):
+    """A missing ledger is unknown history, never an empty remote folder."""
+    path = state.with_name('registry.json')
+    try:
+        registry = json.loads(path.read_text())
+    except (OSError, ValueError):
+        raise ArchiveError('中央发布记录 / 缺失或损坏，停止发布；请管理员核对历史版本后初始化或恢复，不自动扫描目录或重新取数') from None
+    require(isinstance(registry,dict) and registry.get('schema') == REGISTRY_SCHEMA
+            and registry.get('target') == remote.registry_key
+            and isinstance(registry.get('records'),list)
+            and isinstance(registry.get('review'),dict)
+            and registry['review'].get('history_checked') is True,
+            '中央发布记录 / 格式或目标目录不符，停止发布，请管理员恢复')
+    seen = set()
+    for entry in registry['records']:
+        require(isinstance(entry,dict) and set(entry) == {'receipt_token','receipt'}
+                and isinstance(entry['receipt_token'],str) and entry['receipt_token'].isascii()
+                and entry['receipt_token'].isalnum(),
+                '中央发布记录 / 缺少已知回执文件标识')
+        valid_receipt(entry['receipt'])
+        receipt = entry['receipt']
+        key = (receipt['manifest']['version'], receipt.get('sharing_scope','admins_only'))
+        require(key not in seen, '中央发布记录 / 同版本记录冲突，请管理员核查')
+        seen.add(key)
+    if state.exists():
+        try: previous = json.loads(state.read_text())
+        except (OSError, ValueError):
+            raise ArchiveError('中央发布记录 / 上次成功入口损坏，停止发布，请管理员恢复') from None
+        require(any(e['receipt'] == previous for e in registry['records']),
+                '中央发布记录 / 上次成功入口不在登记历史中，停止发布，请管理员恢复')
+    return registry
+
+
+def verify_registered(remote, entry):
+    receipt = entry['receipt']
+    remote.verify_file(entry['receipt_token'])
+    try: saved = json.loads(remote.download(entry['receipt_token']))
+    except ValueError:
+        raise ArchiveError('中央发布记录 / 已知远端回执损坏，停止发布') from None
+    require(saved == receipt, '中央发布记录 / 远端回执与登记记录不同，停止发布')
+    require(receipt['url'] == remote.url(receipt['file_token']), '飞书查重 / 链接与文件标识不一致')
+    remote.verify_file(receipt['file_token'],sharing_scope=receipt.get('sharing_scope','admins_only'))
+    require(hashlib.sha256(remote.download(receipt['file_token'])).hexdigest() == receipt['html_sha256'],
+            '飞书查重 / 已知文件内容已变化，停止发布，请核查')
+    return receipt
+
+
+def initialize_registry(remote, state, proof):
+    """Admin-reviewed bootstrap/import by known receipt tokens; no directory enumeration."""
+    path = state.with_name('registry.json')
+    require(not path.exists(), '中央发布记录 / 已存在，不自动覆盖；损坏时请从批准备份恢复')
+    require(isinstance(proof,dict) and set(proof) == {'account','checked_at','history_checked','receipt_tokens'}
+            and isinstance(proof['account'],str) and proof['account'].strip()
+            and isinstance(proof['checked_at'],str) and proof['checked_at'].strip()
+            and proof['history_checked'] is True and isinstance(proof['receipt_tokens'],list)
+            and all(isinstance(t,str) and t.isascii() and t.isalnum() for t in proof['receipt_tokens'])
+            and len(set(proof['receipt_tokens'])) == len(proof['receipt_tokens']),
+            '中央发布记录 / 需要管理员实际核对历史后的账号、时间及已知回执标识；未核查不能初始化为空')
+    records = []
+    seen = set()
+    for token in proof['receipt_tokens']:
+        remote.verify_file(token)
+        try: receipt = json.loads(remote.download(token))
+        except ValueError:
+            raise ArchiveError('中央发布记录 / 待导入回执损坏，不初始化') from None
+        valid_receipt(receipt)
+        entry = {'receipt_token':token,'receipt':receipt}
+        verify_registered(remote,entry)
+        key = (receipt['manifest']['version'],receipt.get('sharing_scope','admins_only'))
+        require(key not in seen, '中央发布记录 / 同版本导入冲突，请管理员核查')
+        seen.add(key); records.append(entry)
+    if state.exists():
+        try: previous = json.loads(state.read_text())
+        except (OSError, ValueError):
+            raise ArchiveError('中央发布记录 / 上次成功入口损坏，请先恢复，不初始化为空') from None
+        require(any(e['receipt'] == previous for e in records),
+                '中央发布记录 / 历史导入遗漏上次成功入口，不初始化为空')
+    registry = {'schema':REGISTRY_SCHEMA,'target':remote.registry_key,'review':proof,'records':records}
+    write_atomic(path,json.dumps(registry,ensure_ascii=False,sort_keys=True).encode())
+    return {'status':'registry_initialized','records':len(records),'publication':'未上传、未切换成功入口、未启用定时任务'}
+
+
+def lookup(remote, current, state, sharing_scope='admins_only'):
+    registry = read_registry(remote,state)
+    entries = [e for e in registry['records'] if e['receipt']['manifest'] == current
+               and e['receipt'].get('sharing_scope','admins_only') == sharing_scope]
+    found = verify_registered(remote,entries[0]) if entries else None
+    return found, registry
 
 
 def stage(remote, data, version, html, state, sharing_scope='admins_only'):
     require(sharing_scope in ('admins_only','tenant_readable'), '飞书发布 / 未审核的分享范围')
-    found, records, legacy = lookup(remote, version,sharing_scope)
+    found, registry = lookup(remote, version,state,sharing_scope)
+    legacy = None  # Not inspected; an unknown directory must not be reported as empty.
     countries = lambda m: {json.loads(s)[0] for s in m['scope']}
-    records = [r for r in records if countries(r['manifest']) == countries(version)
-               and r.get('sharing_scope','admins_only') == sharing_scope]
+    entries = [e for e in registry['records'] if countries(e['receipt']['manifest']) == countries(version)
+               and e['receipt']['manifest']['brand_sha256'] == version['brand_sha256']
+               and e['receipt'].get('sharing_scope','admins_only') == sharing_scope]
+    records = [e['receipt'] for e in entries]
     if found:
         write_atomic(state, json.dumps(found, ensure_ascii=False,sort_keys=True).encode())
         return {'status':'reused', 'receipt':found, 'legacy_files':legacy,
                 'checked_at':datetime.now(timezone.utc).isoformat()}
     if records:
         previous = max(records,key=lambda r:r['accepted_at'])
-        remote.verify_file(previous['file_token'],sharing_scope=sharing_scope)
-        require(hashlib.sha256(remote.download(previous['file_token'])).hexdigest() == previous['html_sha256'],
-                '飞书查重 / 上一已验收文件发生变化，请核查后再发布')
-        write_atomic(state,json.dumps(previous,ensure_ascii=False,sort_keys=True).encode())
+        verify_registered(remote,next(e for e in entries if e['receipt'] == previous))
     suffix = '-'+sharing_scope if sharing_scope != 'admins_only' else ''
     token = remote.upload_private(html, 'geo-pending-'+version['version']+suffix+'.html')
     remote.verify_file(token)
@@ -206,20 +275,45 @@ def stage(remote, data, version, html, state, sharing_scope='admins_only'):
 
 
 def accept(remote, candidate, proof, state):
+    registry = read_registry(remote,state)
     require(candidate.get('status') == 'pending_acceptance', '飞书验收 / 没有待验收版本')
     receipt = {k:candidate[k] for k in ('manifest','file_token','url','html_sha256','report')}
     sharing_scope = candidate.get('sharing_scope','admins_only')
     receipt['sharing_scope'] = sharing_scope
     receipt.update(schema=SCHEMA, accepted=True, accepted_at=datetime.now(timezone.utc).isoformat(), proof=proof)
     valid_receipt(receipt)
+    for entry in registry['records']:
+        old = entry['receipt']
+        if old['manifest'] == receipt['manifest'] and old.get('sharing_scope','admins_only') == sharing_scope:
+            require(old['file_token'] == receipt['file_token'] and old['html_sha256'] == receipt['html_sha256'],
+                    '飞书验收 / 已登记同版本的其他文件，不接纳重复候选')
+            verify_registered(remote,entry)
+            write_atomic(state,json.dumps(old,ensure_ascii=False,sort_keys=True).encode())
+            return {'status':'published','receipt':old}
     require(receipt['url'] == remote.url(receipt['file_token']), '飞书验收 / 链接与文件标识不一致')
     remote.verify_file(receipt['file_token'],sharing_scope=sharing_scope)
     require(hashlib.sha256(remote.download(receipt['file_token'])).hexdigest() == receipt['html_sha256'],
             '飞书验收 / 验收期间文件变化，保留上次入口')
     body = json.dumps(receipt, ensure_ascii=False, sort_keys=True).encode()
+    # A retry must reuse the timestamp and bytes already bound to the upload journal.
+    prepared = state.with_name('accepting-'+digest([receipt['file_token'],sharing_scope])+'.json')
+    if prepared.exists():
+        try:
+            saved_body = prepared.read_bytes(); saved = json.loads(saved_body)
+        except (OSError, ValueError):
+            raise ArchiveError('飞书验收 / 待提交回执损坏，请管理员核查') from None
+        valid_receipt(saved)
+        expected = json.loads(body); expected['accepted_at'] = saved['accepted_at']
+        require(saved == expected, '飞书验收 / 待提交回执冲突，请管理员核查，不覆盖')
+        body = saved_body
+    else:
+        write_atomic(prepared,body)
+    receipt = json.loads(body)
     suffix = '-'+sharing_scope if sharing_scope != 'admins_only' else ''
     token = remote.upload_private(body, 'geo-accepted-'+candidate['manifest']['version']+suffix+'.json')
     remote.verify_file(token)
     require(remote.download(token) == body, '飞书验收 / 已验收记录回读失败，未切换入口')
+    registry['records'].append({'receipt_token':token,'receipt':receipt})
+    write_atomic(state.with_name('registry.json'),json.dumps(registry,ensure_ascii=False,sort_keys=True).encode())
     write_atomic(state, body)
     return {'status':'published', 'receipt':receipt}

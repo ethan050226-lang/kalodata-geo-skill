@@ -150,6 +150,7 @@ class CountryDeliveryTest(unittest.TestCase):
     def test_country_publication_uses_same_batch_and_keeps_previous_on_upload_failure(self):
         data = self.scope(); dashboard.render(data,self.html)
         remote = Remote(); config={'state_dir':str(self.root/'publication')}
+        remote.initialize(self.root/'publication'/'markets-GB'/'last-success.json')
         candidate=publish(self.html,self.scoped,config,remote=remote)
         state=self.root/'publication'/'markets-GB'/'last-success.json'
         proof={'file_token':candidate['file_token'],'html_sha256':candidate['html_sha256'],

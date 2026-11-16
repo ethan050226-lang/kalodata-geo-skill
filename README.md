@@ -66,13 +66,15 @@ answerbit.py支持单个`--group-id`和可重复`--tag-id`，按交集计算；�
 
 ## 发布连接检查
 
-先按[发布权限清单](skill/geo-sampling/references/feishu-preview.md#一次列清发布权限)核对实际应用/身份及已有连接，再只读探测全部读取能力：
+先按[发布权限清单](skill/geo-sampling/references/feishu-preview.md#一次列清发布权限)核对实际应用/身份及已有连接。常规发布使用私有中央 `registry.json` 和已知文件标识，不扫描飞书目录、不要求 `space:document:retrieve`。首次接入或记录缺失时，管理员先核对历史并初始化/恢复记录；不能将未知历史当空目录。随后只读检查成员及分享能力：
 
 ```sh
 python3 feishu_publish.py <已有看板.html> <已有库.sqlite> --check-access
 ```
 
 不读取Answerbit、不上传、不改权限或任务。读探测成功不证明写入可用；写能力须结合实际应用权限清单核对，新增权限先确认，企业审批项在申请前先报告。源码文件回读采用官方`drive +download`，API预览失败不代表飞书网页无法交互。检查和补发布都复用本批结果。
+
+初始化入口为 `python3 feishu_publish.py <计划看板.html> <计划库.sqlite> --market <获准国家> --initialize-registry <私有历史核查证明.json>`，多国重复 `--market`。首次可使用尚未生成的计划文件路径，不取真实数据；证明和旧回执导入要求见[中央记录与版本去重](skill/geo-sampling/references/feishu-preview.md#中央记录与版本去重)。已有看板时可省略国家参数，沿用看板已隔离范围。仅有旧 HTML 而无完整验收回执时不自动导入成功；记录损坏、已知链接不可达或上传结果不明均停止，要求管理员核查，不自动申请目录权限或重新取数。请备份整个私有状态目录，统一使用单一串行发布者。
 
 ## 配置不足时的行为
 

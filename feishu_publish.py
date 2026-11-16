@@ -14,7 +14,7 @@ from urllib.parse import urlsplit
 from archive import ArchiveError, require, write_atomic
 from dashboard import ANALYSIS_VERSION, retained_data, render
 from feishu_delivery import shared_data
-from publication import manifest, stage, accept
+from publication import manifest, stage, accept, initialize_registry
 
 PLACEHOLDER = b'GEO private upload reservation. No business data.'
 
@@ -33,6 +33,8 @@ class Drive:
         require(url.scheme == 'https' and url.hostname and url.hostname.endswith('.feishu.cn')
                 and re.fullmatch(r'/drive/folder/[A-Za-z0-9]+', url.path), '飞书配置 / 目录必须为获批飞书文件夹')
         self.host, self.folder = url.hostname, url.path.rsplit('/',1)[-1]
+        self.registry_key = hashlib.sha256((self.host+'/'+self.folder).encode()).hexdigest()
+        self.state_dir = Path(config['state_dir']) if config.get('state_dir') else None
         self.allowed = {(r['member_type'], r['member_id']) for r in config['approved_members']}
         require(self.allowed, '飞书配置 / 请配置已批准管理员及应用成员的精确身份，不用姓名作权限判定')
         self.identity = config.get('identity') or 'bot'
@@ -55,7 +57,6 @@ class Drive:
         """Read-only probes; a configured upload scope is not proof of a successful write."""
         checks = []
         probes = (
-            ('目录查重', 'space:document:retrieve', self.list_files),
             ('协作者读取', 'docs:permission.member:retrieve',
              lambda: self.call(['drive','+member-list','--token',self.folder,'--type','folder'])),
             ('分享设置读取', 'docs:permission.setting:read',
@@ -76,32 +77,17 @@ class Drive:
             checks.append(item)
         for name, scope in (
             ('文件上传','drive:file:upload'), ('原文件回读','drive:file:download'),
+            ('已知文件元数据（按CLI版本核对）','drive:drive.metadata:readonly'),
             ('分享设置修改','docs:permission.setting:write_only'),
             ('新文件管理员授权（按需）','docs:permission.member:create'),
         ):
             checks.append({'capability':name,'scope':scope,'status':'not_tested'})
         return {'identity':self.identity,'checks':checks,
-                'read_access_ready':all(c['status']=='passed' for c in checks[:3]),
+                'read_access_ready':all(c['status']=='passed' for c in checks[:2]),
                 'write_access_verified':False,
+                'directory_listing_required':False,
                 'guide':'skill/geo-sampling/references/feishu-preview.md#一次列清发布权限',
                 'next_step':'结合当前应用权限清单核对；未验证不等于缺失。企业审核项先报告，不自动申请或修改权限。'}
-
-    def list_files(self):
-        files, seen, token = [], set(), None
-        while True:
-            params = {'folder_token':self.folder,'page_size':200}
-            if token: params['page_token'] = token
-            data = self.call(['drive','files','list','--params',json.dumps(params)])
-            require(isinstance(data.get('files'),list) and type(data.get('has_more')) is bool,
-                    '飞书查重 / 文件清单缺少分页或文件字段')
-            require(all(isinstance(f,dict) and isinstance(f.get('name'),str)
-                        and re.fullmatch(r'[A-Za-z0-9]+',str(f.get('token',''))) for f in data['files']),
-                    '飞书查重 / 文件名称或标识无效')
-            files.extend(data['files'])
-            if not data['has_more']: return files
-            token = data.get('next_page_token')
-            require(token and token not in seen, '飞书查重 / 分页未取全或游标重复')
-            seen.add(token)
 
     def verify_file(self, token, kind='file', sharing_scope='admins_only'):
         require(isinstance(token,str) and re.fullmatch(r'[A-Za-z0-9]+',token), '飞书权限 / 文件标识无效')
@@ -145,9 +131,22 @@ class Drive:
             return result
 
     def upload_private(self, body, name):
-        files = [r for r in self.list_files() if r['name'] == name]
-        require(len(files) <= 1, '飞书上传 / 发现同名候选冲突，请管理员核查，不自动覆盖')
-        token = files[0]['token'] if files else self.upload(PLACEHOLDER,name)
+        require(self.state_dir is not None, '飞书上传 / 缺少中央持久状态目录')
+        path = self.state_dir/('upload-'+hashlib.sha256(name.encode()).hexdigest()+'.json')
+        expected = {'target':self.registry_key,'name':name,'sha256':hashlib.sha256(body).hexdigest()}
+        if path.exists():
+            try: saved = json.loads(path.read_text())
+            except (OSError, ValueError):
+                raise ArchiveError('飞书上传 / 中央上传记录损坏，请管理员核对，不重复创建') from None
+            require(isinstance(saved,dict) and all(saved.get(k) == v for k,v in expected.items())
+                    and isinstance(saved.get('file_token'),str) and saved['file_token'],
+                    '飞书上传 / 上传结果不明或记录冲突，请管理员核对，不重复创建')
+            token = saved['file_token']
+        else:
+            # Persist intent first: a lost upload response must not create another remote file.
+            write_atomic(path,json.dumps(dict(expected,file_token=None),ensure_ascii=False).encode())
+            token = self.upload(PLACEHOLDER,name)
+            write_atomic(path,json.dumps(dict(expected,file_token=token),ensure_ascii=False).encode())
         # Upload harmless bytes first: tenant defaults may expose newly created files.
         self.verify_file(token)
         current = self.download(token)
@@ -226,8 +225,11 @@ def failure(config, stage_name, message, batch=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('source',type=Path); parser.add_argument('snapshot',type=Path)
-    parser.add_argument('--accept-proof',type=Path,help='Agent 完成实际浏览器验收后保存的私有证据；不是用户确认替代品')
-    parser.add_argument('--check-access',action='store_true',help='只读检查发布连接并列出全部能力；不取数、不上传、不改权限')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--accept-proof',type=Path,help='Agent 完成实际浏览器验收后保存的私有证据；不是用户确认替代品')
+    mode.add_argument('--check-access',action='store_true',help='只读检查成员和分享能力；不列目录、不取数、不上传、不改权限')
+    mode.add_argument('--initialize-registry',type=Path,help='管理员实际核对历史后的私有证明；只按已知回执初始化中央记录，不列目录或上传')
+    parser.add_argument('--market',action='append',help='仅初始化时使用的获准国家；首次尚无看板时必须显式提供，可重复')
     args = parser.parse_args(); config = {}
     try:
         config = load_config()
@@ -235,6 +237,21 @@ def main():
             result = Drive(config).check_access()
             print(json.dumps(result,ensure_ascii=False))
             return 0 if result['read_access_ready'] else 1
+        if args.initialize_registry:
+            if args.market:
+                from market_scope import scope_config
+                config = scope_config(config,args.market)
+            elif args.source.is_file():
+                data = retained_data(args.source)[1]
+                if data.get('market_scope'):
+                    from market_scope import scope_config
+                    config = scope_config(config,data['market_scope']['markets'])
+            else:
+                raise ArchiveError('中央发布记录 / 首次无看板时请显式提供获准国家 --market')
+            result = initialize_registry(Drive(config),Path(config['state_dir'])/'last-success.json',
+                                         json.loads(args.initialize_registry.read_text()))
+            print(json.dumps(result,ensure_ascii=False)); return 0
+        require(not args.market, '配置 / --market 仅用于初始化；正式发布国家由同批看板和数据库核验')
         proof = json.loads(args.accept_proof.read_text()) if args.accept_proof else None
         result = publish(args.source,args.snapshot,config,proof)
         print(json.dumps(result,ensure_ascii=False)); return 0

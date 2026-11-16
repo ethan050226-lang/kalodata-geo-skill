@@ -13,10 +13,12 @@ import test_answerbit as fixture
 from archive import ArchiveError
 from feishu_delivery import shared_data
 from feishu_publish import Drive, PLACEHOLDER, publish
-from publication import CHECKS, manifest, stage, accept, report
+from publication import CHECKS, manifest, stage, accept, report, initialize_registry
 
 
 class Remote:
+    registry_key = 'synthetic-approved-folder'
+
     def __init__(self):
         self.files = {}; self.names = {}; self.writes = 0; self.fail = None; self.sharing = {}
 
@@ -39,12 +41,17 @@ class Remote:
 
     def url(self, token): return 'https://example.feishu.cn/file/'+token
 
+    def initialize(self, state):
+        return initialize_registry(self,state,{'account':'synthetic-admin','checked_at':'2026-11-16T00:00:00Z',
+                                              'history_checked':True,'receipt_tokens':[]})
+
 
 class PublicationTest(unittest.TestCase):
     def setUp(self):
         self.f = fixture.AnswerbitTest(); self.f.setUp(); self.addCleanup(self.f.doCleanups)
         self.root = self.f.output.parent; self.source = self.root/'local.html'
         self.remote = Remote(); self.state = self.root/'last.json'
+        self.remote.initialize(self.state)
         self.record = self.f.records()[0]
         self.detail = dict(prompt=self.record['query_str'],platform=self.record['platform'],
                            language='en',date=self.f.day,links=[],brand_reputation=1,
@@ -103,18 +110,17 @@ class PublicationTest(unittest.TestCase):
         self.record['tags'].append({'tag_id':'new','tag_name':'new','tag_type':2})
         self.refresh(); self.assertNotEqual(self.version['version'],previous['version'])
 
-    def test_old_evidence_and_failed_lookup_never_mean_same_version(self):
+    def test_old_evidence_stops_and_directory_permission_is_not_required(self):
         with sqlite3.connect(self.f.output) as db: db.execute('DROP TABLE source_evidence')
         with self.assertRaisesRegex(ArchiveError,'历史批次'): manifest(self.f.output,self.data)
         self.remote.fail = 'lookup'
-        with self.assertRaises(ArchiveError): self.candidate()
-        self.assertEqual(self.remote.writes,0)
+        self.assertEqual(self.candidate()['status'],'pending_acceptance')
 
     def test_failures_do_not_replace_last_success(self):
         candidate = self.candidate(); accept(self.remote,candidate,self.proof(candidate),self.state)
         previous = self.state.read_bytes()
         self.detail['llm_output'] += ' change'; self.refresh()
-        for failure in ('lookup','upload','permission','download'):
+        for failure in ('upload','permission','download'):
             self.remote.fail = failure
             with self.subTest(failure=failure), self.assertRaises(ArchiveError): self.candidate()
             self.assertEqual(self.state.read_bytes(),previous)
@@ -125,6 +131,7 @@ class PublicationTest(unittest.TestCase):
 
     def test_shared_html_and_report_have_same_batch_without_raw_data(self):
         config = {'state_dir':str(self.root/'publication')}
+        self.remote.initialize(Path(config['state_dir'])/'last-success.json')
         result = publish(self.source,self.f.output,config,remote=self.remote)
         body = self.remote.download(result['file_token'])
         self.assertNotIn(b'Original private answer',body)
@@ -139,15 +146,19 @@ class PublicationTest(unittest.TestCase):
 
     def test_private_upload_never_sends_business_data_before_permission_check(self):
         remote = Remote()
+        remote.state_dir = self.root
         remote.upload = lambda body,name,*args: remote.upload_private(body,name)
         remote.verify_file = lambda token: (_ for _ in ()).throw(ArchiveError('sharing open'))
         with self.assertRaises(ArchiveError): Drive.upload_private(remote,b'BUSINESS SECRET','geo-pending-test.html')
         self.assertEqual(list(remote.files.values()),[PLACEHOLDER])
 
     def test_incomplete_remote_receipt_stops_before_upload(self):
-        self.remote.upload_private(b'{"accepted":true}', 'geo-accepted-old.json')
+        token = self.remote.upload_private(b'{"accepted":true}', 'geo-accepted-old.json')
         writes = self.remote.writes
-        with self.assertRaises(ArchiveError): self.candidate()
+        with self.assertRaises(ArchiveError):
+            initialize_registry(self.remote,self.root/'recovery'/'last-success.json',
+                                {'account':'synthetic-admin','checked_at':'2026-11-16','history_checked':True,
+                                 'receipt_tokens':[token]})
         self.assertEqual(self.remote.writes,writes)
 
     def test_version_tracks_bank_scope_metric_and_ids(self):
@@ -204,6 +215,7 @@ class PublicationTest(unittest.TestCase):
         import feishu_publish
         config = {'state_dir':str(self.root/'end-to-end'), 'folder_url':'https://example.feishu.cn/drive/folder/synthetic',
                   'approved_members':[{'member_type':'openid','member_id':'synthetic-admin'}], 'identity':'bot'}
+        self.remote.initialize(self.root/'end-to-end'/'markets-GB'/'last-success.json')
         def call(path,payload):
             return {'scores':[self.record],'total':1} if path == answerbit.LIST else self.detail
         with patch.object(geo_run,'load_config',return_value=config), \
@@ -237,25 +249,26 @@ class PublicationTest(unittest.TestCase):
         drive = object.__new__(Drive); drive.folder = 'synthetic'; drive.identity = 'bot'
         with patch.object(drive,'call',side_effect=ArchiveError('错误码 99991672')) as call:
             result = drive.check_access()
-        self.assertEqual(call.call_count,3)
+        self.assertEqual(call.call_count,2)
         self.assertFalse(result['read_access_ready'])
         self.assertFalse(result['write_access_verified'])
-        self.assertEqual([c['status'] for c in result['checks']],['blocked']*3+['not_tested']*4)
+        self.assertEqual([c['status'] for c in result['checks']],['blocked']*2+['not_tested']*5)
         self.assertEqual([c.args[0][:2] for c in call.call_args_list],
-                         [['drive','files'],['drive','+member-list'],['drive','+permission-get-setting']])
+                         [['drive','+member-list'],['drive','+permission-get-setting']])
+        self.assertFalse(result['directory_listing_required'])
 
     def test_read_access_success_does_not_claim_write_access(self):
         drive = object.__new__(Drive); drive.folder = 'synthetic'; drive.identity = 'user'
-        replies = [{'files':[],'has_more':False},{'items':[],'has_more':False},
+        replies = [{'items':[],'has_more':False},
                    {'permission_public':{'link_share_entity':'closed'}}]
         with patch.object(drive,'call',side_effect=replies):
             result = drive.check_access()
         self.assertTrue(result['read_access_ready'])
         self.assertFalse(result['write_access_verified'])
         self.assertEqual(result['identity'],'user')
-        with patch.object(drive,'call',side_effect=[{'files':[],'has_more':False},{},{}]):
+        with patch.object(drive,'call',side_effect=[{},{}]):
             incomplete = drive.check_access()
-        self.assertEqual([c['status'] for c in incomplete['checks'][:3]],['passed','blocked','blocked'])
+        self.assertEqual([c['status'] for c in incomplete['checks'][:2]],['blocked','blocked'])
 
     def test_html_readback_downloads_exact_source_bytes_and_rejects_unsafe_paths(self):
         drive = object.__new__(Drive)
@@ -372,6 +385,7 @@ class PublicationTest(unittest.TestCase):
 
     def test_accept_rechecks_config_and_source_before_publishing(self):
         config={'state_dir':str(self.root/'publication'),'sharing_scope':'tenant_readable'}
+        self.remote.initialize(Path(config['state_dir'])/'last-success.json')
         candidate=publish(self.source,self.f.output,config,remote=self.remote)
         proof=self.tenant_proof(candidate)
         self.remote.sharing[candidate['file_token']]='tenant_readable'
@@ -390,3 +404,125 @@ class PublicationTest(unittest.TestCase):
             publish(self.source,self.f.output,config,remote=self.remote)
         self.assertEqual(self.remote.writes,0)
         self.assertFalse((Path(config['state_dir'])/'last-success.json').exists())
+
+    def test_missing_corrupt_or_wrong_target_registry_never_uploads(self):
+        path = self.state.with_name('registry.json'); original = path.read_bytes()
+        wrong = json.loads(original); wrong['target'] = 'another-folder'
+        for body in (None,b'{',json.dumps(wrong).encode()):
+            if body is None: path.unlink(missing_ok=True)
+            else: path.write_bytes(body)
+            with self.subTest(body=body), self.assertRaises(ArchiveError): self.candidate()
+            self.assertEqual(self.remote.writes,0)
+        path.write_bytes(original)
+        with self.assertRaises(ArchiveError): self.remote.initialize(self.state)
+
+    def test_bootstrap_imports_known_receipts_and_never_erases_previous(self):
+        candidate = self.candidate(); accept(self.remote,candidate,self.proof(candidate),self.state)
+        previous = self.state.read_bytes()
+        token = next(t for t,n in self.remote.names.items() if n.endswith('.json'))
+        path = self.state.with_name('registry.json'); path.unlink()
+        with self.assertRaises(ArchiveError): self.candidate()
+        with self.assertRaises(ArchiveError): self.remote.initialize(self.state)
+        self.assertEqual(self.state.read_bytes(),previous)
+        proof={'account':'synthetic-admin','checked_at':'2026-11-16','history_checked':False,'receipt_tokens':[token]}
+        with self.assertRaises(ArchiveError): initialize_registry(self.remote,self.state,proof)
+        self.assertFalse(path.exists())
+        proof['history_checked']=True
+        writes=self.remote.writes
+        initialize_registry(self.remote,self.state,proof)
+        self.assertEqual(path.stat().st_mode & 0o777,0o600)
+        self.remote.fail='lookup'
+        with patch.object(self.remote,'list_files',side_effect=AssertionError('directory must not be read')):
+            self.assertEqual(self.candidate()['status'],'reused')
+        self.assertEqual(self.remote.writes,writes)
+
+    def test_new_version_and_accept_retry_use_only_registered_files(self):
+        with patch.object(self.remote,'list_files',side_effect=AssertionError('directory must not be read')):
+            candidate=self.candidate(); first=accept(self.remote,candidate,self.proof(candidate),self.state)
+            writes=self.remote.writes
+            self.assertEqual(accept(self.remote,candidate,self.proof(candidate),self.state),first)
+            self.assertEqual(self.remote.writes,writes)
+            previous=self.state.read_bytes()
+            self.detail['llm_output']+=' Updated claim.';self.refresh()
+            new=self.candidate()
+            self.assertNotEqual(new['file_token'],candidate['file_token'])
+            self.assertEqual(self.state.read_bytes(),previous)
+            accept(self.remote,new,self.proof(new),self.state)
+            registry=json.loads(self.state.with_name('registry.json').read_text())
+            self.assertEqual(len(registry['records']),2)
+
+    def test_upload_journal_resumes_known_token_and_stops_unknown_outcome(self):
+        remote=Remote();remote.state_dir=self.root/'uploads'
+        body=b'approved synthetic dashboard'
+        def upload(content,name,token=None):
+            if token:
+                remote.files[token]=content;remote.writes+=1
+                raise ArchiveError('response lost after body update')
+            return remote.upload_private(content,name)
+        remote.upload=upload
+        with self.assertRaises(ArchiveError): Drive.upload_private(remote,body,'candidate.html')
+        writes=remote.writes
+        token=Drive.upload_private(remote,body,'candidate.html')
+        self.assertEqual(remote.download(token),body);self.assertEqual(remote.writes,writes)
+        self.assertEqual(len(remote.files),1)
+        def lost(content,name,token=None):
+            remote.upload_private(content,name)
+            raise ArchiveError('response lost before token recorded')
+        remote.upload=lost
+        with self.assertRaises(ArchiveError): Drive.upload_private(remote,body,'unknown.html')
+        writes=remote.writes
+        with self.assertRaisesRegex(ArchiveError,'结果不明'):
+            Drive.upload_private(remote,body,'unknown.html')
+        self.assertEqual(remote.writes,writes)
+        self.assertEqual(list(remote.files.values()).count(PLACEHOLDER),1)
+
+    def test_first_bootstrap_needs_no_existing_dashboard_or_data_fetch(self):
+        import contextlib
+        import io
+        import feishu_publish
+        config={'state_dir':str(self.root/'new-central')}
+        proof=self.root/'review.json'
+        proof.write_text(json.dumps({'account':'synthetic-admin','checked_at':'2026-11-16',
+                                     'history_checked':True,'receipt_tokens':[]}))
+        argv=['feishu_publish.py',str(self.root/'not-created.html'),str(self.root/'not-created.sqlite'),
+              '--market','美国','--initialize-registry',str(proof)]
+        with patch('sys.argv',argv), patch.object(feishu_publish,'load_config',return_value=config), \
+             patch.object(feishu_publish,'Drive',return_value=self.remote), \
+             patch.object(answerbit,'operator_credentials',side_effect=AssertionError('no Answerbit')), \
+             patch.object(self.remote,'list_files',side_effect=AssertionError('no directory scan')), \
+             contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(feishu_publish.main(),0)
+        registry=self.root/'new-central'/'markets-US'/'registry.json'
+        self.assertTrue(registry.is_file());self.assertEqual(self.remote.writes,0)
+        self.assertFalse((registry.parent/'last-success.json').exists())
+
+    def test_interrupted_success_pointer_recovers_from_registered_receipt(self):
+        import publication
+        candidate=self.candidate();accept(self.remote,candidate,self.proof(candidate),self.state)
+        previous=self.state.read_bytes()
+        self.detail['llm_output']+=' new evidence';self.refresh();new=self.candidate()
+        original=publication.write_atomic
+        def fail_pointer(path,body):
+            if path == self.state: raise OSError('synthetic pointer interruption')
+            original(path,body)
+        with patch.object(publication,'write_atomic',side_effect=fail_pointer),self.assertRaises(OSError):
+            accept(self.remote,new,self.proof(new),self.state)
+        self.assertEqual(self.state.read_bytes(),previous)
+        writes=self.remote.writes
+        recovered=self.candidate()
+        self.assertEqual(recovered['status'],'reused')
+        self.assertEqual(recovered['receipt']['file_token'],new['file_token'])
+        self.assertEqual(self.remote.writes,writes)
+
+    def test_accept_upload_retry_keeps_the_exact_receipt_bytes(self):
+        candidate=self.candidate(); bodies=[]; original=self.remote.upload_private
+        def interrupted(body,name):
+            if name.endswith('.json'):
+                bodies.append(body)
+                if len(bodies)==1: raise ArchiveError('synthetic receipt upload interrupted')
+            return original(body,name)
+        self.remote.upload_private=interrupted
+        with self.assertRaises(ArchiveError): accept(self.remote,candidate,self.proof(candidate),self.state)
+        self.assertFalse(self.state.exists())
+        accept(self.remote,candidate,self.proof(candidate),self.state)
+        self.assertEqual(bodies[0],bodies[1])

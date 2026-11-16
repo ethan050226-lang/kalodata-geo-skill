@@ -27,3 +27,10 @@ private/
 *.subscription.json
 *.publication.json
 *.har
+
+# Central publication ledger, in-flight uploads and acceptance drafts
+registry.json
+last-success.json
+candidate.json
+upload-*.json
+accepting-*.json
