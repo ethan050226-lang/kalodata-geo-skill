@@ -29,7 +29,7 @@ def preflight(bank, markets):
         publication_warnings.append('飞书发布未配置或不可读；本地分析可独立运行')
     return {'status':'preflight_only','markets':markets,'blockers':problems,
             'publication_warnings':publication_warnings,
-            'next_step':'补齐取数前置条件后再刷新' if problems else '继续完整刷新；发布缺项不阻止已校验的本地看板交付',
+            'next_step':'补齐取数前置条件后再刷新' if problems else '继续数据校验；飞书发布缺项须一次列清，本地生成不等于在线交付完成',
             'verified':'仅核对本机配置；未请求Answerbit或飞书，平台权限和实时访问尚未验证'}
 
 
@@ -70,12 +70,17 @@ def run(bank, snapshot, output, options=(), *, markets=(), local_only=False):
             blockers.append(str(error) if isinstance(error,ArchiveError) else '飞书发布配置无法读取或解析')
         if blockers:
             return {'status':'local_ready_pending_publication', 'local':local, 'blockers':blockers,
+                    'delivery_status':'incomplete',
+                    'next_step':'免下载交付未完成；保留同批本地结果，补齐发布连接后仅运行 feishu_publish.py，不重新取数；不要仅发附件收尾',
                     'publication':'未上传，未替换上一成功飞书版本；请管理员配置独立发布授权，勿在聊天发送凭证'}, 0
         try:
             return publish(output,snapshot,config), 0
         except (ArchiveError,OSError,ValueError,KeyError,TypeError,sqlite3.Error) as error:
             why = str(error) if isinstance(error,ArchiveError) else '飞书发布配置、文件或响应异常'
             return {'status':'local_ready_pending_publication','local':local,
+                    'delivery_status':'incomplete',
+                    'next_step':'免下载交付未完成；按飞书交付规程修复或使用获准的界面辅助发布，仅复用本批结果，不默认重取或只发附件',
+                    'publication_check':getattr(error,'publication_check',None),
                     'publication':failure(config,'飞书查重、上传或验收',why,batch)}, 0
     except (ArchiveError,OSError,ValueError,KeyError,TypeError,sqlite3.Error) as error:
         why = str(error) if isinstance(error,ArchiveError) else '本地配置、文件或数据库异常，保留上一成功入口'

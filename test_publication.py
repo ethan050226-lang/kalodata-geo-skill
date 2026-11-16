@@ -233,6 +233,56 @@ class PublicationTest(unittest.TestCase):
             with patch('feishu_publish.subprocess.run',return_value=result), self.assertRaises(ArchiveError):
                 drive.call(['drive','files','list'])
 
+    def test_access_check_collects_all_read_failures_without_writes(self):
+        drive = object.__new__(Drive); drive.folder = 'synthetic'; drive.identity = 'bot'
+        with patch.object(drive,'call',side_effect=ArchiveError('错误码 99991672')) as call:
+            result = drive.check_access()
+        self.assertEqual(call.call_count,3)
+        self.assertFalse(result['read_access_ready'])
+        self.assertFalse(result['write_access_verified'])
+        self.assertEqual([c['status'] for c in result['checks']],['blocked']*3+['not_tested']*4)
+        self.assertEqual([c.args[0][:2] for c in call.call_args_list],
+                         [['drive','files'],['drive','+member-list'],['drive','+permission-get-setting']])
+
+    def test_read_access_success_does_not_claim_write_access(self):
+        drive = object.__new__(Drive); drive.folder = 'synthetic'; drive.identity = 'user'
+        replies = [{'files':[],'has_more':False},{'items':[],'has_more':False},
+                   {'permission_public':{'link_share_entity':'closed'}}]
+        with patch.object(drive,'call',side_effect=replies):
+            result = drive.check_access()
+        self.assertTrue(result['read_access_ready'])
+        self.assertFalse(result['write_access_verified'])
+        self.assertEqual(result['identity'],'user')
+        with patch.object(drive,'call',side_effect=[{'files':[],'has_more':False},{},{}]):
+            incomplete = drive.check_access()
+        self.assertEqual([c['status'] for c in incomplete['checks'][:3]],['passed','blocked','blocked'])
+
+    def test_html_readback_downloads_exact_source_bytes_and_rejects_unsafe_paths(self):
+        drive = object.__new__(Drive)
+        body = b'<!doctype html><p>synthetic complete file</p>'
+        def download(args,cwd=None):
+            self.assertEqual(args,['drive','+download','--file-token','synthetic','--output','source'])
+            path = Path(cwd)/'source'; path.write_bytes(body)
+            return {'saved_path':str(path),'size_bytes':len(body)}
+        with patch.object(drive,'call',side_effect=download):
+            self.assertEqual(drive.download('synthetic'),body)
+        for response in ({},{'saved_path':'../../outside'},{'saved_path':str(self.source)}):
+            with self.subTest(response=response), patch.object(drive,'call',return_value=response), self.assertRaises(ArchiveError):
+                drive.download('synthetic')
+
+    def test_access_check_stops_publication_before_upload_and_keeps_previous_entry(self):
+        from feishu_publish import PublicationAccessError
+        config={'state_dir':str(self.root/'publication')}
+        previous=Path(config['state_dir'])/'last-success.json'
+        previous.parent.mkdir(); previous.write_text('{"url":"previous"}')
+        original=previous.read_bytes()
+        self.remote.check_access=lambda: {'read_access_ready':False,'checks':[{'status':'blocked'}]}
+        with self.assertRaises(PublicationAccessError) as raised:
+            publish(self.source,self.f.output,config,remote=self.remote)
+        self.assertFalse(raised.exception.publication_check['read_access_ready'])
+        self.assertEqual(self.remote.writes,0)
+        self.assertEqual(previous.read_bytes(),original)
+
     def test_publishing_identity_defaults_without_asking_for_a_technical_field(self):
         config={'folder_url':'https://example.feishu.cn/drive/folder/synthetic',
                 'approved_members':[{'member_type':'openid','member_id':'synthetic-admin'}]}

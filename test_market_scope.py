@@ -209,6 +209,8 @@ class CountryDeliveryTest(unittest.TestCase):
                 ['--begin',self.f.day,'--end',self.f.day,'--excel',str(self.excel)],markets=['GB'])
         upload.assert_called_once()
         self.assertEqual((code,result['status']),(0,'local_ready_pending_publication'))
+        self.assertEqual(result['delivery_status'],'incomplete')
+        self.assertIn('本批',result['next_step'])
         self.assertTrue(self.html.is_file() and self.scoped.is_file() and self.excel.is_file())
         self.assertEqual(result['local']['report']['batch'],dashboard.retained_data(self.html)[1]['batch'])
         self.assertEqual(result['publication']['status'],'failed')
@@ -225,6 +227,7 @@ class CountryDeliveryTest(unittest.TestCase):
              patch.object(geo_run,'publish') as upload, contextlib.redirect_stdout(io.StringIO()):
             result,code=geo_run.run(self.f.bank,self.scoped,self.html,['--begin',self.f.day,'--end',self.f.day],markets=['GB'])
         self.assertEqual((code,result['status']),(0,'local_ready_pending_publication'))
+        self.assertEqual(result['delivery_status'],'incomplete')
         fetch.assert_called_once_with(url,self.f.bank)
         self.assertEqual(len(result['blockers']),1)
         upload.assert_not_called()

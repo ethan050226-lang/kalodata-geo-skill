@@ -19,6 +19,12 @@ from publication import manifest, stage, accept
 PLACEHOLDER = b'GEO private upload reservation. No business data.'
 
 
+class PublicationAccessError(ArchiveError):
+    def __init__(self, checks):
+        super().__init__('飞书发布连接未通过；请一次核对完整权限清单，修复后仅重试发布，不重新取数')
+        self.publication_check = checks
+
+
 class Drive:
     def __init__(self, config):
         self.cli = os.environ.get('LARK_CLI') or shutil.which('lark-cli')
@@ -44,6 +50,41 @@ class Drive:
                 f"飞书调用 {' '.join(args[:2])} / 错误码 {reply.get('error',{}).get('code','未知')}，请在飞书权限管理核对；未更新成功入口")
         require(isinstance(reply.get('data'),dict), '飞书调用 / 成功响应缺少有效 data 对象')
         return reply['data']
+
+    def check_access(self):
+        """Read-only probes; a configured upload scope is not proof of a successful write."""
+        checks = []
+        probes = (
+            ('目录查重', 'space:document:retrieve', self.list_files),
+            ('协作者读取', 'docs:permission.member:retrieve',
+             lambda: self.call(['drive','+member-list','--token',self.folder,'--type','folder'])),
+            ('分享设置读取', 'docs:permission.setting:read',
+             lambda: self.call(['drive','+permission-get-setting','--token',self.folder,'--type','folder'])),
+        )
+        for name, scope, probe in probes:
+            try:
+                data = probe()
+                if name == '协作者读取':
+                    require(isinstance(data.get('items'),list) and not data.get('has_more'),
+                            '飞书权限 / 协作者清单不完整，不能确认读取能力')
+                elif name == '分享设置读取':
+                    require(isinstance(data.get('permission_public'),dict) and data['permission_public'],
+                            '飞书权限 / 缺少分享设置，不能确认读取能力')
+                item = {'capability':name,'scope':scope,'status':'passed'}
+            except ArchiveError as error:
+                item = {'capability':name,'scope':scope,'status':'blocked','reason':str(error)}
+            checks.append(item)
+        for name, scope in (
+            ('文件上传','drive:file:upload'), ('原文件回读','drive:file:download'),
+            ('分享设置修改','docs:permission.setting:write_only'),
+            ('新文件管理员授权（按需）','docs:permission.member:create'),
+        ):
+            checks.append({'capability':name,'scope':scope,'status':'not_tested'})
+        return {'identity':self.identity,'checks':checks,
+                'read_access_ready':all(c['status']=='passed' for c in checks[:3]),
+                'write_access_verified':False,
+                'guide':'skill/geo-sampling/references/feishu-preview.md#一次列清发布权限',
+                'next_step':'结合当前应用权限清单核对；未验证不等于缺失。企业审核项先报告，不自动申请或修改权限。'}
 
     def list_files(self):
         files, seen, token = [], set(), None
@@ -82,8 +123,11 @@ class Drive:
 
     def download(self, token):
         with tempfile.TemporaryDirectory() as directory:
-            data = self.call(['drive','+preview','--file-token',token,'--type','source_file','--output','source'],cwd=directory)
-            path = Path(data.get('output_path',''))
+            # HTML preview API support does not determine whether the web preview is interactive.
+            data = self.call(['drive','+download','--file-token',token,'--output','source'],cwd=directory)
+            saved = data.get('saved_path')
+            require(isinstance(saved,str) and saved, '飞书完整性 / 下载响应缺少文件路径')
+            path = Path(saved)
             path = path if path.is_absolute() else Path(directory)/path
             require(path.resolve().is_relative_to(Path(directory).resolve()) and path.is_file(),
                     '飞书完整性 / 下载文件路径无效')
@@ -138,6 +182,10 @@ def publish(source, snapshot, config, proof=None, remote=None):
     state = state_dir/'last-success.json'
     candidate_path = state_dir/'candidate.json'
     remote = remote or Drive(config)
+    if hasattr(remote, 'check_access'):
+        access = remote.check_access()
+        if not access['read_access_ready']:
+            raise PublicationAccessError(access)
     if proof is not None:
         candidate = json.loads(candidate_path.read_text())
         require(candidate.get('sharing_scope','admins_only') == sharing_scope,
@@ -179,9 +227,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('source',type=Path); parser.add_argument('snapshot',type=Path)
     parser.add_argument('--accept-proof',type=Path,help='Agent 完成实际浏览器验收后保存的私有证据；不是用户确认替代品')
+    parser.add_argument('--check-access',action='store_true',help='只读检查发布连接并列出全部能力；不取数、不上传、不改权限')
     args = parser.parse_args(); config = {}
     try:
         config = load_config()
+        if args.check_access:
+            result = Drive(config).check_access()
+            print(json.dumps(result,ensure_ascii=False))
+            return 0 if result['read_access_ready'] else 1
         proof = json.loads(args.accept_proof.read_text()) if args.accept_proof else None
         result = publish(args.source,args.snapshot,config,proof)
         print(json.dumps(result,ensure_ascii=False)); return 0
@@ -190,7 +243,9 @@ def main():
         batch = None
         try: batch = retained_data(args.source)[1]['batch']
         except (OSError,ValueError,KeyError,IndexError): pass
-        print(json.dumps(failure(config,'飞书查重、上传或验收',why,batch),ensure_ascii=False)); return 1
+        result = failure(config,'飞书查重、上传或验收',why,batch)
+        if hasattr(error,'publication_check'): result['publication_check'] = error.publication_check
+        print(json.dumps(result,ensure_ascii=False)); return 1
 
 
 if __name__ == '__main__':
