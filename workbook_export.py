@@ -75,6 +75,28 @@ def export_workbook(snapshot, data):
         append(summary, ('运营国家', '、'.join(data['market_scope']['markets'])))
         append(summary, ('未归属异常', data['market_scope']['unassigned_issues']))
         append(summary, ('平台快照', data['market_scope']['platform_snapshot']))
+    if data.get('model_policy'):
+        policy=data['model_policy']
+        append(summary,('国家模型范围',json.dumps(policy['models'],ensure_ascii=False,sort_keys=True)))
+        append(summary,('国家模型规则',policy['version']))
+        append(summary,('国家模型配置校验值',policy['signature']))
+        append(summary,('国家模型排除记录数（本批）',len(policy['excluded_records'])))
+        if policy.get('deferred_models'):
+            append(summary,('本轮暂缓模型（不采样、不分析）','、'.join(policy['deferred_models'])))
+        if policy.get('requested_models'):
+            from market_scope import model_identifier
+            plan=book.create_sheet('采样要求')
+            append(plan,('国家','要求模型','平台标识','本窗口有效回答数','平台采样状态'))
+            for market,models in policy['requested_models'].items():
+                for name,platform in models.items():
+                    count=sum(r['n'] for r in data['rows'] if r['d'][0]==market and model_identifier(r['d'][1])==platform)
+                    append(plan,(market,name,platform,count,'仅核对已有回答；任务启用和频次未验证'))
+            style(plan,(12,24,24,20,48),filters=True)
+        audit=book.create_sheet('国家模型排除')
+        append(audit,('飞书题号','题文','国家','平台','回答日期','任务 ID','排除原因'))
+        for r in policy['excluded_records']:
+            append(audit,(r['question_id'],r['prompt'],r['market'],r['platform'],date.fromisoformat(r['task_date']),r['task_id'],r['reason']))
+        style(audit,(23,52,12,20,14,24,37),filters=True)
     for item in (
         ("数据来源",batch["source"]),("窗口开始",date.fromisoformat(batch["begin_date"])),
         ("窗口结束",date.fromisoformat(batch["end_date"])),("最后成功取数（UTC）",batch["fetched_at_utc"]),

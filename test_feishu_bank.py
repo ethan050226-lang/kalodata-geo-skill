@@ -111,3 +111,24 @@ class BankTest(unittest.TestCase):
             self.assertEqual(content_signature(exported),original)
             book=load_workbook(exported);book['美国']['B2']='Changed question';book.save(exported);book.close()
             self.assertNotEqual(content_signature(exported),original)
+
+    def test_explicit_model_config_sheet_is_retained_and_versioned(self):
+        from market_scope import load_model_policy
+        from openpyxl import load_workbook
+        parent=self.reader()
+        def read(args):
+            if args[1]=='+workbook-info':
+                info=parent(args)
+                info['sheets'].append({'sheet_name':'国家模型配置','sheet_id':'models','row_count':2,'column_count':2,'resource_type':'sheet'})
+                return info
+            if args[args.index('--sheet-id')+1]=='models':
+                return {'revision':1,'has_more':False,'row_indices':[1,2],'col_count':2,
+                        'annotated_csv':'国家,平台标识\n中国,deepseek\n'}
+            return parent(args)
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'bank.xlsx';result=fetch_bank('synthetic',path,read)
+            self.assertEqual(result['markets'],11)
+            self.assertEqual(load_model_policy(path)['models']['CN'],['deepseek'])
+            signature=content_signature(path)
+            book=load_workbook(path);book['国家模型配置']['B2']='chatgpt';book.save(path);book.close()
+            self.assertNotEqual(content_signature(path),signature)

@@ -1,5 +1,7 @@
 # GEO 采样 Skill / GEO Sampling Skill
 
+[国家与模型配置](skill/geo-sampling/references/country-models.md)覆盖11国。日本、韩国已确认 ChatGPT、Gemini、Google AI Mode、Google AIO；Claude 本轮暂缓。国家交付入口先核对最新题库及模型配置，再从独立快照重算看板、简报与 Excel；不创建计费采样任务。
+
 只读分析 Answerbit 已有回答，匹配飞书题号，生成可追溯的看板与简报。运行要求 Python 3.9+、SQLite 3.30+及requirements.txt依赖。安装保留完整仓库；单独复制Skill目录不包含Python工具。
 
 ## 默认交付

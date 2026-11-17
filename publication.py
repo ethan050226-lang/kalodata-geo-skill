@@ -29,6 +29,8 @@ def manifest(snapshot, data):
                     'sample_tag', 'sample_website', 'sample_content', 'issue', 'retrieval_scope', 'source_evidence'}
         if data.get('quality') is not None:
             required.add('sample_quality')
+        if data.get('model_policy'):
+            required.add('country_model_audit')
         require(required <= tables, '版本校验 / 历史批次缺少完整来源校验信息，不能判为相同版本；请重新取数')
         db.row_factory = sqlite3.Row
         batch = dict(db.execute('SELECT * FROM batch').fetchone())
@@ -50,6 +52,8 @@ def manifest(snapshot, data):
                     '国家范围 / 数据库仍含范围外国家')
             validate_data_scope(data)
             content['delivery_scope'] = markets
+            if 'model_policy' in {r[1] for r in db.execute('PRAGMA table_info(delivery_scope)')}:
+                content['model_policy']=db.execute('SELECT model_policy FROM delivery_scope').fetchone()[0]
         require(db.execute("SELECT count(*) FROM sample WHERE status='valid'").fetchone()[0]
                 == sum(r['n'] for r in data['rows']), '版本校验 / 有效样本量不一致')
         require(not db.execute("SELECT count(*) FROM issue WHERE coalesce(question_id,'')='' AND coalesce(candidate_question_ids,'')<>''").fetchone()[0],
@@ -74,6 +78,7 @@ def manifest(snapshot, data):
 
 def report(data):
     from dashboard import report_metrics
+    from market_scope import sampling_plan
     metrics = report_metrics(data)
     primary = [m for m in metrics if m['id'] in ('skill.core_mention_rate','skill.first_rate','skill.adverse_rate')]
     comparison = data.get('comparison') or {}
@@ -107,6 +112,10 @@ def report(data):
                        f"该切片为 {num}/{row['n']}，存在未提及或明确负面的代表回答。")
     conclusion += '各切片样本构成可能不同；内容优化是待复测的建议，不据此推断因果或整体市场优劣。'
     return {'batch': data['batch'], 'metrics': primary, 'actions': actions,
+            'model_scope':{'models':data['model_policy']['models'],'version':data['model_policy']['version'],
+                           'signature':data['model_policy']['signature'],
+                           'excluded':len(data['model_policy']['excluded_records'])} if data.get('model_policy') else None,
+            'sampling_requirements':sampling_plan(data['model_policy'],data['market_scope']['markets']) if data.get('model_policy') else None,
             'comparison': {k:comparison.get(k) for k in ('previous_batch','current_batch','limitations')},
             'conclusion': conclusion,
             'limitations': {'issues': data.get('issues'), 'sampling_coverage': '缺少独立计划量，无法计算',

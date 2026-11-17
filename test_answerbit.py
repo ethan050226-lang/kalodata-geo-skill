@@ -1,6 +1,7 @@
 import contextlib
 import hashlib
 import io
+import json
 import os
 from pathlib import Path
 import sqlite3
@@ -185,7 +186,13 @@ class AnswerbitTest(unittest.TestCase):
             sheet.append(["分类名称", "编号", "问题内容"])
             sheet.append(["测试", "TEST-01-" + code, "Shared question?" if code != "DE" else "Frage?"])
         book.create_sheet("说明")
+        policy=book.create_sheet('国家模型配置');policy.append(['国家','平台标识'])
+        for country in ('美国','英国','德国'): policy.append([country,'test-engine'])
         book.save(self.bank)
+        approved=Path(temp.name)/'synthetic-country-models.json'
+        approved.write_text(json.dumps({'version':'country-model/1','sources':{},'platforms':{},'countries':{}}))
+        policy_patch=patch('market_scope.APPROVED_MODEL_POLICY',approved)
+        policy_patch.start();self.addCleanup(policy_patch.stop)
         self.day = "2026-11-01"
 
     def records(self):

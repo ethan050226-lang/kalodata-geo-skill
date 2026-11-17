@@ -1,5 +1,8 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const html=fs.readFileSync(require('path').join(__dirname,'skill/geo-sampling/assets/dashboard.html'),'utf8');
+const engines={D:{rows:[{d:['US','chatgpt']}],model_policy:{models:{US:['chatgpt','google_ai_overviews']}}}};
+vm.createContext(engines);vm.runInContext(html.slice(html.indexOf('const observedEngines='),html.indexOf('const dimensions=')),engines);
+assert(vm.runInContext('enginePairs.find(([id])=>id==="google_ai_overviews")[1]',engines).includes('暂无数据'));
 const fn=html.slice(html.indexOf('function renderScenarios('),html.indexOf('function render(){'));
 let output;const context={D:{groups:{g:'对比'},tags:{h:'品牌健康',d:'发现度'}},$:()=>({set innerHTML(v){output=v}}),total:rs=>rs.reduce((s,r)=>s+r.n,0),sum:(rs,f)=>rs.reduce((s,r)=>s+f(r),0),num:String,ratio:(a,b)=>`${a}/${b}`,mentionCount:r=>r.mentions.Kalodata-(r.negative_mentions||0),table:(h,rows)=>rows};
 vm.createContext(context);vm.runInContext(fn,context);

@@ -86,7 +86,7 @@ main.wrap{max-width:1700px;margin:0 0 0 224px;padding:0 30px 25px}.hero,.hero::a
 @media(max-width:1150px){.overview-grid{grid-template-columns:1fr}.home-actions{grid-template-columns:1fr}}
 @media(max-width:700px){#overview .kpis{grid-template-columns:1fr}.kpi{min-height:0!important;padding:17px!important}.kpi .value{font-size:34px}.card-history{font-size:11px}.matrix-card table{min-width:480px}.matrix-cell{min-width:99px}.overview-grid{gap:13px}.home-actions{grid-template-columns:1fr}.matrix-card .section-head{align-items:flex-start}}
 
-.matrix-card td:first-child{position:sticky;left:0;background:#f8fbff;z-index:1}.matrix-card th:first-child{left:0;z-index:2}
+.matrix-card td:first-child{position:sticky;left:0;background:#f8fbff;z-index:1}.matrix-card th:first-child{left:0;z-index:2;width:90px}
 .data-reminder{margin:15px 0;border:1px solid #d8e3f2;border-radius:10px;background:#edf3fc;color:#4f6483;font-size:12px}.data-reminder>summary{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:11px 15px;cursor:pointer;list-style:none}.data-reminder>summary::-webkit-details-marker{display:none}.reminder-link{white-space:nowrap;color:#255da8;font-weight:600}.reminder-details{padding:4px 15px 15px;border-top:1px solid #d8e3f2}.reminder-details .table-wrap{margin:10px 0;background:white}.data-reminder[open] .reminder-link{color:#536a8c}.named-topic .definition{margin-top:9px}@media(max-width:700px){.data-reminder>summary{align-items:flex-start;padding:11px 12px;gap:8px;font-size:11px}.reminder-details{padding:6px 10px 12px}.reminder-link{font-size:11px}}
 </style>
 </head>
@@ -127,7 +127,7 @@ main.wrap{max-width:1700px;margin:0 0 0 224px;padding:0 30px 25px}.hero,.hero::a
 <div class="section-head"><h2>市场与竞品</h2></div>
 <div class="grid">
 <article class="card wide"><div class="section-head"><h3 id="mention-title">品牌提及率</h3><label class="review-reason">查看其他市场 <select id="brand-market"><option value="">样本量最大市场</option></select></label></div><p class="definition">Kalodata 扣除明确负面；竞品保留全部正文命中。<a href="#metrics/metric-core">查看口径差异</a></p><div id="mention-chart"></div></article>
-<article class="card wide"><h3>市场与竞品表现</h3><div id="markets"></div></article>
+<article class="card wide"><h3>市场与竞品表现</h3><div id="markets"></div><div id="model-availability"></div></article>
 </div></section>
 <section id="sources" class="section" data-page hidden>
 <div class="section-head"><h2>来源与口碑详情</h2></div>
@@ -213,7 +213,9 @@ if(D.review){
 }
 const groupPairs=Object.entries(D.groups).filter(([k])=>k).map(([k,v])=>[k,v]);
 const tagPairs=Object.entries(D.tags), ns=([,a],[,b])=>a.localeCompare(b,"zh-CN");
-const enginePairs=[...new Set([...D.rows,...(D.quality?.records||[])].map(r=>r.d[1]))].sort().map(x=>[x,x]);
+const observedEngines=new Set([...D.rows,...(D.quality?.records||[])].map(r=>r.d[1]));
+const enginePairs=[...new Set([...observedEngines,...Object.values(D.model_policy?.models||{}).flat()])].sort().map(x=>
+  [x,(x==="google_ai_overviews"?"Google AIO":x)+(observedEngines.has(x)?"":"（暂无数据）")]);
 const dimensions=[
   ["m","市场",Object.entries(D.markets)],
   ["e","平台",enginePairs],
@@ -565,13 +567,23 @@ function render(){
   const issueNames={unmatched_question:"题库无匹配",ambiguous_question:"题号待确认",market_tag_conflict:"市场标签冲突",
     citation_unknown:"引用字段缺失",answer_unconfirmed:"回答待确认",tag_metadata_incomplete:"标签信息不完整",
     quality_invalid:"数据异常：无效原文",quality_shrunken:"数据异常：疑似缩水"};
-  $("home-status").textContent=dataReminder(D.issues,{sentimentUnknown,missing,n,qualityExcluded:D.quality?qualityRows.filter(r=>r.status!=="accepted").length:null})+(D.market_scope?" 当前提醒仅针对交付国家；无法归属国家的异常未纳入。":"");
+  $("home-status").textContent=dataReminder(D.issues,{sentimentUnknown,missing,n,qualityExcluded:D.quality?qualityRows.filter(r=>r.status!=="accepted").length:null})+(D.model_policy?` 国家模型范围已核对；本批排除 ${num(D.model_policy.excluded_records.length)} 条。`:"")+(D.market_scope?" 当前提醒仅针对交付国家；无法归属国家的异常未纳入。":"");
   $("status-details").innerHTML=$("quality").innerHTML+
     table(["全批异常原因","记录数","影响范围","核查入口"],D.issues?Object.entries(D.issues).map(([code,count])=>[
       esc(issueNames[code]||code),num(count),D.market_scope?"交付国家批次；不随页内筛选缩小":"全部取数批次；不随当前筛选缩小",["unmatched_question","ambiguous_question","market_tag_conflict"].includes(code)?"飞书题库与 Answerbit 用户提问":"Answerbit 大模型回答记录"
     ]):[["历史快照未保存异常统计","未知","全批","重新取数核对，不能视作零异常"]])+
     table(["当前筛选问题","记录数","影响与核查入口"],[["口碑未知",num(sentimentUnknown),"影响平台口碑判定覆盖；回 Answerbit 核对口碑字段"],["正式来源字段缺失",num(missing),"不进入正式来源可判定分母；回 Answerbit 回答记录核对引用"],["推荐判断未知",num(unknown),"不能作为明确推荐；在问题与行动 → 推荐记录查看题文和原文"]])+
     `<p class="definition">异常可重叠，数量不相加当作独立回答总数。点名判定来源 ${esc(D.prompt_basis||"旧批来源待核对")}。同批 Excel「数据异常」保留题号、原因及回查字段；题库外记录仅列全批数量，不进入有编号明细。${D.issues&&Object.keys(D.issues).length===0?"本批未记录取数或匹配异常。":""}</p>`;
+
+  if(D.model_policy){
+    const missingModels=Object.entries(D.model_policy.models).flatMap(([m,models])=>models
+      .filter(e=>(!f.m.length||f.m.includes(m))&&(!f.e.length||f.e.includes(e))&&!rs.some(r=>r.d[0]===m&&r.d[1]===e))
+      .map(e=>[esc(marketName(m)),esc(e==="google_ai_overviews"?"Google AIO":e),"当前筛选暂无有效回答"]));
+    $("model-availability").innerHTML=missingModels.length?table(["市场","已纳入模型","数据状态"],missingModels):"";
+    $("status-details").innerHTML+=table(["本批国家","已确认的模型范围"],Object.entries(D.model_policy.models).map(([m,models])=>[esc(marketName(m)),esc(models.join("、"))]))+
+      table(["排除题号","平台 / 日期","原因"],D.model_policy.excluded_records.slice(0,25).map(r=>[esc(r.question_id),esc(r.platform+" / "+r.task_date),esc(r.reason)]))+
+      `<p class="definition">国家模型排除属于本批审计，不随页内筛选重算；此处最多25条，完整记录见同批 Excel「国家模型排除」。</p>`;
+  }
 
 }
 $("matrix-dimension").addEventListener("change",()=>render());

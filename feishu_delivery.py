@@ -12,7 +12,7 @@ from dashboard import retained_data, render
 REFERENCE = {'q','text','category','task','d','status','label','reason','table'}
 TOP = {'batch','platform','rows','issues','core_mention','analysis_version','prompt_basis',
        'question_named','question_scope','markets','competitors','tags','groups','neutral',
-       'links','review','recommendations','comparison','bank_source','market_scope','quality'}
+       'links','review','recommendations','comparison','bank_source','market_scope','quality','model_policy'}
 FORBIDDEN = {'body','answer','answer_text','raw_answer','raw_response','access_token','app_secret',
              'api_key','apikey','authorization','password','originals'}
 
@@ -34,6 +34,13 @@ def shared_data(data):
     validate_data_scope(data)
     require(set(data) <= TOP, '共享校验 / 出现未审核的新数据字段，请先核查共享范围')
     reject_secrets(data)
+    if data.get('model_policy'):
+        policy=data['model_policy']
+        fields={'version','bank_sha256','models','evidence','signature','excluded_records'}
+        require(fields <= set(policy) <= fields|{'requested_models','deferred_models'}
+                and all(set(r)=={'task_id','question_id','market','platform','task_date','reason','prompt'}
+                        for r in policy['excluded_records']),
+                '共享校验 / 国家模型配置或审计包含未审核字段')
     require(data.get('rows') and data.get('batch') and not data.get('last_failure'),
             '共享校验 / 批次不完整、为空或标记失败，不发布')
     result = deepcopy(data)

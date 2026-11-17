@@ -65,7 +65,7 @@ def content_signature(path):
         raise ArchiveError('飞书题库 / 导出或缓存不可解析，停止核对，旧快照保留') from None
     contents = {}
     try:
-        for name in sorted(set(book.sheetnames) & set(MARKETS)):
+        for name in sorted(set(book.sheetnames) & (set(MARKETS)|{'国家模型配置'})):
             sheet = book[name]; sheet.reset_dimensions()
             rows = []
             for row in sheet.iter_rows(values_only=True):
@@ -92,6 +92,10 @@ def fetch_bank(url, destination, read=cli_read):
     sheets = [s for s in before.get('sheets', []) if s.get('sheet_name') in MARKETS]
     require({s['sheet_name'] for s in sheets} == set(MARKETS) and len(sheets) == len(MARKETS),
             '飞书题库 / 国家工作表缺失或重名，请在飞书核对 11 个国家题单')
+    country_count=len(sheets)
+    policy_sheets=[s for s in before.get('sheets',[]) if s.get('sheet_name')=='国家模型配置']
+    require(len(policy_sheets)<=1,'飞书题库 / 国家模型配置页重名，停止读取')
+    sheets+=policy_sheets
     book = Workbook(); book.remove(book.active)
     book.properties.created = book.properties.modified = datetime(2000, 1, 1)
     for sheet in sheets:
@@ -140,7 +144,7 @@ def fetch_bank(url, destination, read=cli_read):
     write_atomic(destination, content)
     return {'source': 'feishu-live', 'revision': before['revision'], 'title': before.get('title'),
             'read_at': datetime.now(timezone.utc).isoformat(), 'question_version': version,
-            'question_count': len(bank), 'markets': len(sheets)}
+            'question_count': len(bank), 'markets': country_count}
 
 
 def main():

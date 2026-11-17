@@ -170,6 +170,12 @@ def dashboard_data(snapshot, bank, native):
         batch = dict(db.execute("SELECT * FROM batch").fetchone())
         scoped = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='delivery_scope'").fetchone()
         scope_markets = json.loads(db.execute('SELECT markets FROM delivery_scope').fetchone()[0]) if scoped else None
+        policy=None;model_audit=[]
+        if scoped and 'model_policy' in {r[1] for r in db.execute('PRAGMA table_info(delivery_scope)')}:
+            policy_json=db.execute('SELECT model_policy FROM delivery_scope').fetchone()[0]
+            policy=json.loads(policy_json) if policy_json else None
+        if policy:
+            model_audit=[dict(r) for r in db.execute('SELECT * FROM country_model_audit ORDER BY task_date,task_id')]
         if scope_markets:
             native = None  # Platform snapshots have independent brand-wide scope, not country scope.
         api.require(batch["question_version"] == sha, "题库校验 / 快照和题库版本不一致")
@@ -334,6 +340,9 @@ def dashboard_data(snapshot, bank, native):
     if scope_markets:
         result['market_scope'] = {'markets':scope_markets, 'platform_snapshot':'未纳入：平台接口为品牌全量口径',
                                   'unassigned_issues':'无法归属国家的异常未纳入；不能据此认定全批没有未匹配题目'}
+        if policy:
+            result['model_policy']={**policy,'excluded_records':model_audit}
+            result['question_scope']['model_policy_signature']=policy['signature']
         from market_scope import validate_data_scope
         validate_data_scope(result)
     return result
@@ -412,6 +421,8 @@ def previous_comparison(data, previous, *, refresh=False):
             previous_policy = previous["comparison"].get("previous_policy")
     reasons = []
     if baseline:
+        if (previous_scope or {}).get('model_policy_signature') != data.get('question_scope',{}).get('model_policy_signature'):
+            reasons.append('国家模型配置或过滤口径不同')
         if previous_policy != data.get("analysis_version") or not previous_policy:
             reasons.append("分析口径不同或上次未记录口径")
         if not previous_scope or not data.get("question_scope"):
@@ -459,7 +470,7 @@ def main(argv=None, *, status_callback=None):
     stage = "配置"
     staging = None
     try:
-        from market_scope import normalize_markets, restrict_snapshot
+        from market_scope import normalize_markets, restrict_snapshot, load_model_policy, require_model_policy, sampling_plan, APPROVED_MODEL_POLICY
         markets = normalize_markets(args.market) if args.market else None
         api.require(args.output.suffix.lower() == ".html" and args.snapshot.suffix == ".sqlite"
                     and len({p.resolve() for p in (args.output,args.bank,args.snapshot)}) == 3,
@@ -511,6 +522,11 @@ def main(argv=None, *, status_callback=None):
                 begin,end = old_batch["begin_date"],old_batch["end_date"]
             if previous and previous.get("batch") == old_batch:
                 native = previous.get("platform")
+        if markets: stage='国家模型配置核对'
+        model_policy=load_model_policy(args.bank,APPROVED_MODEL_POLICY) if markets else None
+        if markets:
+            print(json.dumps({'sampling_requirements':sampling_plan(model_policy,markets)},ensure_ascii=False),file=sys.stderr,flush=True)
+            require_model_policy(model_policy,markets)
         if args.mode != "snapshot":
             if args.mode == "review":
                 stage = "Answerbit 推荐原文复检"
@@ -543,7 +559,7 @@ def main(argv=None, *, status_callback=None):
             if staging is None:
                 staging = TemporaryDirectory()
             scoped_snapshot = Path(staging.name) / 'scoped.sqlite'
-            restrict_snapshot(snapshot, scoped_snapshot, markets)
+            restrict_snapshot(snapshot, scoped_snapshot, markets,model_policy=model_policy)
             snapshot = scoped_snapshot
             native = None
             if previous and previous.get('market_scope',{}).get('markets') != markets:

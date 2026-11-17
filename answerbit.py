@@ -148,6 +148,11 @@ def load_bank(path):
                         issues.append(f"题库 / 编号 {number} 重复：{locations[number]}、{location}")
                         continue
                     locations[number] = location
+                    suffix=str(number).rsplit('-',1)[-1]
+                    suffix='GB' if suffix=='UK' else suffix
+                    if suffix in MARKETS.values() and suffix!=market:
+                        issues.append(f'题库 / {location} 编号国家后缀与工作表冲突')
+                        continue
                     if not prompt or not isinstance(category, str) or not category.strip():
                         field = "题文" if not prompt else "分类"
                         issues.append(f"题库 / {location} {number} 缺少有效{field}")
@@ -197,6 +202,8 @@ def record_markets(row):
 def select_question(row, questions, by_text):
     candidates = by_text.get(question_text(row.get("query_str")), [])
     markets = record_markets(row)
+    if markets and candidates and not any(questions[number][0] in markets for number in candidates):
+        return None,'market_tag_conflict'
     if markets:
         candidates = [number for number in candidates if questions[number][0] in markets]
     if len(markets) > 1:

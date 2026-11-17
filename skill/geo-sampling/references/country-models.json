@@ -1,0 +1,186 @@
+{
+  "version": "country-model/1",
+  "sources": {
+    "user-confirmed-2026-11-17": "已确认英国、美国、德国、法国各使用五模型。",
+    "approved-baseline": "已审核国家模型基础配置；具体证据留获批本地。",
+    "six-countries-google-2026-11-17": "已确认泰国、越南、印尼、马来西亚、日本、韩国同时纳入 AI Mode 与 AIO。",
+    "user-deferred-claude-2026-11-17": "本轮暂缓 Claude，不采样、不分析，不因缺少其标识阻断其他模型。",
+    "user-confirmed-jp-kr-2026-11-17": "已确认日本、韩国完整四模型名单，替代旧冲突名单；Claude 继续暂缓。"
+  },
+  "platforms": {
+    "GPT": {
+      "id": "chatgpt",
+      "evidence": "已核实的平台标识；新环境或标识变化须重新只读核对。"
+    },
+    "Gemini": {
+      "id": "gemini",
+      "evidence": "已核实的平台标识；新环境或标识变化须重新只读核对。"
+    },
+    "Perplexity": {
+      "id": "perplexity",
+      "evidence": "已核实的平台标识；新环境或标识变化须重新只读核对。"
+    },
+    "Google AI Mode": {
+      "id": "google_ai_mode",
+      "evidence": "已核实的平台标识；新环境或标识变化须重新只读核对。"
+    },
+    "Google AIO": {
+      "id": "google_ai_overviews",
+      "evidence": "已核实的平台标识；新环境或标识变化须重新只读核对。"
+    },
+    "Claude": {
+      "id": null,
+      "evidence": "本轮暂缓，未确认机器标识。"
+    },
+    "豆包": {
+      "id": "doubao",
+      "evidence": "已核实的平台标识；新环境或标识变化须重新只读核对。"
+    },
+    "通义千问": {
+      "id": "qianwen",
+      "evidence": "已核实的平台标识；新环境或标识变化须重新只读核对。"
+    },
+    "DeepSeek": {
+      "id": "deepseek",
+      "evidence": "已核实的平台标识；新环境或标识变化须重新只读核对。"
+    },
+    "腾讯元宝": {
+      "id": "yuanbao",
+      "evidence": "已核实的平台标识；新环境或标识变化须重新只读核对。"
+    },
+    "文心一言": {
+      "id": "yiyan",
+      "evidence": "已核实的平台标识；新环境或标识变化须重新只读核对。"
+    },
+    "Kimi": {
+      "id": "kimi",
+      "evidence": "已核实的平台标识；新环境或标识变化须重新只读核对。"
+    }
+  },
+  "countries": {
+    "GB": {
+      "status": "complete",
+      "source": "user-confirmed-2026-11-17",
+      "models": [
+        "GPT",
+        "Gemini",
+        "Google AIO",
+        "Perplexity",
+        "Google AI Mode"
+      ]
+    },
+    "US": {
+      "status": "complete",
+      "source": "user-confirmed-2026-11-17",
+      "models": [
+        "GPT",
+        "Gemini",
+        "Google AIO",
+        "Perplexity",
+        "Google AI Mode"
+      ]
+    },
+    "DE": {
+      "status": "complete",
+      "source": "user-confirmed-2026-11-17",
+      "models": [
+        "GPT",
+        "Gemini",
+        "Google AIO",
+        "Perplexity",
+        "Google AI Mode"
+      ]
+    },
+    "FR": {
+      "status": "complete",
+      "source": "user-confirmed-2026-11-17",
+      "models": [
+        "GPT",
+        "Gemini",
+        "Google AIO",
+        "Perplexity",
+        "Google AI Mode"
+      ]
+    },
+    "TH": {
+      "status": "complete",
+      "source": "six-countries-google-2026-11-17",
+      "models": [
+        "GPT",
+        "Claude",
+        "Gemini",
+        "Google AI Mode",
+        "Google AIO"
+      ]
+    },
+    "VN": {
+      "status": "complete",
+      "source": "six-countries-google-2026-11-17",
+      "models": [
+        "GPT",
+        "Claude",
+        "Gemini",
+        "Google AI Mode",
+        "Google AIO"
+      ]
+    },
+    "ID": {
+      "status": "complete",
+      "source": "six-countries-google-2026-11-17",
+      "models": [
+        "GPT",
+        "Claude",
+        "Gemini",
+        "Google AI Mode",
+        "Google AIO"
+      ]
+    },
+    "MY": {
+      "status": "complete",
+      "source": "six-countries-google-2026-11-17",
+      "models": [
+        "GPT",
+        "Claude",
+        "Gemini",
+        "Google AI Mode",
+        "Google AIO"
+      ]
+    },
+    "CN": {
+      "status": "complete",
+      "source": "approved-baseline",
+      "models": [
+        "豆包",
+        "通义千问",
+        "DeepSeek",
+        "腾讯元宝",
+        "文心一言",
+        "Kimi",
+        "GPT"
+      ]
+    },
+    "JP": {
+      "status": "complete",
+      "source": "user-confirmed-jp-kr-2026-11-17",
+      "models": [
+        "GPT",
+        "Gemini",
+        "Google AI Mode",
+        "Google AIO"
+      ]
+    },
+    "KR": {
+      "status": "complete",
+      "source": "user-confirmed-jp-kr-2026-11-17",
+      "models": [
+        "GPT",
+        "Gemini",
+        "Google AI Mode",
+        "Google AIO"
+      ]
+    }
+  },
+  "deferred_models": {
+    "Claude": "user-deferred-claude-2026-11-17"
+  }
+}
