@@ -56,10 +56,20 @@ def run(bank, snapshot, output, options=(), *, markets=(), local_only=False):
         online = (data.get('bank_source') or {}).get('source') == 'feishu-live'
         batch = data['batch']
         local = {'dashboard':str(output.resolve()), 'snapshot':str(snapshot.resolve()), 'report':report(data)}
+        needs_analysis=data.get('model_policy') and not data.get('core_findings')
+        if needs_analysis:
+            from core_findings import context
+            from archive import write_atomic
+            analysis_path=output.with_suffix('.analysis-context.json')
+            write_atomic(analysis_path,json.dumps(context(data),ensure_ascii=False).encode())
+            local['analysis_context']=str(analysis_path.resolve())
         blockers = []
         if not online:
             blockers.append('本次使用本地题库，未核实在线最新版；管理员配置 GEO_QUESTION_BANK_URL 后再发布')
         if local_only:
+            if needs_analysis:
+                return {'status':'local_ready_pending_analysis','local':local,
+                        'next_step':'Agent继续分析同批上下文，用core_findings.py apply写入并校验后交付本地看板；用户选择仅本地，不上传飞书'},0
             return {'status':'local_ready','local':local,'publication':'用户选择仅本地，不上传飞书'}, 0
         try:
             config = scope_config(load_config(), markets)
@@ -73,6 +83,10 @@ def run(bank, snapshot, output, options=(), *, markets=(), local_only=False):
                     'delivery_status':'incomplete',
                     'next_step':'免下载交付未完成；保留同批本地结果，补齐发布连接后仅运行 feishu_publish.py，不重新取数；不要仅发附件收尾',
                     'publication':'未上传，未替换上一成功飞书版本；请管理员配置独立发布授权，勿在聊天发送凭证'}, 0
+        if needs_analysis:
+            return {'status':'local_ready_pending_analysis','local':local,'delivery_status':'incomplete',
+                    'analysis_context':str(analysis_path.resolve()),
+                    'next_step':'Agent继续读取同批分析上下文，分别分析总体及各国家核心发现，用core_findings.py apply写入并校验，再用feishu_publish.py发布；不要停在此处或重新取数'}, 0
         try:
             return publish(output,snapshot,config), 0
         except (ArchiveError,OSError,ValueError,KeyError,TypeError,sqlite3.Error) as error:

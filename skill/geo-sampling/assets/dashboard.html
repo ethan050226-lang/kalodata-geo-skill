@@ -695,7 +695,23 @@ $("review-pending").addEventListener("change",e=>{
   renderReview(filters());
   $(e.target.id)?.focus();
 });
+function coreFinding(rows){
+  if(!D.model_policy)return "该批尚未校验国家模型范围，请重新生成后再分析。";
+  if(!rows.length)return "当前筛选没有有效回答，暂无核心发现。";
+  const ids=rows.map(r=>D.rows.indexOf(r)).sort((a,b)=>a-b);
+  const entry=D.core_findings?.entries.find(e=>JSON.stringify(e.row_indices)===JSON.stringify(ids));
+  const scope=[...new Set(rows.map(r=>marketName(r.d[0])))].join("、");
+  if(entry)return `${scope}：${entry.conclusion}${entry.judgment?` 运营判断：${entry.judgment}`:""}`;
+  const unnamed=rows.filter(r=>!r.d[4]),n=total(rows);
+  return `${scope} · 当前筛选提及率 ${ratio(sum(unnamed,r=>mentionCount(r)),total(unnamed))}；首次出现第一比例 ${ratio(sum(rows,r=>r.first),n)}。该组合暂无专项分析。`;
+}
 function renderActions(rows){
+  $("headline").textContent=coreFinding(rows);
+  if(!D.model_policy){
+    $("action-count").textContent="待核对国家模型范围";
+    $("home-actions").innerHTML=$("next").innerHTML=empty("请按已确认的国家模型配置重新生成，避免使用范围外模型提出建议。");
+    return;
+  }
   const cuts=new Map();
   for(const r of rows){
     const key=JSON.stringify([r.d[0],r.d[1],r.d[3],r.d[4]]);
@@ -740,14 +756,6 @@ function renderActions(rows){
       ((b.low?b.den-b.hits:b.hits)-(a.low?a.den-a.hits:a.hits))||b.den-a.den);
   const chosen=allActions.filter((item,i)=>allActions.findIndex(other=>other.key===item.key)===i);
   $("action-count").textContent=`${allActions.length} 项行动`;
-  const candidates=[...cuts.values()].filter(rs=>!rs[0].d[4]).map(rs=>({
-    rows:rs,den:total(rs),hits:sum(rs,r=>mentionCount(r))
-  })).filter(r=>r.hits<r.den).sort((a,b)=>a.hits/a.den-b.hits/b.den||b.den-a.den);
-  const focus=candidates[0], allUnnamed=rows.filter(r=>!r.d[4]);
-  $("headline").textContent=focus?
-    `优先核查${marketName(focus.rows[0].d[0])}「${groupName(focus.rows[0].d[3])}」· ${focus.rows[0].d[1]}：提及率 ${ratio(focus.hits,focus.den)}，当前范围 ${ratio(sum(allUnnamed,r=>mentionCount(r)),total(allUnnamed))}。`:
-    total(allUnnamed)?`当前范围提及率 ${ratio(sum(allUnnamed,r=>mentionCount(r)),total(allUnnamed))}，未检出未提及或明确负面命中缺口。`:
-    "当前筛选没有未点名题有效回答，提及率不适用。";
   $("home-actions").innerHTML=chosen.slice(0,3).map((item,i)=>{
     const [market,platform,day,group]=item.lead.d, example=item.lead.evidence[item.key];
     return `<article class="card"><h3><span class="priority">P${i+1}</span>${esc(item.title)}</h3>

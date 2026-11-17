@@ -213,6 +213,8 @@ class PublicationTest(unittest.TestCase):
     def test_default_run_through_acceptance_then_reuse(self):
         import geo_run
         import feishu_publish
+        from core_findings import apply
+        from test_core_findings import synthetic_findings
         config = {'state_dir':str(self.root/'end-to-end'), 'folder_url':'https://example.feishu.cn/drive/folder/synthetic',
                   'approved_members':[{'member_type':'openid','member_id':'synthetic-admin'}], 'identity':'bot'}
         self.remote.initialize(self.root/'end-to-end'/'markets-GB'/'last-success.json')
@@ -226,12 +228,21 @@ class PublicationTest(unittest.TestCase):
              patch.object(dashboard,'platform_snapshot',return_value={'data':{},'issues':{}}), \
              patch.object(feishu_publish,'Drive',return_value=self.remote):
             options = ['--begin',self.f.day,'--end',self.f.day]
-            candidate, code = geo_run.run(self.f.bank,self.f.output,self.source,options,markets=['GB'])
+            pending, code = geo_run.run(self.f.bank,self.f.output,self.source,options,markets=['GB'])
+            self.assertEqual((code,pending['status']),(0,'local_ready_pending_analysis'))
+            self.assertEqual(self.remote.writes,0)
+            analysis=self.root/'synthetic.findings.json'
+            analysis.write_text(json.dumps(synthetic_findings(dashboard.retained_data(self.source)[1])))
+            apply(self.source,analysis)
+            candidate=publish(self.source,self.f.output,config,remote=self.remote)
             self.assertEqual((code,candidate['status']),(0,'pending_acceptance'))
             published = publish(self.source,self.f.output,config,self.proof(candidate),self.remote)
             self.assertEqual(published['status'],'published')
             writes = self.remote.writes
-            reused, code = geo_run.run(self.f.bank,self.f.output,self.source,options,markets=['GB'])
+            pending, code = geo_run.run(self.f.bank,self.f.output,self.source,options,markets=['GB'])
+            self.assertEqual(pending['status'],'local_ready_pending_analysis')
+            apply(self.source,analysis)
+            reused=publish(self.source,self.f.output,config,remote=self.remote)
             self.assertEqual((code,reused['status']),(0,'reused'))
             self.assertEqual(self.remote.writes,writes)
             self.assertEqual(published['receipt']['report'],reused['receipt']['report'])

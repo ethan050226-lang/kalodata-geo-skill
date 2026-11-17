@@ -172,6 +172,9 @@ def publish(source, snapshot, config, proof=None, remote=None):
     _,data,_ = retained_data(source)
     require(data.get('analysis_version') == ANALYSIS_VERSION,
             '发布校验 / 历史批次口径需刷新；不能把历史交互预览作为当前口径的正式看板发布')
+    if data.get('model_policy'):
+        from core_findings import validate
+        validate(data)
     if data.get('market_scope'):
         from market_scope import scope_config
         config = scope_config(config,data['market_scope']['markets'])

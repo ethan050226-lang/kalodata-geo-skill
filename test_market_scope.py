@@ -192,7 +192,7 @@ class CountryDeliveryTest(unittest.TestCase):
         self.assertEqual(result['publication_warnings'],[])
         self.assertEqual(result['status'],'preflight_only')
 
-    def test_upload_failure_keeps_valid_local_dashboard_and_previous_publication(self):
+    def test_pending_agent_analysis_keeps_valid_local_dashboard_and_previous_publication(self):
         config={'state_dir':str(self.root/'publication'),
                 'folder_url':'https://example.feishu.cn/drive/folder/synthetic',
                 'approved_members':[{'member_type':'openid','member_id':'synthetic-admin'}]}
@@ -208,13 +208,13 @@ class CountryDeliveryTest(unittest.TestCase):
              patch.object(geo_run,'publish',side_effect=ArchiveError('飞书上传失败')) as upload:
             result,code=geo_run.run(self.f.bank,self.scoped,self.html,
                 ['--begin',self.f.day,'--end',self.f.day,'--excel',str(self.excel)],markets=['GB'])
-        upload.assert_called_once()
-        self.assertEqual((code,result['status']),(0,'local_ready_pending_publication'))
+        upload.assert_not_called()
+        self.assertEqual((code,result['status']),(0,'local_ready_pending_analysis'))
         self.assertEqual(result['delivery_status'],'incomplete')
-        self.assertIn('本批',result['next_step'])
+        self.assertIn('同批',result['next_step'])
         self.assertTrue(self.html.is_file() and self.scoped.is_file() and self.excel.is_file())
         self.assertEqual(result['local']['report']['batch'],dashboard.retained_data(self.html)[1]['batch'])
-        self.assertEqual(result['publication']['status'],'failed')
+        self.assertTrue(Path(result['analysis_context']).is_file())
         self.assertEqual(state.read_bytes(),previous)
 
     def test_private_bank_url_drives_online_refresh_without_environment_url(self):

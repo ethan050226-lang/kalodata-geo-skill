@@ -27,6 +27,8 @@ private/
 *.subscription.json
 *.publication.json
 *.har
+*.analysis-context.json
+*.findings.json
 
 # Central publication ledger, in-flight uploads and acceptance drafts
 registry.json

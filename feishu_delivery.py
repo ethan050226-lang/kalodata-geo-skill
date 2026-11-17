@@ -12,7 +12,7 @@ from dashboard import retained_data, render
 REFERENCE = {'q','text','category','task','d','status','label','reason','table'}
 TOP = {'batch','platform','rows','issues','core_mention','analysis_version','prompt_basis',
        'question_named','question_scope','markets','competitors','tags','groups','neutral',
-       'links','review','recommendations','comparison','bank_source','market_scope','quality','model_policy'}
+       'links','review','recommendations','comparison','bank_source','market_scope','quality','model_policy','core_findings'}
 FORBIDDEN = {'body','answer','answer_text','raw_answer','raw_response','access_token','app_secret',
              'api_key','apikey','authorization','password','originals'}
 
@@ -34,6 +34,9 @@ def shared_data(data):
     validate_data_scope(data)
     require(set(data) <= TOP, '共享校验 / 出现未审核的新数据字段，请先核查共享范围')
     reject_secrets(data)
+    if data.get('core_findings'):
+        from core_findings import validate
+        validate(data)
     if data.get('model_policy'):
         policy=data['model_policy']
         fields={'version','bank_sha256','models','evidence','signature','excluded_records'}

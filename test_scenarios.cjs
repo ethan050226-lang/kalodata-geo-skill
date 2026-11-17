@@ -71,3 +71,23 @@ for(const values of [['不可比','不可比','不可比'],['+1 pp','-2 pp','不
   assert.equal(cards.filter(card=>card.content).length,shared?0:3);
 }
 console.log('Shared and distinct history display checks passed');
+
+// Findings follow exact selected sample sets; changing country or any slice cannot reuse another claim.
+const cn={...sample,d:['CN','chatgpt','2026-11-09','g',0,[]]},us={...sample,d:['US','perplexity','2026-11-09','g',0,[]]};
+const findingContext={D:{rows:[cn,us],model_policy:{},core_findings:{entries:[
+  {row_indices:[0],conclusion:'中国本批事实',judgment:'核对具体题目'},
+  {row_indices:[1],conclusion:'美国本批事实',judgment:''},
+  {row_indices:[0,1],conclusion:'总体事实',judgment:''}
+]}},marketName:m=>({CN:'中国',US:'美国'}[m]),total:context.total,sum:context.sum,mentionCount:context.mentionCount,ratio:context.ratio};
+vm.createContext(findingContext);vm.runInContext(html.slice(html.indexOf('function coreFinding('),html.indexOf('function renderActions(')),findingContext);
+assert(findingContext.coreFinding([cn]).includes('中国本批事实'));
+assert(!findingContext.coreFinding([cn]).includes('美国本批事实'));
+assert(findingContext.coreFinding([us]).includes('美国本批事实'));
+assert(findingContext.coreFinding([cn,us]).includes('总体事实'));
+findingContext.D.core_findings.entries=findingContext.D.core_findings.entries.filter(e=>e.row_indices.length>1);
+assert(findingContext.coreFinding([cn]).includes('暂无专项分析'));
+assert(!findingContext.coreFinding([cn]).includes('总体事实'));
+assert(findingContext.coreFinding([]).includes('没有有效回答'));
+delete findingContext.D.model_policy;
+assert(findingContext.coreFinding([cn]).includes('尚未校验国家模型范围'));
+console.log('Country and exact-filter Agent finding isolation checks passed');

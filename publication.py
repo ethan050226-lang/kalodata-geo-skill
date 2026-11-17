@@ -103,14 +103,11 @@ def report(data):
     core = next(m for m in primary if m['id'] == 'skill.core_mention_rate')
     value = f"{core['value']:.2f}%（{core['numerator']}/{core['denominator']}）" if core['value'] is not None else '不适用（没有可用分母或缺少口径证据）'
     conclusion = f"本批 {sum(r['n'] for r in data['rows'])} 条有效回答，提及率为{value}。"
-    gaps = [r for r in data['rows'] if not r['d'][4] and 'absence' in r.get('evidence',{})]
-    if gaps:
-        row = max(gaps,key=lambda r:r['n']-(r['mentions'].get('Kalodata',0)-r.get('negative_mentions',0)))
-        m, platform, day, group = row['d'][:4]
-        num = row['mentions'].get('Kalodata',0)-row.get('negative_mentions',0)
-        conclusion += (f"优先回查 {data['markets'].get(m,m)} / {data['groups'].get(group,'分组未知')} / {platform} / {day}，"
-                       f"该切片为 {num}/{row['n']}，存在未提及或明确负面的代表回答。")
-    conclusion += '各切片样本构成可能不同；内容优化是待复测的建议，不据此推断因果或整体市场优劣。'
+    if data.get('core_findings'):
+        from core_findings import validate
+        findings=validate(data)
+        entry=next(e for e in findings['entries'] if e['row_indices']==list(range(len(data['rows']))))
+        conclusion=entry['conclusion']+(' 运营判断：'+entry['judgment'] if entry['judgment'] else '')
     return {'batch': data['batch'], 'metrics': primary, 'actions': actions,
             'model_scope':{'models':data['model_policy']['models'],'version':data['model_policy']['version'],
                            'signature':data['model_policy']['signature'],

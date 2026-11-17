@@ -168,6 +168,8 @@ def dashboard_data(snapshot, bank, native):
     with closing(sqlite3.connect(snapshot.resolve().as_uri() + "?mode=ro", uri=True)) as db:
         db.row_factory = sqlite3.Row
         batch = dict(db.execute("SELECT * FROM batch").fetchone())
+        has_source = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='source_evidence'").fetchone()
+        answer_source = db.execute('SELECT content_sha256 FROM source_evidence').fetchone()[0] if has_source else None
         scoped = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='delivery_scope'").fetchone()
         scope_markets = json.loads(db.execute('SELECT markets FROM delivery_scope').fetchone()[0]) if scoped else None
         policy=None;model_audit=[]
@@ -330,6 +332,7 @@ def dashboard_data(snapshot, bank, native):
             "prompt_basis":"Answerbit 返回题文" if prompt_join else "唯一匹配的题库题文回算（旧批）",
             "question_named":{r[0]:r[4] for r in question_scope},
             "question_scope":{"signature":hashlib.sha256(json.dumps(sorted(question_scope)).encode()).hexdigest(),
+                              "answer_source_sha256":answer_source,
                               "returned_signature":returned_scope,"verified":bool(has_questions and has_scope),
                               "question_count":len({r[0] for r in question_scope}),"range":"全部返回题目及匹配题库的题目、平台、语言、分组和标签"},
             "markets":{v:k for k,v in api.MARKETS.items() if not scope_markets or v in scope_markets},
@@ -351,6 +354,9 @@ def dashboard_data(snapshot, bank, native):
 def render(data, output):
     from market_scope import validate_data_scope
     validate_data_scope(data)
+    if data.get('core_findings'):
+        from core_findings import validate
+        validate(data)
     page = ASSET.read_text()
     api.require(page.count("__GEO_PAYLOAD__") == 1, "渲染 / 看板模板缺少唯一数据占位符")
     api.write_atomic(output, page.replace("__GEO_PAYLOAD__", encode(data)).encode())

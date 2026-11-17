@@ -86,6 +86,8 @@ python3 feishu_publish.py <已有看板.html> <已有库.sqlite> --check-access
 
 ## 交付和规范
 
+核心发现由运行 Agent 按[分析流程](skill/geo-sampling/references/core-findings.md)分别分析总体及各国家后写入，不再机械选择最低比例。`local_ready_pending_analysis`返回后继续分析并独立发布同批结果，不重新取数。国家或其他筛选变化时仅复用同样本范围的结论。
+
 默认交付已验收飞书链接及同批简报：核心数据表、一段结论、最多三条证据行动。Excel可本地生成，默认不上传。原文通过同批本机库查看；飞书共享版仅保留题文、题号、日期、平台和分组定位，工作台入口不是原文直达。
 
 geo_run.py核对远端版本：reused复用已验收链接；pending_acceptance仍待实际预览和权限验收。证据绑定精确版本后，用`python3 feishu_publish.py <看板.html> <库.sqlite> --accept-proof <证据.json>`验收入账为published，才交付新链接。发布状态按国家集合隔离，避免串用他国上次入口。本地文件提交中断会回滚，未完成的提交标记阻止发布；进程意外中止后须重跑核对，不声称多文件写入具备系统级事务。失败保留上一成功结果，不发布半批；尚无固定链接切换，多人发布使用统一串行环境。
