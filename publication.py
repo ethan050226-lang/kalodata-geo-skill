@@ -87,17 +87,20 @@ def report(data):
         old = compared.get(metric['id'],{})
         metric.update(previous=old.get('previous'), change=old.get('change') if not comparison.get('limitations') else None)
     actions = []
-    plans = {'absence': ('核对未点名回答是否遗漏品牌或存在明确负面', '补充对应场景选型和适用人群内容', '提及率'),
-             'formal': ('核对回答正式来源是否支持品牌描述', '补充有证据、可引用的官网说明页', '官网正式来源命中率'),
-             'sentiment': ('核对平台负面或褒贬并存的具体说法', '核实后修正相关能力、限制或价格说明', '负面与褒贬并存占比')}
+    plans = {'absence': ('未点名回答未提及品牌或为明确负面', '确认选型说明缺失后，补充适用场景及人群', '提及率'),
+             'formal': ('已提及品牌的回答未命中官网正式来源', '确认官网说明缺失后，补充对应语言的功能和步骤', '官网正式来源命中率'),
+             'sentiment': ('平台口碑为负面或褒贬并存', '确认说法过时或有误后，更新对应功能、限制或价格说明', '负面与褒贬并存占比')}
     for signal, (check, direction, metric) in plans.items():
         candidates = [r for r in data['rows'] if signal in r.get('evidence', {})]
         if not candidates: continue
         row = max(candidates, key=lambda r:(r.get('evidence_counts',{}).get(signal,0),r['n'])); ref = row['evidence'][signal]
-        actions.append({'priority': f'P{len(actions)+1}', 'fact': check, 'suggestion': direction,
+        affected=row.get('evidence_counts',{}).get(signal)
+        location=' / '.join((data['markets'].get(row['d'][0],row['d'][0]),data['groups'].get(row['d'][3],'分组未知'),row['d'][1]))
+        fact=f'{location}：{affected} 条{check}' if affected is not None else f'{location}：{ref["q"]} 对应回答待核查'
+        actions.append({'priority': f'P{len(actions)+1}', 'status':'待核查','fact':fact, 'suggestion': direction,
                         'sample_count': row['n'], 'affected_count':row.get('evidence_counts',{}).get(signal), 'reference': ref,
                         'verify': 'Answerbit 工作台 → 大模型回答记录，按题文、平台、日期和分组查找；题号用于飞书题库',
-                        'retest': f'同题、同平台和同等窗口复测{metric}，范围构成保持一致'})
+                        'retest': f'同题、同平台、同窗口复测{metric}'})
     actions.sort(key=lambda a:(a['affected_count'] or 0,a['sample_count']),reverse=True)
     for i,action in enumerate(actions,1): action['priority']=f'P{i}'
     core = next(m for m in primary if m['id'] == 'skill.core_mention_rate')
@@ -107,7 +110,7 @@ def report(data):
         from core_findings import validate
         findings=validate(data)
         entry=next(e for e in findings['entries'] if e['row_indices']==list(range(len(data['rows']))))
-        conclusion=entry['conclusion']+(' 运营判断：'+entry['judgment'] if entry['judgment'] else '')
+        conclusion=entry['conclusion']+(' 下一步：'+entry['judgment'] if entry['judgment'] else '')
     return {'batch': data['batch'], 'metrics': primary, 'actions': actions,
             'model_scope':{'models':data['model_policy']['models'],'version':data['model_policy']['version'],
                            'signature':data['model_policy']['signature'],

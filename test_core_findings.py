@@ -59,6 +59,14 @@ class CoreFindingsTest(unittest.TestCase):
             with self.subTest(change=change),self.assertRaises(ArchiveError):apply(self.html,self.file)
             self.assertEqual(before,self.html.read_bytes())
 
+    def test_generic_reminders_must_be_rewritten_as_specific_states(self):
+        good=synthetic_findings(self.data)
+        from core_findings import GENERIC_REMINDERS
+        for phrase in GENERIC_REMINDERS:
+            bad=deepcopy(good);bad['entries'][0]['judgment']=phrase
+            with self.subTest(phrase=phrase),self.assertRaisesRegex(ArchiveError,'泛化提醒'):
+                validate(self.data,bad)
+
     def test_data_change_invalidates_analysis_but_fetch_time_alone_does_not(self):
         good=synthetic_findings(self.data);changed=deepcopy(self.data)
         changed['batch']['fetched_at_utc']='2026-11-17T00:00:00Z'

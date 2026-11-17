@@ -34,16 +34,16 @@ context.batch={begin_date:'2026-11-01',end_date:'2026-11-07'};
 const allFilters={m:[],e:[],g:[],tags:[],named:[],from:context.batch.begin_date,to:context.batch.end_date};
 context.D.comparison={previous_batch:{},limitations:[],metrics:[{id:'skill.first_rate',change:25}]};
 assert(context.cardHistory('skill.first_rate',allFilters).includes('+25.00'));
-assert(context.cardHistory('skill.first_rate',{...allFilters,m:['US']}).includes('暂不比较'));
-context.D.comparison.limitations=['题库版本不同'];assert(context.cardHistory('skill.first_rate',allFilters).includes('上次不可比'));
+assert.equal(context.cardHistory('skill.first_rate',{...allFilters,m:['US']}),'');
+context.D.comparison.limitations=['题库版本不同'];assert.equal(context.cardHistory('skill.first_rate',allFilters),'');
 console.log('Card history scope checks passed');
 
 assert(context.dataReminder({unmatched_question:7},{sentimentUnknown:2,missing:1,n:9}).includes('全批 7'));
 assert(context.dataReminder({unmatched_question:7},{sentimentUnknown:0,missing:0,n:3}).includes('当前筛选口碑与引用字段可判定'));
-assert(context.dataReminder(undefined,{sentimentUnknown:0,missing:0,n:0}).includes('全批异常统计未知'));
+assert(context.dataReminder(undefined,{sentimentUnknown:0,missing:0,n:0}).includes('未保存全批异常统计'));
 assert(context.dataReminder({},{sentimentUnknown:0,missing:0,n:0}).includes('当前筛选无有效回答'));
-assert(context.dataReminder({quality_shrunken:2},{sentimentUnknown:0,missing:0,n:3,qualityExcluded:2}).includes('当前筛选数据异常 2 条，已排除'));
-assert(context.dataReminder({},{sentimentUnknown:0,missing:0,n:3}).includes('原文质量未检查'));
+assert(context.dataReminder({quality_shrunken:2},{sentimentUnknown:0,missing:0,n:3,qualityExcluded:2}).includes('已排除：当前筛选 2 条数据异常'));
+assert(context.dataReminder({},{sentimentUnknown:0,missing:0,n:3}).includes('本批未保存原文质量结果'));
 console.log('Scoped reminder and unknown-state checks passed');
 
 // Run the real preview route handler: local-mode HTML embedded by Feishu must work too.
@@ -79,15 +79,27 @@ const findingContext={D:{rows:[cn,us],model_policy:{},core_findings:{entries:[
   {row_indices:[1],conclusion:'美国本批事实',judgment:''},
   {row_indices:[0,1],conclusion:'总体事实',judgment:''}
 ]}},marketName:m=>({CN:'中国',US:'美国'}[m]),total:context.total,sum:context.sum,mentionCount:context.mentionCount,ratio:context.ratio};
-vm.createContext(findingContext);vm.runInContext(html.slice(html.indexOf('function coreFinding('),html.indexOf('function renderActions(')),findingContext);
+vm.createContext(findingContext);vm.runInContext(html.slice(html.indexOf('function findingEntry('),html.indexOf('function renderActions(')),findingContext);
 assert(findingContext.coreFinding([cn]).includes('中国本批事实'));
 assert(!findingContext.coreFinding([cn]).includes('美国本批事实'));
 assert(findingContext.coreFinding([us]).includes('美国本批事实'));
 assert(findingContext.coreFinding([cn,us]).includes('总体事实'));
 findingContext.D.core_findings.entries=findingContext.D.core_findings.entries.filter(e=>e.row_indices.length>1);
-assert(findingContext.coreFinding([cn]).includes('暂无专项分析'));
+assert(findingContext.coreFinding([cn]).includes('提及率'));
+assert(context.dataReminder({},{sentimentUnknown:0,missing:0,n:2,qualityExcluded:0,analysisMissing:true}).includes('待分析：当前筛选无专项结论'));
 assert(!findingContext.coreFinding([cn]).includes('总体事实'));
-assert(findingContext.coreFinding([]).includes('没有有效回答'));
+assert.equal(findingContext.coreFinding([]),'');
 delete findingContext.D.model_policy;
-assert(findingContext.coreFinding([cn]).includes('尚未校验国家模型范围'));
+assert.equal(findingContext.coreFinding([cn]),'');
+assert(context.dataReminder({},{sentimentUnknown:0,missing:0,n:2,modelUnverified:true}).includes('本批未校验国家模型范围'));
 console.log('Country and exact-filter Agent finding isolation checks passed');
+
+// Actual limitations belong to one reminder; history causes are not repeated on all KPI cards.
+const precise=context.dataReminder({citation_unknown:12,quality_shrunken:2},{sentimentUnknown:12,missing:12,n:20,qualityExcluded:2});
+assert(precise.includes('当前筛选 12 条口碑字段未识别'));
+assert.equal((precise.match(/引用字段缺失/g)||[]).length,1);
+assert.equal((precise.match(/数据异常/g)||[]).length,1);
+assert.equal((html.match(/id="data-reminder"/g)||[]).length,1);
+assert(!html.includes('样本构成可能不同'));
+assert(!html.includes('不代表整体表现'));
+console.log('Business copy, concrete states and single-reminder checks passed');

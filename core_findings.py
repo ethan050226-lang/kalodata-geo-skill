@@ -8,6 +8,7 @@ from pathlib import Path
 from archive import ArchiveError, require, write_atomic
 
 VERSION = 'core-findings/1'
+GENERIC_REMINDERS = ('样本构成可能不同','不代表整体表现','不能据此推断','仅供参考','建议进一步核实')
 
 
 def fingerprint(data):
@@ -48,8 +49,9 @@ def context(data):
                     for i,r in enumerate(data['rows'])],
             'instructions':'运行Agent分析同批数据，为overall及每个国家写发现；可增加平台/题类切片。'
                            'entries每项含row_indices、conclusion、judgment、metrics。'
-                           'metrics使用上述同切片核对值；结论是数据事实，judgment是待复测判断。'
-                           '不机械挑最低比例，不把样本差异当因果，不纳入范围外模型。'}
+                           '每句写清国家/题类、指标、数值及下一步，均须有本批证据。'
+                           'metrics使用同切片核对值；conclusion写事实，judgment写具体行动，证据不足标待核查。'
+                           '不机械挑最低比例；不写泛化提醒。具体缺失放数据提醒，方法放指标说明，数字旁列分子分母。'}
 
 
 def validate(data, findings=None):
@@ -74,6 +76,8 @@ def validate(data, findings=None):
         scopes.add(tuple(ids))
         require(all(isinstance(item[k],str) and len(item[k])<=400 for k in ('conclusion','judgment'))
                 and item['conclusion'].strip(),'核心发现 / 结论不能为空或过长')
+        require(not any(phrase in item[k] for phrase in GENERIC_REMINDERS for k in ('conclusion','judgment')),
+                '核心发现 / 请删除泛化提醒；用本批数量、具体原因和下一步说明问题')
         require(item['metrics']==metrics([data['rows'][i] for i in ids]),
                 '核心发现 / 指标、分子分母与所分析范围不一致')
     required = context(data)['required_scopes']
