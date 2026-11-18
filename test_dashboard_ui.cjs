@@ -4,7 +4,7 @@ const fileUrl=require('url').pathToFileURL(require('path').resolve(process.argv[
 (async()=>{const browser=await chromium.launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
 await page.goto(fileUrl);
 const picker=side=>page.locator('#filter-'+side+' [data-key="m"]');
-const selected=side=>picker(side).locator('input:checked').evaluateAll(items=>items.map(i=>i.value).sort());
+const selected=side=>picker(side).locator('input:checked').evaluateAll(items=>items.map(i=>i.value).filter(value=>value!=='__all').sort());
 async function checkInitialView(){
   const config=await page.evaluate(()=>({
     defaults:D.market_scope?.default_markets||[],
@@ -14,14 +14,16 @@ async function checkInitialView(){
   }));
   for(const side of ['a','b','review']){
     assert.deepEqual(await selected(side),config.defaults);
-    assert.deepEqual(await picker(side).locator('input').evaluateAll(items=>items.map(i=>i.value).sort()),config.markets);
+    assert.equal(await picker(side).locator('input[value="__all"]').isChecked(),config.defaults.length===0);
+    assert.equal(await picker(side).locator('input:not([value="__all"])').evaluateAll(items=>items.every(i=>i.disabled)),config.defaults.length===0);
+    assert.deepEqual(await picker(side).locator('input:not([value="__all"])').evaluateAll(items=>items.map(i=>i.value).sort()),config.markets);
   }
   assert.equal(await page.locator('#kpis .value').first().innerText(),config.rate);
   return config;
 }
 const initial=await checkInitialView();
 await page.goto(fileUrl+'#brand');
-assert.deepEqual(await page.locator('#brand-market option').evaluateAll(items=>items.map(i=>i.value).filter(Boolean).sort()),initial.markets);
+assert.deepEqual(await page.locator('#brand-market option').evaluateAll(items=>items.map(i=>i.value).filter(value=>value&&!value.startsWith('__')).sort()),initial.markets);
 const otherCountry=await page.evaluate(()=>D.rows.find(r=>!(D.market_scope.default_markets||[]).includes(r.d[0]))?.d[0]);
 if(otherCountry){
   await page.locator('#brand-market').selectOption(otherCountry);
@@ -44,9 +46,13 @@ if(process.argv[3]){
     assert(markets.length>=2);
     const check=async(side,market)=>picker(side).locator('input[value="'+market+'"]').check();
     await picker('a').locator('summary').click();
-    await picker('a').locator('button').click();
+    await picker('a').locator('input[value="__all"]').check();
+    assert.equal(await picker('a').locator('input:not([value="__all"])').evaluateAll(items=>items.every(i=>i.disabled&&!i.checked)),true);
     assert.deepEqual(await selected('a'),[]);
     assert.deepEqual(await selected('review'),[]);
+    await picker('a').locator('input[value="__all"]').uncheck();
+    assert.equal(await picker('a').locator('summary').textContent(),'请选择国家');
+    assert.equal(await page.locator('#kpis .value').first().innerText(),'不适用');
     await check('a',markets[0]);await check('a',markets[1]);
     assert.deepEqual(await selected('review'),markets.slice(0,2).sort());
     await picker('a').locator('input[value="'+markets[1]+'"]').uncheck();
@@ -61,7 +67,9 @@ if(process.argv[3]){
     }
     await page.goto(emptyUrl+'#compare');
     await picker('b').locator('summary').click();
-    await picker('b').locator('button').click();await check('b',markets[1]);
+    await picker('b').locator('input[value="__all"]').check();
+    assert.equal(await picker('b').locator('input:not([value="__all"])').evaluateAll(items=>items.every(i=>i.disabled&&!i.checked)),true);
+    await picker('b').locator('input[value="__all"]').uncheck();await check('b',markets[1]);
     assert.deepEqual(await selected('a'),[markets[0]]);
     assert((await page.locator('.cohort.b').innerText()).includes(await page.evaluate(m=>D.markets[m],markets[1])));
     await page.locator('#filter-a').getByText('重置',{exact:true}).click();
@@ -78,11 +86,32 @@ if(process.argv[4]){
     const config=await checkInitialView();assert.deepEqual(config.defaults,[]);
     assert.equal(await picker('a').locator('summary').textContent(),'全部国家');
     await picker('a').locator('summary').click();
-    await picker('a').locator('input').first().check();
+    await picker('a').locator('input[value="__all"]').uncheck();
+    await picker('a').locator('input:not([value="__all"])').first().check();
     assert.equal((await selected('a')).length,1);
     await page.locator('#filter-a').getByText('重置',{exact:true}).click();
     assert.deepEqual(await selected('a'),[]);
     assert.equal(await page.locator('#kpis .value').first().innerText(),config.rate);
+  }
+}
+for(const countryFile of process.argv.slice(5)){
+  const url=require('url').pathToFileURL(require('path').resolve(countryFile)).href;
+  for(const width of [1440,390]){
+    await page.setViewportSize({width,height:1000});
+    await page.goto(url);
+    const config=await checkInitialView();
+    assert.equal(config.defaults.length,1);
+    const all=picker('a').locator('input[value="__all"]');
+    await picker('a').locator('summary').click();await all.check();
+    assert.deepEqual(await selected('a'),[]);
+    assert.equal(await picker('review').locator('input[value="__all"]').isChecked(),true);
+    assert.equal(await picker('a').locator('input:not([value="__all"])').evaluateAll(items=>items.every(i=>i.disabled&&!i.checked)),true);
+    await page.locator('#filter-a').getByText('重置',{exact:true}).click();
+    assert.deepEqual(await selected('a'),config.defaults);
+    await page.goto(url+'#brand');
+    await page.locator('#brand-market').selectOption('__all');
+    assert.deepEqual(await selected('a'),[]);
+    assert.equal(await picker('a').locator('input[value="__all"]').isChecked(),true);
   }
 }
 await page.goto(fileUrl);

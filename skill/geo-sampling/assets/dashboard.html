@@ -239,7 +239,7 @@ function makeFilters(side){
     const pick=document.createElement("details");
     pick.className="picker";
     pick.dataset.key=key;
-    pick.innerHTML=`<div class="f-label">${label}</div><summary><span>${key==="m"?"全部国家":"全部"}</span></summary><div class="pick-menu"><button type="button">${key==="m"?"全部国家":"清空选择"}</button><div class="pick-list"></div></div>`;
+    pick.innerHTML=`<div class="f-label">${label}</div><summary><span>${key==="m"?"全部国家":"全部"}</span></summary><div class="pick-menu">${key==="m"?"":'<button type="button">清空选择</button>'}<div class="pick-list"></div></div>`;
     const title=pick.querySelector(".f-label");
     form.append(pick);
     // Native details requires its summary to be first for keyboard activation.
@@ -247,14 +247,15 @@ function makeFilters(side){
     pick.before(wrap);wrap.append(title,pick);
     const summary=pick.querySelector("summary");
     summary.setAttribute("aria-label",`${scopeLabel}范围${label}多选`);
-    for(const [value,name] of opts){
+    const choices=key==="m"?[["__all","全部国家"],...opts]:opts;
+    for(const [value,name] of choices){
       const l=document.createElement("label"), i=document.createElement("input");
       i.type="checkbox";i.value=value;
-      i.defaultChecked=key==="m" && defaultMarkets.includes(value);
+      i.defaultChecked=key==="m" && (value==="__all"?defaultMarkets.length===0:defaultMarkets.includes(value));
       l.append(i,document.createTextNode(name+(opts.filter(([,v])=>v===name).length>1?" · "+value:"")));pick.querySelector(".pick-list").append(l);
     }
     if(!opts.length)pick.querySelector(".pick-list").textContent="本批暂无选项";
-    pick.querySelector("button").addEventListener("click",()=>{
+    pick.querySelector("button")?.addEventListener("click",()=>{
       for(const i of pick.querySelectorAll("input"))i.checked=false;
       update();
     });
@@ -304,9 +305,17 @@ function filters(side="a"){
   const form=$("filter-"+side), result={from:form.elements.from.value||batch.begin_date,
     to:form.elements.to.value||batch.end_date,tagMode:form.elements.tagMode.value};
   for(const pick of form.querySelectorAll(".picker")){
+    const all=pick.querySelector('input[value="__all"]');
+    if(all){
+      for(const input of pick.querySelectorAll('input:not([value="__all"])')){
+        input.disabled=all.checked;
+        if(all.checked)input.checked=false;
+      }
+    }
     const checked=[...pick.querySelectorAll("input:checked")];
-    result[pick.dataset.key]=checked.map(i=>i.value);
-    const text=checked.length===0?(pick.dataset.key==="m"?"全部国家":"全部"):checked.length===1?checked[0].parentElement.textContent:`已选 ${checked.length} 项`;
+    const values=checked.map(i=>i.value);
+    result[pick.dataset.key]=all?.checked?[]:all&&!values.length?["__none"]:values;
+    const text=checked.length===0?(all?"请选择国家":"全部"):checked.length===1?checked[0].parentElement.textContent:`已选 ${checked.length} 项`;
     pick.querySelector("summary span").textContent=text;
     pick.classList.toggle("has-selection",checked.length>0);
   }
@@ -316,7 +325,9 @@ function setFilters(side, f){
   const form=$("filter-"+side);
   form.elements.from.value=f.from;form.elements.to.value=f.to;form.elements.tagMode.value=f.tagMode;
   for(const pick of form.querySelectorAll(".picker")){
-    for(const i of pick.querySelectorAll("input"))i.checked=f[pick.dataset.key].includes(i.value);
+    for(const i of pick.querySelectorAll("input")){
+      i.checked=i.value==="__all"?f.m.length===0:f[pick.dataset.key].includes(i.value);
+    }
   }
 }
 const includes=(values,v)=>!values.length||values.includes(v);
@@ -326,7 +337,7 @@ function matches(d,f){
   return includes(f.m,m)&&includes(f.e,e)&&includes(f.g,g||"__unknown")&&includes(f.named||[],String(named))&&day>=f.from&&day<=f.to&&tagMatch;
 }
 function describe(f){
-  return [f.m.length?f.m.map(marketName).join("、"):(D.market_scope?"交付国家："+D.market_scope.markets.map(marketName).join("、"):"全部市场"),f.e.length?f.e.join("、"):"全部平台",
+  return [f.m.includes("__none")?"未选择国家":f.m.length?f.m.map(marketName).join("、"):(D.market_scope?"交付国家："+D.market_scope.markets.map(marketName).join("、"):"全部市场"),f.e.length?f.e.join("、"):"全部平台",
     f.g.length?f.g.map(groupName).join("、"):"全部分组",
     f.tags.length?f.tags.map(t=>D.tags[t]).join(f.tagMode==="all"?" ∩ ":" ∪ "):"全部标签",
     f.named?.length?f.named.map(x=>x==="0"?"未点名":"点名").join("、"):"全部题文状态",
@@ -534,7 +545,7 @@ function render(){
   const choices=selected.filter(x=>!x[0].d[4]).sort((a,b)=>total(b)-total(a));
   if(brandMarket&&!choices.some(x=>x[0].d[0]===brandMarket))brandMarket="";
   const chosen=(brandMarket?choices.find(x=>x[0].d[0]===brandMarket):choices[0]);
-  $("brand-market").innerHTML='<option value="">当前范围样本量最大市场</option>'+Object.entries(D.markets).map(([code,name])=>`<option value="${esc(code)}"${code===brandMarket?" selected":""}>${esc(name)}</option>`).join("");
+  $("brand-market").innerHTML=`<option value="">${f.m.length?"当前范围样本量最大市场":"全部国家"}</option>${f.m.length?'<option value="__all">全部国家</option>':""}`+Object.entries(D.markets).map(([code,name])=>`<option value="${esc(code)}"${code===brandMarket?" selected":""}>${esc(name)}</option>`).join("");
   $("mention-title").textContent=chosen?`${marketName(chosen[0].d[0])} · 未点名题 · ${num(total(chosen))} 条有效回答`:"品牌提及率";
   $("mention-chart").innerHTML=chosen?`<p class="sub">${brandMarket?"当前所选市场":"默认显示当前样本量最大的市场"} · 竞品集合 ${esc(D.competitors[chosen[0].d[0]].join("、"))}</p>${scaleLabel}<div class="bars">${D.competitors[chosen[0].d[0]].map(b=>bar(b,sum(chosen,r=>mentionCount(r,b)),total(chosen))).join("")}</div>`:empty("当前筛选没有未点名题样本。");
   const byBrand=(brand,i)=>sum(rs,r=>r.links[brand]?.[i]||0);
@@ -611,9 +622,10 @@ function render(){
 $("matrix-dimension").addEventListener("change",()=>render());
 let brandMarket="";
 $("brand-market").addEventListener("change",e=>{
-  brandMarket=e.target.value;
-  if(brandMarket){
-    const next={...filters(),m:[brandMarket]};
+  const value=e.target.value;
+  brandMarket=value==="__all"?"":value;
+  if(value){
+    const next={...filters(),m:value==="__all"?[]:[brandMarket]};
     setFilters("a",next);setFilters("review",next);filters("review");
   }
   render();
