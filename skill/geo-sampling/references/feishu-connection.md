@@ -36,6 +36,8 @@
 
 `missing_scopes` 可能是“必须这一项”，也可能是“多个权限满足其一”，须按当前接口的原始错误和官方说明选择最小只读项，不把全部候选都申请。当前 CLI 的 `sheet_ai ... invoke_read` 若明确要求 `sheets:spreadsheet:read`，按这一项核实；不能机械套用其他接口可接受的 `sheets:spreadsheet:readonly`，更不能据此要求写入权限。
 
+发布下载同样先区分接口与快捷命令：`drive +download`可能检查导出/协作者等辅助权限，报错不能直接证明文件下载能力缺失。先按当前安装版本帮助及官方schema，用同一获批身份实测原生`GET /open-apis/drive/v1/files/{file_token}/download`；已可下载就复用，不申请`docs:permission.member:auth`、不切账号或重新扫码。记录实际平台code/message和失败接口，HTTP 401/404本身不足以断言缺scope。只拿到Wiki节点成功仍不代表题库单元格已读通过。具体交付见[已有权限单次发布](feishu-preview.md#已有权限单次发布)。
+
 ## 缺权限的具体开通步骤
 
 1. 使用当前失败响应中的官方 `console_url`，或到飞书开放平台 → 当前应用 → 权限管理，找到本接口要求的最小表格读取项。不要使用其他 Agent 的私人应用链接，也不要在公开说明中写入真实应用 ID。
