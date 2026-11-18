@@ -84,9 +84,54 @@ class CoreFindingsTest(unittest.TestCase):
         from core_findings import validate_claims
         expected={'mention':[1000,3000],'first':[2000,4000],
                   'negative':[0,4000],'mixed':[1,4000]}
-        validate_claims('2026/11/12 至 2026/11/18；33.33%（1,000 / 3,000），50% (2000/4000)',expected)
+        validate_claims('2026/11/12 至 2026/11/18；提及率33.33%（1,000 / 3,000），首位率50% (2000/4000)',expected)
         with self.assertRaisesRegex(ArchiveError,'文案'):
-            validate_claims('33.34%（1,000/3,000）',expected)
+            validate_claims('提及率33.34%（1,000/3,000）',expected)
+
+
+    def test_named_numeric_claims_reject_wrong_metric_and_bare_percent(self):
+        from core_findings import validate_claims
+        expected={'mention':[80,100],'first':[20,100],'negative':[5,100],'mixed':[10,100]}
+        bad = ('提及率为99%', '提及率20%（20/100）', '提及率99%，分子分母为80/100',
+               '80%', '80/100', '提及率和首位率20%', '提及率80%。20%',
+               '提及率80%，首位率80/100', '提及率8e1%', '提及率-80%',
+               '提及率80%，预计增长20%', '提及率80/100/50',
+               '提及率80.000000000000000000000000000000%')
+        for text in bad:
+            with self.subTest(text=text), self.assertRaisesRegex(ArchiveError,'文案'):
+                validate_claims(text,expected)
+        good = ('提及率80%', '提及率80/100', '提及率80%（80/100）',
+                '提及率80/100（80%）', '提及率80%，分子分母为80/100',
+                '提及率８０％（８０／１００）',
+                '提及率80%，首位率20%（20/100）；负面率5%，褒贬并存率10%',
+                'mention: 80% (80/100); first: 20% (20/100)',
+                '2026/11/12 至 2026/11/18；提及率80%（80/100）')
+        for text in good:
+            with self.subTest(text=text):validate_claims(text,expected)
+
+    def test_zero_denominator_and_rounding(self):
+        from core_findings import validate_claims
+        expected={'mention':[0,0],'first':[1,6],'negative':[0,6],'mixed':[0,6]}
+        validate_claims('提及率不适用；首位率16.67%（1/6）；负面率0%',expected)
+        for text in ('提及率0%', '首位率16.66%', '首位率16.68%'):
+            with self.subTest(text=text), self.assertRaisesRegex(ArchiveError,'文案'):
+                validate_claims(text,expected)
+
+    def test_invalid_prose_in_either_field_preserves_html_and_stops_publish(self):
+        from feishu_publish import publish
+        good=synthetic_findings(self.data)
+        for field in ('conclusion','judgment'):
+            bad=deepcopy(good);bad['entries'][0][field]='提及率99.99999%'
+            self.file.write_text(json.dumps(bad));before=self.html.read_bytes()
+            with self.subTest(field=field),self.assertRaisesRegex(ArchiveError,'文案'):
+                apply(self.html,self.file)
+            self.assertEqual(before,self.html.read_bytes())
+            data=deepcopy(self.data);data['core_findings']=bad
+            remote=Mock()
+            with patch.object(__import__('feishu_publish'),'retained_data',return_value=('',data,'')):
+                with self.assertRaises(ArchiveError):
+                    publish(self.html,self.target,{},remote=remote)
+            self.assertEqual(remote.mock_calls,[])
 
     def test_default_country_combination_is_required_before_sharing(self):
         f=self.fixture

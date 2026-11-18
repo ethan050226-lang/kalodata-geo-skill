@@ -30,17 +30,65 @@ def metrics(rows):
     }
 
 
+# Labels bind each claim to one metric, never to an unordered pool of values.
+CLAIM_LABELS = {
+    'mention': ('提及率', 'mention'),
+    'first': ('首次出现第一比例', '首次出现第一率', '首位率', 'first'),
+    'negative': ('负面比例', '负面率', '负面', 'negative'),
+    'mixed': ('褒贬并存比例', '褒贬并存率', '褒贬并存', 'mixed'),
+}
+_CLAIM_NAMES = {name: key for key, names in CLAIM_LABELS.items() for name in names}
+_CLAIM_LABEL = re.compile('|'.join(re.escape(x) for x in sorted(_CLAIM_NAMES, key=len, reverse=True)))
+_CLAIM_NUMBER = re.compile(
+    r'(?P<ratio>[+-]?\d[\d,]*(?:\.\d+)?\s*/\s*[+-]?\d[\d,]*(?:\.\d+)?)'
+    r'|(?P<percent>[+-]?\d+(?:\.\d+)?\s*%)')
+_CLAIM_GAP = re.compile(r'[\s:：=,，()]*'
+                        r'(?:(?:为|是|约为|约|达到|占比|比例|分子分母为|分子分母)[\s:：=,，()]*)*')
+
+
 def validate_claims(text, expected):
-    pairs={tuple(pair) for pair in expected.values()}
-    for match in re.finditer(r'(?<![\d/／])(\d[\d,]*)\s*[/／]\s*(\d[\d,]*)(?![\d/／])',text):
-        numerator,denominator=(int(value.replace(',','')) for value in match.groups())
-        require((numerator,denominator) in pairs,
-                '核心发现 / 文案分子分母与本条范围指标不一致')
-        prefix=re.search(r'(\d+(?:\.\d+)?)%\s*[（(]\s*$',text[:match.start()])
-        if prefix:
-            value=prefix[1];precision=len(value.partition('.')[2])
-            require(denominator>0 and abs(float(value)-100*numerator/denominator)<=0.5*10**-precision+1e-9,
-                    '核心发现 / 文案百分比与分子分母不一致')
+    """Check numeric claims in a deliberately bounded, metric-labelled syntax."""
+    from decimal import Decimal, ROUND_HALF_UP
+    from unicodedata import normalize
+    text = normalize('NFKC', text)
+    # Dates are context, not metric ratios. Preserve offsets when masking.
+    text = re.sub(r'(?<!\d)\d{4}/\d{1,2}/\d{1,2}(?!\d)',
+                  lambda m: ' ' * len(m[0]), text)
+    for sentence in re.split(r'[。；;\n!?！？]', text):
+        labels = list(_CLAIM_LABEL.finditer(sentence))
+        previous_end = 0
+        previous_metric = None
+        for claim in _CLAIM_NUMBER.finditer(sentence):
+            candidates = [m for m in labels if previous_end <= m.start() < claim.start()]
+            require(len(candidates) <= 1, '核心发现 / 文案数值对应多个指标，请分别写明')
+            if candidates:
+                label = candidates[0]
+                metric = _CLAIM_NAMES[label[0]]
+                gap = sentence[label.end():claim.start()]
+            else:
+                metric = previous_metric
+                gap = sentence[previous_end:claim.start()]
+            require(metric is not None and _CLAIM_GAP.fullmatch(gap) is not None,
+                    '核心发现 / 文案数值须明确标注指标名称，不能省略或混用口径')
+            numerator, denominator = expected[metric]
+            if claim['ratio']:
+                values = [Decimal(v.strip().replace(',', '')) for v in claim['ratio'].split('/')]
+                require(values == [Decimal(numerator), Decimal(denominator)],
+                        '核心发现 / 文案分子分母与所标指标不一致')
+            else:
+                raw = claim['percent'].replace('%', '').strip()
+                precision = len(raw.partition('.')[2])
+                require(precision <= 12, '核心发现 / 文案百分比最多保留12位小数')
+                require(denominator > 0, '核心发现 / 文案零分母不能写百分比')
+                actual = Decimal(100) * Decimal(numerator) / Decimal(denominator)
+                rounded = actual.quantize(Decimal(1).scaleb(-precision), rounding=ROUND_HALF_UP)
+                require(Decimal(raw) == rounded, '核心发现 / 文案百分比与所标指标不一致')
+            previous_end, previous_metric = claim.end(), metric
+        # Do not silently ignore unsupported percentage forms, e.g. scientific notation.
+        residue = _CLAIM_NUMBER.sub('', sentence)
+        require(not re.search(r'(?:\d\s*/|/\s*[+-]?\d)', residue),
+                '核心发现 / 文案分数格式无法校验，请使用分子/分母')
+        require('%' not in residue, '核心发现 / 文案百分比格式无法校验，请使用十进制百分比')
 
 
 def required_scopes(data):
