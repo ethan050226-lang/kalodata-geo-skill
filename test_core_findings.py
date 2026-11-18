@@ -69,6 +69,44 @@ class CoreFindingsTest(unittest.TestCase):
             with self.subTest(phrase=phrase),self.assertRaisesRegex(ArchiveError,'泛化提醒'):
                 validate(self.data,bad)
 
+    def test_prose_numbers_cannot_disagree_with_validated_metrics(self):
+        good=synthetic_findings(self.data)
+        pair=good['entries'][0]['metrics']['mention']
+        for text in ('提及率47.09%（999/1000）',
+                     f'提及率{100*pair[0]/pair[1]+10:.2f}%（{pair[0]}/{pair[1]}）'):
+            bad=deepcopy(good);bad['entries'][0]['conclusion']=text
+            self.file.write_text(json.dumps(bad));before=self.html.read_bytes()
+            with self.subTest(text=text),self.assertRaisesRegex(ArchiveError,'文案'):
+                apply(self.html,self.file)
+            self.assertEqual(self.html.read_bytes(),before)
+
+    def test_formatted_claims_allow_rounding_and_do_not_parse_dates(self):
+        from core_findings import validate_claims
+        expected={'mention':[1000,3000],'first':[2000,4000],
+                  'negative':[0,4000],'mixed':[1,4000]}
+        validate_claims('2026/11/12 至 2026/11/18；33.33%（1,000 / 3,000），50% (2000/4000)',expected)
+        with self.assertRaisesRegex(ArchiveError,'文案'):
+            validate_claims('33.34%（1,000/3,000）',expected)
+
+    def test_default_country_combination_is_required_before_sharing(self):
+        f=self.fixture
+        book=country_fixture.load_workbook(f.f.bank)
+        sheet=book.create_sheet('日本');sheet.append(['分类名称','编号','问题内容'])
+        sheet.append(['01 品类发现','TEST-01-JP','Japanese seller question?'])
+        book['国家模型配置'].append(['日本','chatgpt']);book.save(f.f.bank);book.close()
+        extra=deepcopy(f.records[5]);extra.update(task_id='JP-chatgpt',query_str='Japanese seller question?',language='ja')
+        f.records.append(extra);f.refresh()
+        target=f.root/'three-countries.sqlite'
+        restrict_snapshot(f.f.output,target,['CN','TH','JP'],model_policy=load_model_policy(f.f.bank))
+        data=dashboard.dashboard_data(target,f.f.bank,None)
+        data['presentation']={'default_markets':['CN','TH']}
+        draft=context(data);default=next(s for s in draft['required_scopes'] if s['name']=='default')
+        self.assertEqual({data['rows'][i]['d'][0] for i in default['row_indices']},{'CN','TH'})
+        good=synthetic_findings(data);validate(data,good)
+        good['entries']=[e for e in good['entries'] if e['row_indices']!=default['row_indices']]
+        with self.assertRaisesRegex(ArchiveError,'默认组合'):
+            validate(data,good)
+
     def test_data_change_invalidates_analysis_but_fetch_time_alone_does_not(self):
         good=synthetic_findings(self.data);changed=deepcopy(self.data)
         changed['batch']['fetched_at_utc']='2026-11-17T00:00:00Z'
