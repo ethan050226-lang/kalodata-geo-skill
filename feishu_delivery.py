@@ -12,7 +12,7 @@ from dashboard import retained_data, render
 REFERENCE = {'q','text','category','task','d','status','label','reason','table'}
 TOP = {'batch','platform','rows','issues','core_mention','analysis_version','prompt_basis',
        'question_named','question_scope','markets','competitors','tags','groups','neutral',
-       'links','review','recommendations','comparison','bank_source','market_scope','quality','model_policy','core_findings'}
+       'links','review','recommendations','comparison','bank_source','market_scope','quality','model_policy','core_findings','presentation'}
 FORBIDDEN = {'body','answer','answer_text','raw_answer','raw_response','access_token','app_secret',
              'api_key','apikey','authorization','password','originals'}
 
@@ -34,6 +34,10 @@ def shared_data(data):
     validate_data_scope(data)
     require(set(data) <= TOP, '共享校验 / 出现未审核的新数据字段，请先核查共享范围')
     reject_secrets(data)
+    from dashboard import ANALYSIS_VERSION, data_warnings
+    require(data.get('analysis_version')==ANALYSIS_VERSION and
+            not any(w in data_warnings(data) for w in ('原文质量待检查','回答来源校验信息缺失')),
+            '共享校验 / 历史口径或原文质量与来源未校验，请先完成同批校验；保留本地历史复盘')
     if data.get('core_findings'):
         from core_findings import validate
         validate(data)

@@ -106,6 +106,12 @@ def export_workbook(snapshot, data):
         ("平台回查","在 Answerbit「大模型回答记录」按题号对应题文、日期及平台核对。"),
     ):
         append(summary,item)
+    from dashboard import data_warnings
+    warnings = data_warnings(data)
+    if warnings:
+        append(summary,("批次校验状态","；".join(warnings)))
+    if data.get('presentation'):
+        append(summary,("默认展示国家","、".join(data['presentation']['default_markets']) or "全部国家"))
     source = data.get("bank_source")
     if source:
         append(summary, ('题库来源', '本地导出，未核实在线最新版' if source['source']=='local-export' else '飞书在线题库'))

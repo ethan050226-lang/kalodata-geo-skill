@@ -17,3 +17,15 @@ class HistoryMetricsTest(unittest.TestCase):
         current['rows']=[]
         zero={r['id']:r for r in previous_comparison(current,old)['metrics']}
         self.assertIsNone(zero['skill.first_rate']['value']);self.assertIsNone(zero['skill.adverse_rate']['value'])
+
+    def test_historical_formula_is_explicit_and_unknown_formula_stays_unknown(self):
+        from dashboard import report_metrics, data_warnings
+        data={'analysis_version':'geo-core/2-unnamed-negative',
+              'rows':[{'n':4,'d':['US','test','2026-11-01','g',0,[]],
+                       'mentions':{'Kalodata':3},'negative_mentions':1,'first':1,'sent':{},'links':{}}]}
+        core=next(m for m in report_metrics(data) if m['id']=='skill.core_mention_rate')
+        self.assertEqual((core['value'],core['numerator'],core['denominator']),(50,2,4))
+        self.assertIn('原文质量待检查',data_warnings(data))
+        data['analysis_version']='unknown'
+        core=next(m for m in report_metrics(data) if m['id']=='skill.core_mention_rate')
+        self.assertIsNone(core['value'])

@@ -74,6 +74,16 @@ class PublicationTest(unittest.TestCase):
                 'checks':dict.fromkeys(CHECKS,True),'account':'approved-admin',
                 'access_scope':'admins_only','checked_at':'2026-11-01T00:00:00Z'}
 
+    def test_quality_gap_stops_before_remote_access_and_preserves_success(self):
+        self.data['quality']=None
+        dashboard.render(self.data,self.source)
+        config={'state_dir':str(self.root/'uncreated-state')}
+        with patch('feishu_publish.Drive') as remote, self.assertRaisesRegex(ArchiveError,'未校验'):
+            publish(self.source,self.f.output,config)
+        remote.assert_not_called()
+        self.assertFalse(Path(config['state_dir']).exists())
+        self.assertEqual(self.remote.writes,0)
+
     def test_identical_version_reuses_only_after_full_remote_readback(self):
         candidate = self.candidate(); self.assertFalse(self.state.exists())
         accepted = accept(self.remote,candidate,self.proof(candidate),self.state)

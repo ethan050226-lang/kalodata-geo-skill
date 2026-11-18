@@ -239,6 +239,13 @@ def restrict_snapshot(source, target, markets, *, model_policy=None):
 
 def validate_data_scope(data):
     """Fail closed on country leakage at the render/publication boundary."""
+    presentation = data.get('presentation')
+    if presentation is not None:
+        require(isinstance(presentation,dict) and set(presentation)=={'default_markets'},
+                '默认国家 / 展示配置字段异常')
+        defaults = presentation['default_markets']
+        require(isinstance(defaults,list) and defaults==default_selection(defaults,list(data['markets'])),
+                '默认国家 / 展示配置与已有国家不一致')
     scope = data.get('market_scope')
     if not scope:
         return  # Legacy local, unscoped snapshots remain readable.

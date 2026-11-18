@@ -132,6 +132,23 @@ class CountryDeliveryTest(unittest.TestCase):
         with self.assertRaisesRegex(ArchiveError,'不能同时选择'):
             default_selection(['无偏好','GB'],['GB','US'])
 
+    def test_presentation_defaults_survive_rendering_and_reject_out_of_scope(self):
+        data=self.scope(('GB','US'))
+        data['presentation']={'default_markets':['GB','US']}
+        dashboard.render(data,self.html)
+        restored=dashboard.retained_data(self.html)[1]
+        dashboard.render(restored,self.html)
+        self.assertEqual(dashboard.retained_data(self.html)[1]['presentation'],data['presentation'])
+        self.assertEqual(shared_data(restored)['presentation'],data['presentation'])
+        with patch.object(answerbit,'operator_credentials') as credentials, contextlib.redirect_stdout(io.StringIO()):
+            result=dashboard.main(['snapshot',str(self.f.bank),str(self.scoped),str(self.html),
+                                   '--default-market','GB','--default-market','US'])
+        self.assertEqual(result,0)
+        credentials.assert_not_called()
+        self.assertEqual(dashboard.retained_data(self.html)[1]['presentation'],data['presentation'])
+        restored['presentation']['default_markets']=['JP']
+        with self.assertRaisesRegex(ArchiveError,'默认国家'):dashboard.render(restored,self.html)
+
     def test_invalid_empty_and_cross_country_candidate_block_delivery(self):
         for markets in ([],['XX']):
             with self.assertRaises(ArchiveError): normalize_markets(markets)

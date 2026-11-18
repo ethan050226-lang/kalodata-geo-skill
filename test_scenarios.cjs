@@ -77,7 +77,7 @@ console.log('Shared and distinct history display checks passed');
 
 // Findings follow exact selected sample sets; changing country or any slice cannot reuse another claim.
 const cn={...sample,d:['CN','chatgpt','2026-11-09','g',0,[]]},us={...sample,d:['US','perplexity','2026-11-09','g',0,[]]};
-const findingContext={D:{rows:[cn,us],model_policy:{},core_findings:{entries:[
+const findingContext={metricSupported:true,sampleLabel:"有效回答",D:{rows:[cn,us],model_policy:{},core_findings:{entries:[
   {row_indices:[0],conclusion:'中国本批事实',judgment:'核对具体题目'},
   {row_indices:[1],conclusion:'美国本批事实',judgment:''},
   {row_indices:[0,1],conclusion:'总体事实',judgment:''}
@@ -93,7 +93,7 @@ assert(context.dataReminder({},{sentimentUnknown:0,missing:0,n:2,qualityExcluded
 assert(!findingContext.coreFinding([cn]).includes('总体事实'));
 assert.equal(findingContext.coreFinding([]),'');
 delete findingContext.D.model_policy;
-assert.equal(findingContext.coreFinding([cn]),'');
+assert(findingContext.coreFinding([cn]).includes('提及率'));
 assert(context.dataReminder({},{sentimentUnknown:0,missing:0,n:2,modelUnverified:true}).includes('本批未校验国家模型范围'));
 console.log('Country and exact-filter Agent finding isolation checks passed');
 
@@ -106,3 +106,10 @@ assert.equal((html.match(/id="data-reminder"/g)||[]).length,1);
 assert(!html.includes('样本构成可能不同'));
 assert(!html.includes('不代表整体表现'));
 console.log('Business copy, concrete states and single-reminder checks passed');
+
+const compactContext={};vm.createContext(compactContext);
+vm.runInContext(html.slice(html.indexOf('function compactReminder('),html.indexOf('function render(){')),compactContext);
+const compact=compactContext.compactReminder(precise);
+assert(compact.length<precise.length);
+assert(!compact.includes('待核查：'));
+console.log('Compact reminder preserves expandable detail strategy');

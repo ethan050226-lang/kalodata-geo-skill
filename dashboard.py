@@ -27,6 +27,24 @@ SOURCE = "https://answerbit.qq.com/zh-CN/dashboard/home"
 QNA = os.environ.get("GEO_QUESTION_BANK_URL", "")
 DATA_MARKER = '<script id="geo-data" type="application/json">'
 ANALYSIS_VERSION = "geo-core/4-answer-quality"
+SUPPORTED_ANALYSES = (ANALYSIS_VERSION, "geo-core/3-answer-quality", "geo-core/2-unnamed-negative")
+
+
+def data_warnings(data):
+    from answer_quality import VERSION as QUALITY_VERSION
+    warnings = []
+    if data.get('analysis_version') not in SUPPORTED_ANALYSES:
+        warnings.append('指标口径未知')
+    quality = data.get('quality') or {}
+    checked = quality.get('checked')
+    if quality.get('version') != QUALITY_VERSION or type(checked) is not int or checked < sum(r['n'] for r in data['rows']):
+        warnings.append('原文质量待检查')
+    if not data.get('model_policy'):
+        warnings.append('国家模型范围待核对')
+    if not (data.get('question_scope') or {}).get('answer_source_sha256'):
+        warnings.append('回答来源校验信息缺失')
+    return warnings
+
 
 
 class PacedRead:
@@ -359,6 +377,12 @@ def render(data, output):
         validate(data)
     page = ASSET.read_text()
     api.require(page.count("__GEO_PAYLOAD__") == 1, "渲染 / 看板模板缺少唯一数据占位符")
+    warnings = data_warnings(data)
+    policy = {'supported':SUPPORTED_ANALYSES,
+              'historical':data.get('analysis_version')!=ANALYSIS_VERSION or '原文质量待检查' in warnings,
+              'warnings':warnings}
+    api.require(page.count("__GEO_POLICY__") == 1, "渲染 / 看板模板缺少指标口径配置")
+    page = page.replace("__GEO_POLICY__", encode(policy))
     api.write_atomic(output, page.replace("__GEO_PAYLOAD__", encode(data)).encode())
 
 
@@ -377,7 +401,7 @@ def report_metrics(data):
     valid = sum(r["n"] for r in rows)
     unnamed = [r for r in rows if r["d"][4] == 0]
     den = sum(r["n"] for r in unnamed)
-    known = data.get("analysis_version") == ANALYSIS_VERSION
+    known = data.get("analysis_version") in SUPPORTED_ANALYSES
     num = sum(r["mentions"].get("Kalodata",0)-r.get("negative_mentions",0) for r in unnamed)
     negative = sum(r.get("negative_mentions",0) for r in unnamed)
     metrics = [{"id":"valid","name":"有效回答（全部题型）","source":"Skill","kind":"count",
@@ -479,7 +503,7 @@ def main(argv=None, *, status_callback=None):
     try:
         from market_scope import default_selection, normalize_markets, restrict_snapshot, load_model_policy, require_model_policy, sampling_plan, APPROVED_MODEL_POLICY
         markets = normalize_markets(args.market) if args.market else None
-        defaults = default_selection(args.default_market, markets)
+        defaults = default_selection(args.default_market, markets or list(api.MARKETS.values()))
         api.require(args.output.suffix.lower() == ".html" and args.snapshot.suffix == ".sqlite"
                     and len({p.resolve() for p in (args.output,args.bank,args.snapshot)}) == 3,
                     "配置 / 题库、SQLite 与 HTML 路径必须独立")
@@ -578,7 +602,8 @@ def main(argv=None, *, status_callback=None):
         if args.default_market is None and args.mode != 'refresh' and previous and previous.get('batch') == data['batch']:
             prior_scope = previous.get('market_scope') or {}
             if prior_scope.get('markets') == (data.get('market_scope') or {}).get('markets'):
-                defaults = prior_scope.get('default_markets', [])
+                defaults = (previous.get('presentation') or {}).get('default_markets',prior_scope.get('default_markets', []))
+        data['presentation'] = {'default_markets':defaults}
         if data.get('market_scope'):
             data['market_scope']['default_markets'] = defaults
         if bank_url:

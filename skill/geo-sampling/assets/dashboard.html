@@ -189,6 +189,9 @@ main.wrap{max-width:1700px;margin:0 0 0 224px;padding:0 30px 25px}.hero,.hero::a
 <script>
 "use strict";
 const D=JSON.parse(document.querySelector("#geo-data").textContent), $=id=>document.getElementById(id);
+const metricPolicy=__GEO_POLICY__;
+const metricSupported=metricPolicy.supported.includes(D.analysis_version);
+const sampleLabel=metricPolicy.historical?"历史回答":"有效回答";
 const N=new Intl.NumberFormat("zh-CN"), pct=(n,d)=>d?(100*n/d).toFixed(2)+"%":"不适用", num=n=>N.format(n);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
 const ratio=(n,d)=>d?`${pct(n,d)}（${num(n)}/${num(d)}）`:"不适用";
@@ -216,7 +219,7 @@ const tagPairs=Object.entries(D.tags), ns=([,a],[,b])=>a.localeCompare(b,"zh-CN"
 const observedEngines=new Set([...D.rows,...(D.quality?.records||[])].map(r=>r.d[1]));
 const enginePairs=[...new Set([...observedEngines,...Object.values(D.model_policy?.models||{}).flat()])].sort().map(x=>
   [x,(x==="google_ai_overviews"?"Google AIO":x)+(observedEngines.has(x)?"":"（暂无数据）")]);
-const defaultMarkets=D.market_scope?.default_markets||[];
+const defaultMarkets=D.presentation?.default_markets??D.market_scope?.default_markets??[];
 const dimensions=[
   ["m","市场",Object.entries(D.markets)],
   ["e","平台",enginePairs],
@@ -495,9 +498,16 @@ function dataReminder(issues,{sentimentUnknown,missing,n,qualityExcluded=null,mo
   notes.push("暂无法计算：采样覆盖率缺少计划量");
   return "数据提醒："+notes.join("；")+"。";
 }
+function compactReminder(text){
+  const notes=text.replace(/^数据提醒：/,"").replace(/。$/,"").split("；");
+  const important=notes.filter(note=>/原文质量|国家模型|题目未匹配/.test(note));
+  const ordered=[...important,...notes.filter(note=>!important.includes(note))];
+  return "数据提醒："+ordered.slice(0,3).map(note=>note.replace(/^(待核查|待检查)：/,"")).join(" · ")+
+    (ordered.length>3?` · 另 ${ordered.length-3} 项`:"");
+}
 function render(){
   const f=filters(), rs=D.rows.filter(r=>matches(r.d,f)), n=total(rs), selected=breakdown(rs);
-  $("scope").textContent=describe(f)+` · ${num(n)} 条有效回答`+(f.from>f.to?" · 起始日应早于或等于结束日":n?"":" · 暂无数据");
+  $("scope").textContent=describe(f)+` · ${num(n)} 条${sampleLabel}`+(f.from>f.to?" · 起始日应早于或等于结束日":n?"":" · 暂无数据");
   if(activePage==="compare")renderComparison(f,rs);
   if(activePage==="overview")renderPrevious(f);
   renderScenarios(rs);
@@ -508,7 +518,7 @@ function render(){
   const rankSamples=sum(rs,r=>r.rank[1]),rankSum=sum(rs,r=>r.rank[0]);
   const negative=sum(rs,r=>r.sent.negative||0), mixed=sum(rs,r=>r.sent.mixed||0);
   const notMentioned=sum(rs,r=>r.sent.not_mentioned||0),sentUnknown=sum(rs,r=>r.sent.unknown||0);
-  $("kpis").innerHTML=kpi("提及率",pct(nh,unr),`${num(nh)}/${num(unr)} · 扣除明确负面 ${num(excludedUnnamed)}`,"metric-core")+
+  $("kpis").innerHTML=kpi("提及率",metricSupported?pct(nh,unr):"不适用",`${sampleLabel==="历史回答"?"历史统计 · ":""}${metricSupported?num(nh):"未知"}/${num(unr)} · 扣除明确负面 ${metricSupported?num(excludedUnnamed):"未知"}`,"metric-core")+
     kpi("首次出现第一比例",pct(first,n),`${num(first)}/${num(n)} · 正文出现顺序`,"metric-first")+
     kpi("负面与褒贬并存",pct(negative+mixed,n),`负面 ${ratio(negative,n)} · 褒贬并存 ${ratio(mixed,n)}`,"metric-sentiment");
   const histories=["skill.core_mention_rate","skill.first_rate","skill.adverse_rate"].map(id=>cardHistory(id,f));
@@ -592,10 +602,10 @@ function render(){
   const issueNames={unmatched_question:"题库无匹配",ambiguous_question:"题号待确认",market_tag_conflict:"市场标签冲突",
     citation_unknown:"引用字段缺失",answer_unconfirmed:"回答待确认",tag_metadata_incomplete:"标签信息不完整",
     quality_invalid:"数据异常：无效原文",quality_shrunken:"数据异常：疑似缩水"};
-  $("home-status").textContent=dataReminder(D.issues,{sentimentUnknown,missing,n,
+  $("home-status").textContent=compactReminder(dataReminder(D.issues,{sentimentUnknown,missing,n,
     qualityExcluded:D.quality?qualityRows.filter(r=>r.status!=="accepted").length:null,
     modelUnverified:!D.model_policy,analysisMissing:n>0&&!!D.model_policy&&!findingEntry(rs)})+
-    (D.model_policy?.excluded_records.length?` 已排除：本批 ${num(D.model_policy.excluded_records.length)} 条国家模型范围外记录。`:"");
+    (D.model_policy?.excluded_records.length?` 已排除：本批 ${num(D.model_policy.excluded_records.length)} 条国家模型范围外记录。`:""));
   $("status-details").innerHTML=
     table(["全批异常原因","记录数","影响范围","核查入口"],D.issues?Object.entries(D.issues).map(([code,count])=>[
       esc(issueNames[code]||code),num(count),D.market_scope?"交付国家批次；不随页内筛选缩小":"全部取数批次；不随当前筛选缩小",["unmatched_question","ambiguous_question","market_tag_conflict"].includes(code)?"飞书题库与 Answerbit 用户提问":"Answerbit 大模型回答记录"
@@ -603,6 +613,10 @@ function render(){
     table(["当前筛选问题","记录数","影响与核查入口"],[["口碑未知",num(sentimentUnknown),"影响平台口碑判定覆盖；回 Answerbit 核对口碑字段"],["正式来源字段缺失",num(missing),"不进入正式来源可判定分母；回 Answerbit 回答记录核对引用"],["推荐判断未知",num(unknown),"不能作为明确推荐；在问题与行动 → 推荐记录查看题文和原文"]])+
     `<p class="definition">异常可重叠，数量不相加当作独立回答总数。点名判定来源 ${esc(D.prompt_basis||"旧批来源待核对")}。同批 Excel「数据异常」保留题号、原因及回查字段；题库外记录仅列全批数量，不进入有编号明细。${D.issues&&Object.keys(D.issues).length===0?"本批未记录取数或匹配异常。":""}</p>`;
 
+  $("status-details").innerHTML+=table(["批次校验","状态"],[
+    ...metricPolicy.warnings.map(warning=>[esc(warning),"待核查"]),
+    ["采样覆盖率","缺少独立计划量，暂无法计算"]
+  ]);
   if(D.model_policy){
     const missingModels=Object.entries(D.model_policy.models).flatMap(([m,models])=>models
       .filter(e=>(!f.m.length||f.m.includes(m))&&(!f.e.length||f.e.includes(e))&&!rs.some(r=>r.d[0]===m&&r.d[1]===e))
@@ -741,22 +755,17 @@ function findingEntry(rows){
   return D.core_findings?.entries.find(e=>JSON.stringify(e.row_indices)===JSON.stringify(ids));
 }
 function coreFinding(rows){
-  if(!D.model_policy||!rows.length)return "";
+  if(!rows.length)return "";
+  if(!metricSupported)return "当前范围指标口径待校验，请按题号回查记录。";
   const entry=findingEntry(rows);
   const scope=[...new Set(rows.map(r=>marketName(r.d[0])))].join("、");
   if(entry)return `${entry.conclusion}${entry.judgment?` 下一步：${entry.judgment}`:""}`;
   const unnamed=rows.filter(r=>!r.d[4]),n=total(rows);
-  return `${scope} · 提及率 ${ratio(sum(unnamed,r=>mentionCount(r)),total(unnamed))}；首次出现第一比例 ${ratio(sum(rows,r=>r.first),n)}。`;
+  return `${sampleLabel==="历史回答"?"历史统计 · ":""}${scope} · 提及率 ${ratio(sum(unnamed,r=>mentionCount(r)),total(unnamed))}；首次出现第一比例 ${ratio(sum(rows,r=>r.first),n)}。`;
 }
 function renderActions(rows){
   $("headline").textContent=coreFinding(rows);
   $("headline").closest("article").hidden=!$("headline").textContent;
-  if(!D.model_policy){
-    $("action-count").textContent="待核对国家模型范围";
-    $("home-actions").innerHTML=empty("暂无已验证行动。");
-    $("next").innerHTML=empty("待核查：本批未校验国家模型范围。");
-    return;
-  }
   const cuts=new Map();
   for(const r of rows){
     const key=JSON.stringify([r.d[0],r.d[1],r.d[3],r.d[4]]);
@@ -800,7 +809,7 @@ function renderActions(rows){
   }).sort((a,b)=>
       ((b.low?b.den-b.hits:b.hits)-(a.low?a.den-a.hits:a.hits))||b.den-a.den);
   const chosen=allActions.filter((item,i)=>allActions.findIndex(other=>other.key===item.key)===i);
-  $("action-count").textContent=`${allActions.length} 项行动`;
+  $("action-count").textContent=`${allActions.length} ${metricPolicy.warnings.length?"条核查线索":"项行动"}`;
   $("home-actions").innerHTML=chosen.slice(0,3).map((item,i)=>{
     const [market,platform,day,group]=item.lead.d, example=item.lead.evidence[item.key];
     return `<article class="card"><h3><span class="priority">P${i+1}</span>待核查 · ${esc(item.title)}</h3>

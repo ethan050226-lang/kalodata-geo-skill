@@ -77,7 +77,7 @@ def manifest(snapshot, data):
 
 
 def report(data):
-    from dashboard import report_metrics
+    from dashboard import report_metrics, data_warnings, ANALYSIS_VERSION
     from market_scope import sampling_plan
     metrics = report_metrics(data)
     primary = [m for m in metrics if m['id'] in ('skill.core_mention_rate','skill.first_rate','skill.adverse_rate')]
@@ -105,7 +105,8 @@ def report(data):
     for i,action in enumerate(actions,1): action['priority']=f'P{i}'
     core = next(m for m in primary if m['id'] == 'skill.core_mention_rate')
     value = f"{core['value']:.2f}%（{core['numerator']}/{core['denominator']}）" if core['value'] is not None else '不适用（没有可用分母或缺少口径证据）'
-    conclusion = f"本批 {sum(r['n'] for r in data['rows'])} 条有效回答，提及率为{value}。"
+    sample_label = "历史回答" if data.get('analysis_version')!=ANALYSIS_VERSION or '原文质量待检查' in data_warnings(data) else "有效回答"
+    conclusion = f"本批 {sum(r['n'] for r in data['rows'])} 条{sample_label}，提及率为{value}。"
     if data.get('core_findings'):
         from core_findings import validate
         findings=validate(data)
@@ -118,7 +119,7 @@ def report(data):
             'sampling_requirements':sampling_plan(data['model_policy'],data['market_scope']['markets']) if data.get('model_policy') else None,
             'comparison': {k:comparison.get(k) for k in ('previous_batch','current_batch','limitations')},
             'conclusion': conclusion,
-            'limitations': {'issues': data.get('issues'), 'sampling_coverage': '缺少独立计划量，无法计算',
+            'limitations': {'validation':data_warnings(data), 'issues': data.get('issues'), 'sampling_coverage': '缺少独立计划量，无法计算',
                             'answer_quality': {'checked':data['quality']['checked'],
                                                'comparable':data['quality']['comparable'],
                                                'excluded':len(data['quality']['records']),

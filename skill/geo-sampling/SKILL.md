@@ -33,6 +33,8 @@ python3 geo_run.py <题库缓存.xlsx> <同批库.sqlite> <看板.html> --market
 3. **裁剪国家。** 按[国家与模型配置](references/country-models.md)从私有母批生成独立副本，从同一副本重算看板、简报、Excel 和比较。核查内嵌数据、模型和筛选选项均在授权范围内；只预选国家不能隔离数据。无样本的平台保留对应状态，零分母显示「不适用」。Answerbit 分组、标签和飞书分类分开，按[运营场景](references/analysis-scenarios.md)解释。
 4. **写核心发现。** 结果中有 `local.analysis_context` 就复用它。按[核心发现分析](references/core-findings.md)分别分析总体及各国，执行 `core_findings.py apply`，使用返回的同批简报。筛选后的样本集合不同，只复用完全对应的分析。按[看板展示规范](references/dashboard-design.md)把方法放「指标说明」、异常放「数据提醒」，保留数字、分母、时间和具体行动。
 
+历史批次按[看板展示规范](references/dashboard-design.md#历史批次兼容与交付校验)兼容，已有证据保留为待核查线索。口径、原文质量及来源校验未完成时先交付标明状态的本地复盘。
+
 ## 飞书交付
 
 | 运行结果 | Agent 的下一步 |
