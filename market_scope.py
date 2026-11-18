@@ -142,6 +142,12 @@ def normalize_markets(values):
     return result
 
 
+def default_selection(values, markets):
+    defaults = normalize_markets(values) if values else []
+    require(set(defaults) <= set(markets or ()), '默认国家 / 运营国家超出本次获准交付范围，请核对已有授权')
+    return defaults
+
+
 def scope_config(config, markets):
     """Keep accepted publication state separate for each country's subscription."""
     key = 'markets-'+'-'.join(normalize_markets(markets))
@@ -161,6 +167,9 @@ def restrict_snapshot(source, target, markets, *, model_policy=None):
     review = saved_review(source)
     with closing(sqlite3.connect(source.resolve().as_uri()+'?mode=ro', uri=True)) as origin, \
             closing(sqlite3.connect(target)) as db:
+        if origin.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='delivery_scope'").fetchone():
+            saved = json.loads(origin.execute('SELECT markets FROM delivery_scope').fetchone()[0])
+            require(set(markets) <= set(saved), '国家范围 / 已裁剪快照无法扩大交付范围')
         origin.backup(db)
         db.execute('PRAGMA secure_delete=ON')
         placeholders = ','.join('?' for _ in markets)
@@ -231,6 +240,9 @@ def validate_data_scope(data):
     if not scope:
         return  # Legacy local, unscoped snapshots remain readable.
     markets = set(normalize_markets(scope['markets']))
+    defaults = scope.get('default_markets', [])
+    require(isinstance(defaults, list) and defaults == default_selection(defaults, markets)
+            and set(defaults) <= set(data['markets']), '默认国家 / 筛选选项与交付范围不一致')
     policy=data.get('model_policy')
     if policy:
         require(set(policy['models'])==markets and set(policy['evidence'])==markets

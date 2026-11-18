@@ -238,7 +238,7 @@ function makeFilters(side){
     const pick=document.createElement("details");
     pick.className="picker";
     pick.dataset.key=key;
-    pick.innerHTML=`<div class="f-label">${label}</div><summary><span>全部</span></summary><div class="pick-menu"><button type="button">清空选择</button><div class="pick-list"></div></div>`;
+    pick.innerHTML=`<div class="f-label">${label}</div><summary><span>全部</span></summary><div class="pick-menu"><button type="button">${key==="m"?"全部国家":"清空选择"}</button><div class="pick-list"></div></div>`;
     const title=pick.querySelector(".f-label");
     form.append(pick);
     // Native details requires its summary to be first for keyboard activation.
@@ -249,6 +249,7 @@ function makeFilters(side){
     for(const [value,name] of opts){
       const l=document.createElement("label"), i=document.createElement("input");
       i.type="checkbox";i.value=value;
+      i.defaultChecked=key==="m" && (D.market_scope?.default_markets||[]).includes(value);
       l.append(i,document.createTextNode(name+(opts.filter(([,v])=>v===name).length>1?" · "+value:"")));pick.querySelector(".pick-list").append(l);
     }
     if(!opts.length)pick.querySelector(".pick-list").textContent="本批暂无选项";
@@ -303,7 +304,7 @@ function filters(side="a"){
   for(const pick of form.querySelectorAll(".picker")){
     const checked=[...pick.querySelectorAll("input:checked")];
     result[pick.dataset.key]=checked.map(i=>i.value);
-    const text=checked.length===0?"全部":checked.length===1?checked[0].parentElement.textContent:`已选 ${checked.length} 项`;
+    const text=checked.length===0?(pick.dataset.key==="m"?"全部国家":"全部"):checked.length===1?checked[0].parentElement.textContent:`已选 ${checked.length} 项`;
     pick.querySelector("summary span").textContent=text;
     pick.classList.toggle("has-selection",checked.length>0);
   }
@@ -437,7 +438,7 @@ function renderMatrix(rows,f){
   ]));
   $("home-matrix").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
     const next={...f,m:[b.dataset.market]};if(kind==="tag"){next.tags=[b.dataset.topic];next.tagMode="all";}else next.g=[b.dataset.topic];
-    setFilters("a",next);render();
+    setFilters("a",next);setFilters("review",next);filters("review");render();
   }));
 }
 function renderSentimentSummary(rows){
@@ -483,7 +484,7 @@ function dataReminder(issues,{sentimentUnknown,missing,n,qualityExcluded=null,mo
 }
 function render(){
   const f=filters(), rs=D.rows.filter(r=>matches(r.d,f)), n=total(rs), selected=breakdown(rs);
-  $("scope").textContent=describe(f)+` · ${num(n)} 条有效回答`+(f.from>f.to?" · 起始日应早于或等于结束日":"");
+  $("scope").textContent=describe(f)+` · ${num(n)} 条有效回答`+(f.from>f.to?" · 起始日应早于或等于结束日":n?"":" · 暂无数据");
   if(activePage==="compare")renderComparison(f,rs);
   if(activePage==="overview")renderPrevious(f);
   renderScenarios(rs);

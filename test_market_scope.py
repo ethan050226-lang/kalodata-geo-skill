@@ -77,6 +77,40 @@ class CountryDeliveryTest(unittest.TestCase):
             self.assertEqual(db.execute('SELECT body FROM sample_answer').fetchone()[0],'Kalodata. GB_ORIGINAL')
         self.assertEqual(cells.count('英国'),2)  # Record and its quality-check row.
 
+    def test_operator_country_changes_only_dashboard_view(self):
+        with patch.object(answerbit,'operator_credentials',return_value=('TEST_ONLY','synthetic')), \
+             patch.object(answerbit,'question_bank_url',return_value='https://example.feishu.cn/wiki/test'), \
+             patch('feishu_bank.fetch_bank',return_value={'source':'feishu-live','revision':1}), \
+             patch.object(dashboard,'PacedRead',return_value=self.call):
+            result, code = geo_run.run(self.f.bank,self.scoped,self.html,
+                ['--begin',self.f.day,'--end',self.f.day,'--excel',str(self.excel),'--default-market','德国'],
+                markets=['GB','US','DE'],local_only=True)
+        self.assertEqual(code,0,result)
+        data=dashboard.retained_data(self.html)[1]
+        self.assertEqual(data['market_scope']['default_markets'],['DE'])
+        self.assertEqual(set(data['markets']),{'GB','US','DE'})
+        self.assertEqual({r['d'][0] for r in data['rows']},{'GB','US'})
+        self.assertEqual(shared_data(data)['market_scope'],data['market_scope'])
+        self.assertEqual((data['core_mention']['numerator'],data['core_mention']['denominator']),(1,2))
+        book=load_workbook(self.excel,read_only=True)
+        records=list(book['回答记录'].values)[1:]
+        self.assertEqual(len(records),2)
+        self.assertEqual({name for name in ('英国','美国','德国') if any(name in row for row in records)}, {'英国','美国'})
+        book.close()
+        other=deepcopy(data);other['market_scope']['default_markets']=['US']
+        self.assertEqual(report(other),report(data))
+        first,second=manifest(self.scoped,data),manifest(self.scoped,other)
+        self.assertEqual(first['computed_sha256'],second['computed_sha256'])
+        self.assertNotEqual(first['version'],second['version'])
+        other['market_scope']['default_markets']=['JP']
+        with self.assertRaisesRegex(ArchiveError,'默认国家'):shared_data(other)
+        with patch.object(answerbit,'operator_credentials') as credentials:
+            self.assertEqual(dashboard.main(['refresh',str(self.f.bank),str(self.scoped),str(self.root/'invalid.html'),
+                '--market','GB','--default-market','JP']),1)
+            credentials.assert_not_called()
+        with self.assertRaisesRegex(ArchiveError,'已裁剪快照'):
+            restrict_snapshot(self.scoped,self.root/'invalid.sqlite',['GB','JP'])
+
     def test_invalid_empty_and_cross_country_candidate_block_delivery(self):
         for markets in ([],['XX']):
             with self.assertRaises(ArchiveError): normalize_markets(markets)

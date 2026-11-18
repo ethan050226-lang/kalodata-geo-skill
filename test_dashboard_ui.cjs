@@ -3,6 +3,41 @@ const assert=require('assert'),fs=require('fs');
 const fileUrl=require('url').pathToFileURL(require('path').resolve(process.argv[2])).href;
 (async()=>{const browser=await chromium.launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
 await page.goto(fileUrl);
+// Optional second fixture opens on an approved country with no answers.
+if(process.argv[3]){
+  const emptyUrl=require('url').pathToFileURL(require('path').resolve(process.argv[3])).href;
+  for(const width of [1440,390]){
+    await page.setViewportSize({width,height:1000});
+    await page.goto(emptyUrl);
+    const defaults=await page.evaluate(()=>D.market_scope.default_markets);
+    const picker=side=>page.locator('#filter-'+side+' [data-key="m"]');
+    const selected=side=>picker(side).locator('input:checked').evaluateAll(items=>items.map(i=>i.value).sort());
+    for(const side of ['a','b','review'])assert.deepEqual(await selected(side),defaults);
+    assert((await page.locator('#scope').innerText()).includes('暂无数据'));
+    assert.equal(await page.locator('#kpis .value').first().innerText(),'不适用');
+    assert.equal(await page.locator('#home-matrix .matrix-cell, #home-actions .action-item').count(),0);
+    const markets=await page.evaluate(()=>[...new Set(D.rows.map(r=>r.d[0]))]);
+    assert(markets.length>=2);
+    const check=async(side,market)=>picker(side).locator('input[value="'+market+'"]').check();
+    await picker('a').locator('summary').click();
+    await picker('a').getByText('全部国家',{exact:true}).last().click();
+    assert.deepEqual(await selected('a'),[]);
+    await check('a',markets[0]);await check('a',markets[1]);
+    assert.deepEqual(await selected('review'),markets.slice(0,2).sort());
+    await picker('a').locator('input[value="'+markets[1]+'"]').uncheck();
+    assert.equal(await page.locator('#kpis .value').first().innerText(),await page.evaluate(m=>{
+      const rows=D.rows.filter(r=>r.d[0]===m&&!r.d[4]);return pct(sum(rows,r=>mentionCount(r)),total(rows));
+    },markets[0]));
+    await page.goto(emptyUrl+'#compare');
+    await picker('b').locator('summary').click();
+    await picker('b').locator('button').click();await check('b',markets[1]);
+    assert.deepEqual(await selected('a'),[markets[0]]);
+    assert((await page.locator('.cohort.b').innerText()).includes(await page.evaluate(m=>D.markets[m],markets[1])));
+    await page.locator('#filter-a').getByText('重置',{exact:true}).click();
+    assert.deepEqual(await selected('a'),defaults);
+  }
+  await page.goto(fileUrl);
+}
 for(const width of [1440,390,320]){await page.setViewportSize({width,height:1000});await page.goto(fileUrl+'#overview');await page.waitForTimeout(100);assert.equal(await page.locator('.page-tabs a').count(),5);assert.equal(await page.locator('#kpis .kpi').count(),3);assert(await page.locator('#home-matrix .matrix-cell').count()>0);assert(await page.locator('#home-sentiment .sent-stack').count()>0);const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);assert(!overflow,'page overflow at '+width);if(process.env.SCREENSHOT_DIR)await page.screenshot({path:require('path').join(process.env.SCREENSHOT_DIR,'geo-'+width+'.png'),fullPage:true});}
 for(const name of ['brand','platform','compare','action','answers','sources','metrics']){await page.goto(fileUrl+'#'+name);assert(await page.locator('#'+name).isVisible());assert.equal(await page.locator('[data-page]:visible').count(),1);if(name==='sources')assert(await page.locator('#sentiment').isVisible());}
 await page.goto(fileUrl+'#overview');await page.waitForTimeout(50);

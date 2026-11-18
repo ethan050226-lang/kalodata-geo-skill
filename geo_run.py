@@ -9,14 +9,15 @@ import sqlite3
 from archive import ArchiveError
 import dashboard
 from feishu_publish import load_config, publish, failure
-from market_scope import normalize_markets, scope_config
+from market_scope import default_selection, normalize_markets, scope_config
 from publication import report
 
 
-def preflight(bank, markets):
+def preflight(bank, markets, default_markets=()):
     """Local prerequisite checks only. Never echo identifiers, URLs or credential values."""
     import answerbit
     markets = normalize_markets(markets)
+    default_selection(default_markets, markets)
     key,_ = answerbit.operator_credentials()  # Do not open private publishing configuration before the Key gate.
     problems = []; publication_warnings = []
     if not answerbit.question_bank_url(key):
@@ -108,14 +109,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('bank',type=Path); parser.add_argument('snapshot',type=Path); parser.add_argument('output',type=Path)
     parser.add_argument('--begin'); parser.add_argument('--end'); parser.add_argument('--excel',type=Path)
-    parser.add_argument('--market',action='append',required=True,help='用户确认的运营国家，可重复')
+    parser.add_argument('--market',action='append',required=True,help='本次获准交付的国家，可重复')
+    parser.add_argument('--default-market',action='append',help='看板默认展示的运营国家，可重复')
     parser.add_argument('--local-only',action='store_true',help='仅生成本地看板与简报，不调用飞书发布')
     parser.add_argument('--check',action='store_true',help='仅检查本机前置条件，不请求平台、不发布')
     args = parser.parse_args(); options = []
     for name in ('begin','end','excel'):
         if getattr(args,name) is not None: options.extend(['--'+name,str(getattr(args,name))])
+    for market in args.default_market or ():
+        options.extend(['--default-market',market])
     if args.check:
-        try: result,code = preflight(args.bank,args.market),0
+        try: result,code = preflight(args.bank,args.market,args.default_market),0
         except ArchiveError as error: result,code = {'status':'failed','stage':'运行前检查','reason':str(error)},1
     else:
         result, code = run(args.bank,args.snapshot,args.output,options,markets=args.market,local_only=args.local_only)

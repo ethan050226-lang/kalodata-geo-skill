@@ -72,7 +72,7 @@ def export_workbook(snapshot, data):
     append(summary, ("项目","内容"))
     batch = data["batch"]
     if data.get('market_scope'):
-        append(summary, ('运营国家', '、'.join(data['market_scope']['markets'])))
+        append(summary, ('获准交付国家', '、'.join(data['market_scope']['markets'])))
         append(summary, ('未归属异常', data['market_scope']['unassigned_issues']))
         append(summary, ('平台快照', data['market_scope']['platform_snapshot']))
     if data.get('model_policy'):
