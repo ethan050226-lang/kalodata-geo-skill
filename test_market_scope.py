@@ -111,6 +111,27 @@ class CountryDeliveryTest(unittest.TestCase):
         with self.assertRaisesRegex(ArchiveError,'已裁剪快照'):
             restrict_snapshot(self.scoped,self.root/'invalid.sqlite',['GB','JP'])
 
+    def test_no_preference_clears_retained_default_without_refetching(self):
+        data=self.scope(('GB','US'))
+        data['market_scope']['default_markets']=['GB']
+        dashboard.render(data,self.html)
+        batch=data['batch']
+        with patch.object(answerbit,'operator_credentials') as credentials, \
+             contextlib.redirect_stdout(io.StringIO()):
+            result=dashboard.main(['snapshot',str(self.f.bank),str(self.scoped),str(self.html),
+                '--market','GB','--market','US','--default-market','无偏好'])
+        self.assertEqual(result,0)
+        credentials.assert_not_called()
+        updated=dashboard.retained_data(self.html)[1]
+        self.assertEqual(updated['market_scope']['default_markets'],[])
+        self.assertEqual(updated['batch'],batch)
+        self.assertEqual(updated['rows'],json.loads(json.dumps(data['rows'])))
+        self.assertEqual(updated['core_mention'],data['core_mention'])
+        self.assertEqual(shared_data(updated)['market_scope']['default_markets'],[])
+        from market_scope import default_selection
+        with self.assertRaisesRegex(ArchiveError,'不能同时选择'):
+            default_selection(['无偏好','GB'],['GB','US'])
+
     def test_invalid_empty_and_cross_country_candidate_block_delivery(self):
         for markets in ([],['XX']):
             with self.assertRaises(ArchiveError): normalize_markets(markets)

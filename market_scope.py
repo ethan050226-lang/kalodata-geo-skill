@@ -143,6 +143,9 @@ def normalize_markets(values):
 
 
 def default_selection(values, markets):
+    if values and '无偏好' in values:
+        require(list(values) == ['无偏好'], '默认国家 / 无偏好与具体国家不能同时选择')
+        return []
     defaults = normalize_markets(values) if values else []
     require(set(defaults) <= set(markets or ()), '默认国家 / 运营国家超出本次获准交付范围，请核对已有授权')
     return defaults

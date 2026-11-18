@@ -216,11 +216,9 @@ const tagPairs=Object.entries(D.tags), ns=([,a],[,b])=>a.localeCompare(b,"zh-CN"
 const observedEngines=new Set([...D.rows,...(D.quality?.records||[])].map(r=>r.d[1]));
 const enginePairs=[...new Set([...observedEngines,...Object.values(D.model_policy?.models||{}).flat()])].sort().map(x=>
   [x,(x==="google_ai_overviews"?"Google AIO":x)+(observedEngines.has(x)?"":"（暂无数据）")]);
-const priorityMarkets=D.market_scope?.default_markets||[];
-const compareMarketPriority=(a,b)=>Number(priorityMarkets.includes(b))-Number(priorityMarkets.includes(a));
-const marketOptions=Object.entries(D.markets).sort(([a],[b])=>compareMarketPriority(a,b));
+const defaultMarkets=D.market_scope?.default_markets||[];
 const dimensions=[
-  ["m","市场",marketOptions],
+  ["m","市场",Object.entries(D.markets)],
   ["e","平台",enginePairs],
   ["g","Answerbit 分组",[...groupPairs.sort(ns),["__unknown","分组未知"]]],
   ["tags","Answerbit 标签",tagPairs.sort(ns)],
@@ -252,6 +250,7 @@ function makeFilters(side){
     for(const [value,name] of opts){
       const l=document.createElement("label"), i=document.createElement("input");
       i.type="checkbox";i.value=value;
+      i.defaultChecked=key==="m" && defaultMarkets.includes(value);
       l.append(i,document.createTextNode(name+(opts.filter(([,v])=>v===name).length>1?" · "+value:"")));pick.querySelector(".pick-list").append(l);
     }
     if(!opts.length)pick.querySelector(".pick-list").textContent="本批暂无选项";
@@ -279,6 +278,7 @@ function makeFilters(side){
   form.addEventListener("submit",e=>e.preventDefault());
 }
 makeFilters("a");makeFilters("b");makeFilters("review");
+filters("a");filters("b");filters("review");
 document.addEventListener("pointerdown",e=>{
   for(const item of document.querySelectorAll(".picker[open]"))if(!item.contains(e.target))item.open=false;
 });
@@ -339,7 +339,7 @@ function breakdown(rs){
     if(!b.has(k))b.set(k,[]);
     b.get(k).push(r);
   }
-  return [...b.values()].sort((a,b)=>compareMarketPriority(a[0].d[0],b[0].d[0])||a[0].d[0].localeCompare(b[0].d[0])||a[0].d[4]-b[0].d[4]);
+  return [...b.values()].sort((a,b)=>a[0].d[0].localeCompare(b[0].d[0])||a[0].d[4]-b[0].d[4]);
 }
 const bar=(label,n,d)=>`<div class="bar"><span>${esc(label)}</span><div class="track" aria-hidden="true"><div class="fill" style="width:${d?100*n/d:0}%"></div></div><span class="number">${esc(pct(n,d))}${d?`<span class="bar-count">（${num(n)}/${num(d)}）</span>`:""}</span></div>`;
 const scaleLabel='<div class="chart-label" aria-hidden="true"><div><span>0%</span><span>100%</span></div></div>';
@@ -427,7 +427,7 @@ function sentimentCounts(rows){
 function matrixData(rows,kind){
   const unnamed=rows.filter(r=>r.d[4]===0), source=kind==="tag"?D.tags:D.groups;
   const columns=Object.entries(source).filter(([id])=>unnamed.some(r=>kind==="tag"?r.d[5].includes(id):r.d[3]===id)).sort((a,b)=>a[1].localeCompare(b[1],"zh-CN"));
-  const markets=marketOptions.map(([m])=>m).filter(m=>rows.some(r=>r.d[0]===m));
+  const markets=Object.keys(D.markets).filter(m=>rows.some(r=>r.d[0]===m));
   const cells=markets.map(m=>columns.map(([id])=>{const rs=unnamed.filter(r=>r.d[0]===m&&(kind==="tag"?r.d[5].includes(id):r.d[3]===id));return {m,id,n:total(rs),hits:sum(rs,r=>mentionCount(r)),platforms:[...new Set(rs.map(r=>r.d[1]))].sort()};}));
   const nonempty=cells.flat().filter(c=>c.n>0).map(c=>c.n);
   return {columns,markets,cells,min:nonempty.length?Math.min(...nonempty):null};
@@ -531,14 +531,12 @@ function render(){
   if(new Set(selected.map(rs=>D.competitors[rs[0].d[0]].join("|"))).size>1){
     $("markets").insertAdjacentHTML("afterbegin",'<p class="warning">当前市场的竞品集合不同。品牌名称逐市场列出，提及份额需在同一竞品集合内比较。</p>');
   }
-  const choices=selected.filter(x=>!x[0].d[4]).sort((a,b)=>compareMarketPriority(a[0].d[0],b[0].d[0])||total(b)-total(a));
+  const choices=selected.filter(x=>!x[0].d[4]).sort((a,b)=>total(b)-total(a));
   if(brandMarket&&!choices.some(x=>x[0].d[0]===brandMarket))brandMarket="";
   const chosen=(brandMarket?choices.find(x=>x[0].d[0]===brandMarket):choices[0]);
-  const preferredChart=choices.length&&priorityMarkets.includes(choices[0][0].d[0]);
-  const chartDefault=preferredChart?"优先市场 · "+marketName(choices[0][0].d[0]):"样本量最大市场";
-  $("brand-market").innerHTML=`<option value="">${esc(chartDefault)}</option>`+choices.map(x=>`<option value="${esc(x[0].d[0])}"${x[0].d[0]===brandMarket?" selected":""}>${esc(marketName(x[0].d[0]))} · ${num(total(x))} 条</option>`).join("");
+  $("brand-market").innerHTML='<option value="">当前范围样本量最大市场</option>'+Object.entries(D.markets).map(([code,name])=>`<option value="${esc(code)}"${code===brandMarket?" selected":""}>${esc(name)}</option>`).join("");
   $("mention-title").textContent=chosen?`${marketName(chosen[0].d[0])} · 未点名题 · ${num(total(chosen))} 条有效回答`:"品牌提及率";
-  $("mention-chart").innerHTML=chosen?`<p class="sub">${brandMarket?"当前所选市场":esc(chartDefault)} · 竞品集合 ${esc(D.competitors[chosen[0].d[0]].join("、"))}</p>${scaleLabel}<div class="bars">${D.competitors[chosen[0].d[0]].map(b=>bar(b,sum(chosen,r=>mentionCount(r,b)),total(chosen))).join("")}</div>`:empty("当前筛选没有未点名题样本。");
+  $("mention-chart").innerHTML=chosen?`<p class="sub">${brandMarket?"当前所选市场":"默认显示当前样本量最大的市场"} · 竞品集合 ${esc(D.competitors[chosen[0].d[0]].join("、"))}</p>${scaleLabel}<div class="bars">${D.competitors[chosen[0].d[0]].map(b=>bar(b,sum(chosen,r=>mentionCount(r,b)),total(chosen))).join("")}</div>`:empty("当前筛选没有未点名题样本。");
   const byBrand=(brand,i)=>sum(rs,r=>r.links[brand]?.[i]||0);
   $("website").innerHTML=n?scaleLabel+[[0,1,"正文链接"],[2,3,"正式来源"]].map(([a,b,name])=>`<div class="chart-group"><strong>${name}</strong><div class="bars">${["Kalodata","FastMoss"].map(x=>bar(x,byBrand(x,a),byBrand(x,b))).join("")}</div></div>`).join("")+
     `<p class="definition">正式来源字段覆盖 ${ratio(known,n)}。</p>`:empty("当前筛选没有有效回答。");
@@ -612,7 +610,14 @@ function render(){
 }
 $("matrix-dimension").addEventListener("change",()=>render());
 let brandMarket="";
-$("brand-market").addEventListener("change",e=>{brandMarket=e.target.value;render();});
+$("brand-market").addEventListener("change",e=>{
+  brandMarket=e.target.value;
+  if(brandMarket){
+    const next={...filters(),m:[brandMarket]};
+    setFilters("a",next);setFilters("review",next);filters("review");
+  }
+  render();
+});
 function renderPrevious(f){
   const c=D.comparison;
   if(!c?.previous_batch){
@@ -780,7 +785,7 @@ function renderActions(rows){
       return den&&(rule.key!=="recommendation"||hits)?[{lead,hits,den,rate:hits/den}]:[];
     }).sort((a,b)=>(rule.low?a.rate-b.rate:b.rate-a.rate)||b.den-a.den);
     return candidates.map(candidate=>({...rule,...candidate}));
-  }).sort((a,b)=>compareMarketPriority(a.lead.d[0],b.lead.d[0])||
+  }).sort((a,b)=>
       ((b.low?b.den-b.hits:b.hits)-(a.low?a.den-a.hits:a.hits))||b.den-a.den);
   const chosen=allActions.filter((item,i)=>allActions.findIndex(other=>other.key===item.key)===i);
   $("action-count").textContent=`${allActions.length} 项行动`;

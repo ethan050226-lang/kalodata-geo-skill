@@ -110,7 +110,7 @@ def main():
     parser.add_argument('bank',type=Path); parser.add_argument('snapshot',type=Path); parser.add_argument('output',type=Path)
     parser.add_argument('--begin'); parser.add_argument('--end'); parser.add_argument('--excel',type=Path)
     parser.add_argument('--market',action='append',required=True,help='本次获准交付的国家，可重复')
-    parser.add_argument('--default-market',action='append',help='看板优先展示的运营国家，可重复')
+    parser.add_argument('--default-market',action='append',help='看板默认分析的运营国家，可重复；无偏好时传无偏好')
     parser.add_argument('--local-only',action='store_true',help='仅生成本地看板与简报，不调用飞书发布')
     parser.add_argument('--check',action='store_true',help='仅检查本机前置条件，不请求平台、不发布')
     args = parser.parse_args(); options = []

@@ -472,7 +472,7 @@ def main(argv=None, *, status_callback=None):
     parser.add_argument("--defer-unavailable", action="store_true", help="复检时暂缓上轮未读到的任务")
     parser.add_argument("--excel", type=Path, help="导出同批可筛选的 .xlsx 记录")
     parser.add_argument('--market', action='append', help='本次获准交付的国家，可重复')
-    parser.add_argument('--default-market', action='append', help='优先展示的运营国家，可重复')
+    parser.add_argument('--default-market', action='append', help='默认分析的运营国家，可重复；无偏好时传无偏好')
     args = parser.parse_args(argv)
     stage = "配置"
     staging = None
@@ -575,11 +575,11 @@ def main(argv=None, *, status_callback=None):
                 previous = None  # Never embed a prior full-brand or other-country report.
         stage = "看板校验与渲染"
         data = dashboard_data(snapshot,args.bank,native)
-        if not defaults and args.mode != 'refresh' and previous and previous.get('batch') == data['batch']:
+        if args.default_market is None and args.mode != 'refresh' and previous and previous.get('batch') == data['batch']:
             prior_scope = previous.get('market_scope') or {}
             if prior_scope.get('markets') == (data.get('market_scope') or {}).get('markets'):
                 defaults = prior_scope.get('default_markets', [])
-        if defaults:
+        if data.get('market_scope'):
             data['market_scope']['default_markets'] = defaults
         if bank_url:
             data['links']['bank'] = bank_url

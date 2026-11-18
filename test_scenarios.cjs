@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const html=fs.readFileSync(require('path').join(__dirname,'skill/geo-sampling/assets/dashboard.html'),'utf8');
 const engines={D:{rows:[{d:['US','chatgpt']}],model_policy:{models:{US:['chatgpt','google_ai_overviews']}}}};
-vm.createContext(engines);vm.runInContext(html.slice(html.indexOf('const observedEngines='),html.indexOf('const priorityMarkets=')),engines);
+vm.createContext(engines);vm.runInContext(html.slice(html.indexOf('const observedEngines='),html.indexOf('const defaultMarkets=')),engines);
 assert(vm.runInContext('enginePairs.find(([id])=>id==="google_ai_overviews")[1]',engines).includes('暂无数据'));
 const fn=html.slice(html.indexOf('function renderScenarios('),html.indexOf('function render(){'));
 let output;const context={D:{groups:{g:'对比'},tags:{h:'品牌健康',d:'发现度'}},$:()=>({set innerHTML(v){output=v}}),total:rs=>rs.reduce((s,r)=>s+r.n,0),sum:(rs,f)=>rs.reduce((s,r)=>s+f(r),0),num:String,ratio:(a,b)=>`${a}/${b}`,mentionCount:r=>r.mentions.Kalodata-(r.negative_mentions||0),table:(h,rows)=>rows};
@@ -21,15 +21,14 @@ console.log('Metric numerator/denominator checks passed');
 
 // Matrix cells use only unnamed answers; duplicate tag membership never adds within a cell.
 context.D.markets={US:'美国',JP:'日本'};context.D.tags={d:'发现度',h:'健康'};
-context.D.market_scope={default_markets:['JP']};
-vm.runInContext(html.slice(html.indexOf('const priorityMarkets='),html.indexOf('const dimensions=')),context);
+
 
 const cellRow={...row(0,['d','h']),rec:{},sent:{positive:1,unknown:1}};
 const namedRow={...cellRow,d:['US','chatgpt','2026-11-09','g',1,['d']]};
 const matrix=context.matrixData([cellRow,namedRow],'group');assert.equal(matrix.cells[0][0].n,2);assert.equal(matrix.cells[0][0].hits,1);
 assert.equal(context.matrixData([namedRow],'group').columns.length,0);
 const japanRow={...cellRow,d:['JP',...cellRow.d.slice(1)]};
-assert.deepEqual(Array.from(context.matrixData([cellRow,japanRow],'group').markets),['JP','US']);
+assert.deepEqual(Array.from(context.matrixData([cellRow,japanRow],'group').markets),['US','JP']);
 const tags=context.matrixData([cellRow],'tag');assert.equal(tags.cells[0][0].n,2);assert.equal(tags.cells[0][1].n,2);
 const sent=context.sentimentCounts([cellRow]);assert.equal(sent.known,1);assert.equal(sent.counts.reduce((a,b)=>a+b,0),2);
 assert.equal(context.sentimentCounts([]).n,0);
