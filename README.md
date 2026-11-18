@@ -26,7 +26,7 @@ Agent 从[执行入口](skill/geo-sampling/SKILL.md#执行入口)区分查看、
 python3 geo_run.py /path/to/question-bank.xlsx .trial/dashboard.sqlite .trial/GEO运营看板.html --market JP --market KR --default-market JP --excel .trial/GEO采样明细.xlsx
 ```
 
-示例中接收方获准查看日本和韩国，负责日本的运营打开看板时先看到日本。为每个已获准交付的国家传入 `--market`。用 `--default-market` 指定初始展示，可多选。未指定时沿用全部获准国家视图。
+示例中接收方获准查看日本和韩国，打开即显示日韩汇总，日本在市场列表、市场明细和行动中优先展示。为每个已获准交付的国家传入 `--market`，用 `--default-market` 指定优先展示的运营国家（可重复）。初始筛选和重置都为「全部国家」。
 
 默认最近七个北京时间自然日（含当天），可加`--begin YYYY-MM-DD --end YYYY-MM-DD`；定时默认前七个完整自然日，与手动窗口不同。refresh在Key就绪后先从飞书读取并校验真实题库，再更新缓存和取数；完整读取必需国家页，检查题号、版本和分页。失败保留上一批。真实取数前必须实际读取飞书题库，不能只检查本机配置；在线读取或校验失败就停止，不请求Answerbit。`--offline-bank`不能绕过真实取数前置核对；仅纯离线snapshot可使用本地题库，`--feishu-bank <URL>`可临时指定获批在线题库。
 
