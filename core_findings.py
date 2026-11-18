@@ -4,6 +4,7 @@ from copy import deepcopy
 import hashlib
 import json
 from pathlib import Path
+import re
 
 from archive import ArchiveError, require, write_atomic
 
@@ -29,6 +30,19 @@ def metrics(rows):
     }
 
 
+def validate_claims(text, expected):
+    pairs={tuple(pair) for pair in expected.values()}
+    for match in re.finditer(r'(?<![\d/／])(\d[\d,]*)\s*[/／]\s*(\d[\d,]*)(?![\d/／])',text):
+        numerator,denominator=(int(value.replace(',','')) for value in match.groups())
+        require((numerator,denominator) in pairs,
+                '核心发现 / 文案分子分母与本条范围指标不一致')
+        prefix=re.search(r'(\d+(?:\.\d+)?)%\s*[（(]\s*$',text[:match.start()])
+        if prefix:
+            value=prefix[1];precision=len(value.partition('.')[2])
+            require(denominator>0 and abs(float(value)-100*numerator/denominator)<=0.5*10**-precision+1e-9,
+                    '核心发现 / 文案百分比与分子分母不一致')
+
+
 def required_scopes(data):
     from market_scope import validate_data_scope
     validate_data_scope(data)
@@ -39,8 +53,13 @@ def required_scopes(data):
     by_country = {}
     for index, row in enumerate(data['rows']):
         by_country.setdefault(row['d'][0], []).append(index)
-    return [('overall', list(range(len(data['rows'])))),
+    scopes=[('overall', list(range(len(data['rows'])))),
             *[(market, by_country[market]) for market in sorted(by_country)]]
+    defaults=data.get('presentation',data['market_scope']).get('default_markets',[])
+    selected=[i for i,row in enumerate(data['rows']) if row['d'][0] in defaults]
+    if selected and selected not in [ids for _,ids in scopes]:
+        scopes.append(('default',selected))
+    return scopes
 
 
 def context(data):
@@ -53,7 +72,7 @@ def context(data):
             'rows':[{'index':i,'dimensions':r['d'],'valid':r['n'],'metrics':metrics([r]),
                      'references':list(r.get('evidence',{}).values())}
                     for i,r in enumerate(data['rows'])],
-            'instructions':'运行Agent分析同批数据，为overall及每个国家写发现；可增加平台/题类切片。'
+            'instructions':'运行Agent分析同批数据，为required_scopes中的总体、每个国家及默认组合写发现；可增加平台/题类切片。'
                            'entries每项含row_indices、conclusion、judgment、metrics。'
                            '每句写清国家/题类、指标、数值及下一步，均须有本批证据。'
                            'metrics使用同切片核对值；conclusion写事实，judgment写具体行动，证据不足标待核查。'
@@ -84,8 +103,10 @@ def validate(data, findings=None):
                 '核心发现 / 请删除泛化提醒；用本批数量、具体原因和下一步说明问题')
         require(item['metrics']==metrics([data['rows'][i] for i in ids]),
                 '核心发现 / 指标、分子分母与所分析范围不一致')
+        for key in ('conclusion','judgment'):
+            validate_claims(item[key],item['metrics'])
     require(all(tuple(indices) in scopes for _, indices in required),
-            '核心发现 / 必须分别分析总体及各国家，不能用一条全批结论代替')
+            '核心发现 / 必须分别分析总体、各国家及默认组合，不能用一条全批结论代替')
     return value
 
 
