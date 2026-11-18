@@ -29,16 +29,22 @@ def metrics(rows):
     }
 
 
-def context(data):
+def required_scopes(data):
     from market_scope import validate_data_scope
     validate_data_scope(data)
     require(data.get('model_policy') and data.get('market_scope'),
             '核心发现 / 该批未校验国家模型范围，请先从同批母库按已确认配置生成国家副本')
     require(data.get('question_scope',{}).get('answer_source_sha256'),
             '核心发现 / 缺少回答来源校验信息，请从同批数据库重新生成，不重取数')
-    countries = sorted({r['d'][0] for r in data['rows']})
-    scopes = [('overall',list(range(len(data['rows']))))]
-    scopes += [(m,[i for i,r in enumerate(data['rows']) if r['d'][0]==m]) for m in countries]
+    by_country = {}
+    for index, row in enumerate(data['rows']):
+        by_country.setdefault(row['d'][0], []).append(index)
+    return [('overall', list(range(len(data['rows'])))),
+            *[(market, by_country[market]) for market in sorted(by_country)]]
+
+
+def context(data):
+    scopes = required_scopes(data)
     return {'version':VERSION,'data_sha256':fingerprint(data),'batch':data['batch'],
             'models':data['model_policy']['models'],
             'markets':data['markets'],'groups':data['groups'],'tags':data['tags'],
@@ -60,9 +66,7 @@ def validate(data, findings=None):
     require(isinstance(value,dict) and set(value)=={'version','data_sha256','entries'}
             and value['version']==VERSION and value['data_sha256']==fingerprint(data),
             '核心发现 / 缺少同批Agent分析或数据已变化；保留上一成功版本，重新分析当前批次')
-    require(data.get('model_policy') and data.get('market_scope'),'核心发现 / 国家模型范围未校验')
-    from market_scope import validate_data_scope
-    validate_data_scope(data)
+    required = required_scopes(data)
     reject_secrets(value)
     require(isinstance(value['entries'],list) and value['entries'],'核心发现 / 分析结果为空')
     scopes = set()
@@ -80,8 +84,7 @@ def validate(data, findings=None):
                 '核心发现 / 请删除泛化提醒；用本批数量、具体原因和下一步说明问题')
         require(item['metrics']==metrics([data['rows'][i] for i in ids]),
                 '核心发现 / 指标、分子分母与所分析范围不一致')
-    required = context(data)['required_scopes']
-    require(all(tuple(s['row_indices']) in scopes for s in required),
+    require(all(tuple(indices) in scopes for _, indices in required),
             '核心发现 / 必须分别分析总体及各国家，不能用一条全批结论代替')
     return value
 
@@ -93,9 +96,12 @@ def apply(source, findings_file):
     findings = json.loads(findings_file.read_text())
     validate(data,findings)
     updated = deepcopy(data); updated['core_findings'] = findings
+    from publication import report
+    summary = report(updated)
     render(updated,source)
     return {'status':'analysis_ready','batch':data['batch'],'scopes':len(findings['entries']),
-            'next_step':'使用同批HTML和数据库继续独立发布；不重新取数，定时任务保持暂停'}
+            'report':summary,
+            'next_step':'仅本地交付时返回本看板及同批简报；需要飞书链接时用同批HTML和数据库继续发布'}
 
 
 def main():

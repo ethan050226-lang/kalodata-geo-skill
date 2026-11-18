@@ -37,9 +37,11 @@ class CoreFindingsTest(unittest.TestCase):
 
     def test_agent_analysis_is_bound_to_same_batch_and_report(self):
         findings=synthetic_findings(self.data);self.file.write_text(json.dumps(findings))
-        self.assertEqual(apply(self.html,self.file)['status'],'analysis_ready')
+        result = apply(self.html,self.file)
+        self.assertEqual(result['status'],'analysis_ready')
         updated=dashboard.retained_data(self.html)[1]
-        self.assertIn('SYNTHETIC overall',report(updated)['conclusion'])
+        self.assertEqual(result['report'], report(updated))
+        self.assertIn('SYNTHETIC overall',result['report']['conclusion'])
         shared=shared_data(updated)
         self.assertEqual(shared['core_findings'],findings)
         self.assertNotIn('PRIVATE_ORIGINAL',json.dumps(shared))

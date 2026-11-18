@@ -231,6 +231,8 @@ class CountryDeliveryTest(unittest.TestCase):
         self.assertEqual(result['delivery_status'],'incomplete')
         fetch.assert_called_once_with(url,self.f.bank)
         self.assertEqual(len(result['blockers']),1)
+        self.assertTrue(Path(result['local']['analysis_context']).is_file())
+        self.assertIn('core_findings.py apply', result['next_step'])
         upload.assert_not_called()
         public=self.html.read_text()
         for marker in ('synthetic-brand','synthetic-team','TEST_ONLY'):

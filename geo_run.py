@@ -79,9 +79,12 @@ def run(bank, snapshot, output, options=(), *, markets=(), local_only=False):
         except (ArchiveError,OSError,ValueError) as error:
             blockers.append(str(error) if isinstance(error,ArchiveError) else '飞书发布配置无法读取或解析')
         if blockers:
+            next_step = '补齐发布连接后仅运行 feishu_publish.py，不重新取数'
+            if needs_analysis:
+                next_step = '先按同批分析上下文完成 core_findings.py apply，再' + next_step
             return {'status':'local_ready_pending_publication', 'local':local, 'blockers':blockers,
                     'delivery_status':'incomplete',
-                    'next_step':'免下载交付未完成；保留同批本地结果，补齐发布连接后仅运行 feishu_publish.py，不重新取数；不要仅发附件收尾',
+                    'next_step':next_step,
                     'publication':'未上传，未替换上一成功飞书版本；请管理员配置独立发布授权，勿在聊天发送凭证'}, 0
         if needs_analysis:
             return {'status':'local_ready_pending_analysis','local':local,'delivery_status':'incomplete',

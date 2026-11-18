@@ -1,37 +1,19 @@
-# GEO 采样 Skill / GEO Sampling Skill
+# GEO 采样 Skill
 
-[国家与模型配置](skill/geo-sampling/references/country-models.md)覆盖11国。日本、韩国已确认 ChatGPT、Gemini、Google AI Mode、Google AIO；Claude 本轮暂缓。国家交付入口先核对最新题库及模型配置，再从独立快照重算看板、简报与 Excel；不创建计费采样任务。
+只读分析 Answerbit 已有回答，与飞书题库核对后，按获准国家生成可交互的飞书看板和同批简报。支持国家及模型见[国家与模型配置](skill/geo-sampling/references/country-models.md)。
 
-只读分析 Answerbit 已有回答，匹配飞书题号，生成可追溯的看板与简报。运行要求 Python 3.9+、SQLite 3.30+及requirements.txt依赖。安装保留完整仓库；单独复制Skill目录不包含Python工具。
+运行环境需要 Python 3.9+、SQLite 3.30+ 及 requirements.txt 依赖。安装时保留完整仓库；仅复制 Skill 目录缺少执行工具。
 
-## 默认交付
-
-公司内部Agent读取Skill后，应返回可在飞书内直接预览和交互的云空间链接及简报，HTML附件仅为备用。Agent负责发布和在线验收；优先复用已有权限和已知文件，按[已有权限单次发布](skill/geo-sampling/references/feishu-preview.md#已有权限单次发布)原地更新、回读校验并实测交互。用户明确要求上传但保留权限时，核验具体文件后沿用，不反复要求改权限；单次手动交付与严格自动发布分别记录。运行 Skill 取数需要 Answerbit 品牌级只读 Key，由运行者安全提供或复用已安全配置的有效 Key；同事查看已生成的飞书看板，只需具备相应飞书访问权限，无需提供该 Key。没有可用预览链接或交互未通过时，须明确报告「免下载交付未完成」，不能把本地导出成功当作在线交付成功。
-
-## 集中运行与统一入口
-
-默认由一个获批中央环境运行本仓库工具，项目管理员创建的统一 Agent 接收国家/时间需求并推送。运营自己的 Agent 可作为获批查询入口，不分发数据源密钥、不各自重复取数。真实入口名称、用户映射、运行地址和凭证引用只放私有配置。查看或订阅已验收结果无需 Answerbit Key；真实取数仍须中央环境已有有效品牌级只读 Key。
-
-复用现有题库读取、国家裁剪、强版本查重、飞书发布和订阅草稿；同品牌、窗口、题库及口径的兼容范围集中取数，再从同批私有母批生成国家副本。现有 `geo_run.py` 处理一次范围，`subscription.configure` 只保存草稿；常驻运行、多订阅合并、统一入口接入、调度、实际投递和自动浏览器验收仍由宿主配置验证，仓库未自带这些服务。不能为实现分发而逐国重复 refresh，也不直接分发全量 HTML 再预选国家。
-
-接入前先列权限和环境缺项、证据时间、处理人及审批状态；复用已有连接，企业审批项先报告且等待决定。中央环境须持续在线、私有状态可持久保存、任务串行，并具备独立飞书凭证、获准接收路由和真实预览验收能力。具体权限、各阶段自检和边界见[集中执行与国家推送](skill/geo-sampling/references/scheduled-delivery.md)。
-
-## 用户运行
-
-真实分析由中央运行Agent先核对获准运营国家（可多国）、已有安全配置的品牌级只读Key并说明预计耗时；缺少时才向运行管理员索要，两项齐备前不真实取数或发布。运营仅订阅或查看结果时不重复索要Key，也不触发refresh。本次已明确的无需重复问，历史国家配置须确认沿用。交付数据仅含确认国家，HTML内嵌数据与附件也须裁剪；不能裁剪则停止共享。国家自报不替代访问授权。geo_run.py要求显式传入`--market`（可重复）；内部生成裁剪后的SQLite，再重算HTML、Excel和简报。单国交付不嵌入品牌全量平台快照，无法归属国家的异常另注明未纳入。
-
-已暂停的定时任务保持暂停，更新Skill、修权限和单次发布都不恢复任务。询问是否需要定时、频率、时间及接收位置。推荐每周一北京时间上午11:30，汇总上一周周一至周日；用户确认后先保存待验收订阅。完成一次真实题库读取、Answerbit 取数、国家裁剪、自检、飞书预览与权限及目标投递验收后，仍须用户另行明确要求才启用/恢复。已有订阅更新原任务，不擅自改成默认时间。定时依赖宿主已有的持久调度、数据、发布和消息能力；缺项保存待接入，不能称已启用。本Skill允许使用官方lark-cli和仓库Python工具执行；新增权限仍须按下文报告。
+Agent 从[执行入口](skill/geo-sampling/SKILL.md#执行入口)区分查看、刷新、补发及订阅。统一 Agent 负责接收需求，中央环境负责执行。跨订阅合并、实际投递和持久调度由宿主接入，接入条件见[集中执行与国家推送](skill/geo-sampling/references/scheduled-delivery.md)。
 
 ## 管理员私有配置
 
 题库连接先执行[自动检查、复用和开通指引](skill/geo-sampling/references/feishu-connection.md)。优先复用公司现有获批连接，默认应用身份；已有获批用户连接可在私有运行环境设置`GEO_FEISHU_BANK_IDENTITY=user`，不再被固定切回bot。该设置仅控制题库读取，与发布身份分开。程序不会自动登录、切换账号或申请权限；缺项由Agent按实际原因引导，一次实际全量读取通过后继续完整刷新。
 
-原文质量筛查已接入每次真实刷新：纯报错、纯拒答、明确不完整及有同条件缺项证据的疑似缩水标为“数据异常”，不进入Skill自算指标；仅长度下降仍纳入统计并单列待核查，避免误排完整短回答。原因、编号、对照及原始规则版本在看板“回答表现→原文质量”和Excel“回答质量”中查看，原文只留本地。支持范围与限制见[指标定义](skill/geo-sampling/references/metric-definitions.md#回答原文质量检查)。新旧筛查版本不自动计算变化，平台原生快照仍按平台口径。
-
 - Answerbit：运行者安全配置ANSWERBIT_API_KEY，或交互终端隐藏输入。品牌范围用ANSWERBIT_BRAND_ID，或私有.trial/answerbit-resources.json；可用ANSWERBIT_RESOURCE_CONFIG改路径。结构见[空白私有配置样例](examples/private-resources.example.json)，填写brand_id、team_id和question_bank_url后存入被忽略的私有目录；不要修改或提交已填值的公开样例，只传brand_id查询。Key格式通过后才读资源文件；查询成功不证明Key没有写权限，需在平台核实只读及品牌范围。
 - 在线题库：先读取GEO_QUESTION_BANK_URL，未设置时在Key就绪后读取同一私有资源文件的question_bank_url；复用拥有知识库及电子表格只读权限的官方lark-cli，必要时用LARK_CLI指定路径。题库保持只读。面向核查的题库链接可用GEO_QUESTION_BANK_URL；未配置则隐藏，不提交内部地址。
 - 权限审批：任何需企业管理员审批的权限，先按[权限申请前置报告](skill/geo-sampling/SKILL.md#权限申请前置报告)向用户说明具体权限、用途、资源范围、缺项与替代方式；用户决定前不发起申请、扩权或为权限生效发布应用版本。复用既有权限不等于已验证实时题库可读，仍需实际读取验收。
-- 题库只读授权由用户提供：缺少访问权时，将指定飞书题库以“可阅读”权限共享给当前Agent或其已配置应用，或完成对应只读授权。Agent负责连接配置、实读验收及后续复用；文件访问权和应用读取权限分别核验，需要企业管理员审批时先向用户报告，不以文件分享成功冒充接通。品牌信息先查私有配置，Excel读取组件由Agent处理。缺项按[中文提示规则](skill/geo-sampling/SKILL.md#一次性题库接入与缺项提示)说明问题、处理人及下一步，不要求用户提供变量名、权限代码或程序库。
+- 题库只读授权由用户提供：缺少访问权时，将指定飞书题库以“可阅读”权限共享给当前Agent或其已配置应用，或完成对应只读授权。Agent负责连接配置、实读验收及后续复用；文件访问权和应用读取权限分别核验，需要企业管理员审批时先向用户报告，不以文件分享成功冒充接通。品牌信息先查私有配置，Excel读取组件由Agent处理。缺项按[中文提示规则](skill/geo-sampling/references/feishu-connection.md#失败时按原因处理)说明问题、处理人及下一步，不要求用户提供变量名、权限代码或程序库。
 - 飞书交付：独立授权及私有GEO_FEISHU_CONFIG，配置指定位置、获准管理员和sharing_scope（默认admins_only；用户确认后可用tenant_readable公司内只读），按[飞书交付](skill/geo-sampling/references/feishu-preview.md)验收。identity可省略或留空，默认bot，既有user配置保持不变；它只影响发布，不阻止本地生成。
 
 不提交密钥、资源ID、私人配置、真实题库、原文、日志、数据库、Excel或真实HTML。Answerbit与飞书凭证分开，原文SQLite仅留获批本机。
@@ -49,7 +31,7 @@ python3 geo_run.py /path/to/question-bank.xlsx .trial/dashboard.sqlite .trial/GE
 | 目的 | 入口 |
 |---|---|
 | 仅验证在线题库，无需Answerbit Key | `python3 feishu_bank.py .trial/在线题库.xlsx` |
-| 仅本地看板 | `python3 dashboard.py refresh <题库.xlsx> <库.sqlite> <看板.html>` |
+| 仅本地国家看板 | 上方同一条 geo_run.py 命令加 `--local-only`，保留 `--market` 和同批分析 |
 | 离线重绘，不更换历史题库 | dashboard.py同参数，snapshot代替refresh；`--fetch-platform`仅补读平台快照 |
 | 历史推荐未知复检 | dashboard.py同参数，review代替refresh；`--defer-unavailable`仅在明确暂缓旧任务时使用 |
 | 命令行指标刷新 | `python3 answerbit.py refresh <题库.xlsx> <库.sqlite> --begin YYYY-MM-DD --end YYYY-MM-DD` |
@@ -74,31 +56,15 @@ answerbit.py支持单个`--group-id`和可重复`--tag-id`，按交集计算；�
 python3 feishu_publish.py <已有看板.html> <已有库.sqlite> --check-access
 ```
 
-不读取Answerbit、不上传、不改权限或任务。读探测成功不证明写入可用。`drive +download`报辅助权限不足时，先核对安装版本并用同一获批身份测试官方原生文件下载接口；不要仅凭快捷命令或HTTP状态就申请新权限。新增权限先确认，企业审批项在申请前先报告。API预览失败不代表飞书网页无法交互；检查和补发布都复用本批结果。
+此命令只探测读取能力。快捷下载报错、保留权限更新及回读操作见[已有权限单次发布](skill/geo-sampling/references/feishu-preview.md#已有权限单次发布)。
 
 初始化入口为 `python3 feishu_publish.py <计划看板.html> <计划库.sqlite> --market <获准国家> --initialize-registry <私有历史核查证明.json>`，多国重复 `--market`。首次可使用尚未生成的计划文件路径，不取真实数据；证明和旧回执导入要求见[中央记录与版本去重](skill/geo-sampling/references/feishu-preview.md#中央记录与版本去重)。已有看板时可省略国家参数，沿用看板已隔离范围。仅有旧 HTML 而无完整验收回执时不自动导入成功；记录损坏、已知链接不可达或上传结果不明均停止，要求管理员核查，不自动申请目录权限或重新取数。请备份整个私有状态目录，统一使用单一串行发布者。
 
-初始化和发布均使用`scope_config`解析后的同一国家目录；低层`initialize_registry`的`state`参数是该目录下的`last-success.json`文件路径，不是目录。已有手动上传HTML须留私有迁移记录，不能伪造为工具回执。已知文件更新用官方`drive +upload --file-token`或网页“上传新版本”，具体步骤见单次发布规程。定时任务继续暂停，发布成功不自动恢复。
+## 运行结果与续跑
 
-## 配置不足时的行为
+`--check` 只核对本地配置。缺发布配置时仍可完成已获准的本地分析；结果中的 `blockers` 指明发布缺项，有 `local.analysis_context` 时先完成同批核心发现。具体状态与下一步见[飞书交付](skill/geo-sampling/SKILL.md#飞书交付)。
 
-`--check`只检查本机前置条件，不请求平台，也不代替完整运行或每次取数前对飞书题库的实际核对；国家和Key就绪后才读私有品牌及发布配置，输出仅显示缺项名称，不回显实际值。blockers只列真实取数前置缺项，publication_warnings单列发布提示，不能据发布提示停止本地分析。`--local-only`仅在用户本次明确要求本地交付时使用；不能沿用被本次发布要求取代的旧轮次参数。
-
-未配置飞书发布、上传失败或验收失败时，完整本地分析返回`local_ready_pending_publication`，同时标记`delivery_status=incomplete`，保留同批本地结果；一次列清发布权限缺项并继续获准的修复，不能默认只发附件收尾。补发布仅运行`feishu_publish.py`，不重新取数。已验收飞书入口保持原样。缺在线题库或在线核对失败时，即使本地有Excel也停止真实取数；已有快照仍可纯离线查看。缺Key、品牌资源或有效题号仍停止真实分析，不能猜值。已核实的参数可由运行者在获批私有环境配置，无须在聊天发送。
-
-## 交付和规范
-
-核心发现由运行 Agent 按[分析流程](skill/geo-sampling/references/core-findings.md)分别分析总体及各国家后写入，不再机械选择最低比例。`local_ready_pending_analysis`返回后继续分析并独立发布同批结果，不重新取数。国家或其他筛选变化时仅复用同样本范围的结论。
-
-默认交付已验收飞书链接及同批简报：核心数据表、一段结论、最多三条证据行动。Excel可本地生成，默认不上传。原文通过同批本机库查看；飞书共享版仅保留题文、题号、日期、平台和分组定位，工作台入口不是原文直达。
-
-geo_run.py核对远端版本：reused复用已验收链接；pending_acceptance仍待实际预览和权限验收。证据绑定精确版本后，用`python3 feishu_publish.py <看板.html> <库.sqlite> --accept-proof <证据.json>`验收入账为published，才交付新链接。发布状态按国家集合隔离，避免串用他国上次入口。本地文件提交中断会回滚，未完成的提交标记阻止发布；进程意外中止后须重跑核对，不声称多文件写入具备系统级事务。失败保留上一成功结果，不发布半批；尚无固定链接切换，多人发布使用统一串行环境。
-
-- [Skill执行规程](skill/geo-sampling/SKILL.md)：启动、国家范围、流程及报告。
-- [指标定义](skill/geo-sampling/references/metric-definitions.md)：公式、分母、缺失与可比条件。
-- [运营场景](skill/geo-sampling/references/analysis-scenarios.md)：按实际分组/标签解读。
-- [看板展示与图表](skill/geo-sampling/references/dashboard-design.md)：布局、交互和选图。
-- [飞书交付](skill/geo-sampling/references/feishu-preview.md)：版本校验、分享、验收及失败处理。
+严格发布候选通过真实预览和权限检查后，用 `python3 feishu_publish.py <看板.html> <库.sqlite> --accept-proof <证据.json>` 登记。手动更新指定文件按单次发布规程独立留证。发布状态按国家集合隔离；中断后须核对本地提交及远端状态，保留上一成功结果。失败时不重新取数解决发布问题。
 
 ## 合成试跑与验证
 
