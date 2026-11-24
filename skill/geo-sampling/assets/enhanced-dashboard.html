@@ -1,0 +1,1520 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>GEO 本地看板</title>
+<style>
+:root{color-scheme:light;--ink:#142745;--muted:#536580;--blue:#2459c4;--deep:#101f3a;--line:#dde5f0;--paper:#fff;--wash:#f3f6fb;--soft:#eaf1ff;--radius:16px;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;font-size:15px}
+*{box-sizing:border-box}body{margin:0;color:var(--ink);background:var(--wash);line-height:1.55}a{color:var(--blue);text-underline-offset:3px}button,input,select{font:inherit}h1,h2,h3,p{margin:0}h2{font-size:1.55rem;letter-spacing:-.025em}h3{font-size:1.03rem}small,.sub,.definition{color:var(--muted);font-size:.86rem}.definition{margin:.45rem 0 .9rem}.wrap{max-width:1280px;margin:auto;padding:0 30px}.mast{background:#fff;border-bottom:1px solid var(--line)}.mast .wrap{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:64px}.brand{display:flex;gap:11px;align-items:center;font-weight:750}.mark{display:grid;place-items:center;background:#1e4db1;color:white;border-radius:9px;width:32px;height:32px;font-size:17px}.mast nav{display:flex;gap:22px;flex-wrap:wrap}.mast nav a{text-decoration:none;color:var(--muted);font-weight:600;font-size:.87rem}.hero{background:linear-gradient(112deg,#10203b,#173b72);color:#fff;border-radius:21px;margin:24px 0 16px;padding:27px 30px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:end}.eyebrow{font-size:.78rem;color:#bcd3fb;letter-spacing:.08em;font-weight:680}.hero h1{font-size:clamp(1.7rem,3.4vw,2.6rem);letter-spacing:-.04em}.hero p{color:#d4e2fa;margin-top:6px;font-size:.89rem}.hero a{color:#fff;font-size:.88rem}.filter,.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius)}.filter{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) repeat(2,minmax(0,.86fr)) auto;gap:10px;padding:13px 16px;align-items:end}.filter label,.f-label{display:block;color:var(--muted);font-size:.78rem;font-weight:650}.filter select,.filter input[type=date],.tagpick summary,button{min-height:37px;border:1px solid #cbd7e7;border-radius:8px;background:white;color:var(--ink);padding:6px 8px;width:100%;margin-top:4px}.filter select,.filter input{min-width:0}.tagpick{position:relative}.tagpick summary{display:block;cursor:pointer;font-size:.9rem;font-weight:500}.tagpick summary::after{content:" ▾";color:var(--blue)}.tag-options{position:absolute;z-index:4;top:100%;right:0;width:min(245px,80vw);max-height:245px;overflow:auto;border:1px solid var(--line);background:white;border-radius:10px;box-shadow:0 8px 24px #13254724;padding:9px}.tag-options label{display:flex;align-items:flex-start;gap:6px;padding:4px;font-weight:500}.tag-options input{margin-top:3px}button{cursor:pointer;width:auto;font-weight:650}.filter button{white-space:nowrap}button:hover,select:hover,.tagpick summary:hover{background:#f5f8ff}a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid #3262d6;outline-offset:2px}.scope{padding:8px 2px;color:var(--muted);font-size:.83rem}.warning{background:#eaf1ff;color:#254779;border-left:3px solid #4b70bf;border-radius:8px;padding:9px 12px;font-size:.87rem;margin:8px 0}.warning[hidden]{display:none}.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:5px 0 22px}.kpi{padding:14px 16px}.value{font-size:clamp(1.27rem,2.55vw,1.95rem);font-variant-numeric:tabular-nums;line-height:1.18;font-weight:750;color:#163c82;margin:5px 0 3px}.kpi b{font-size:.86rem}.kpi small{display:block}.section{margin:24px 0 0;scroll-margin-top:18px}.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 10px}.label{color:#32568a;background:#e9effa;border-radius:99px;font-size:.74rem;font-weight:650;padding:4px 9px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{min-width:0;padding:16px 18px}.wide{grid-column:1/-1}.native{display:grid;gap:10px}.native-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.native-cards .mini{background:#f1f5fc;border-radius:11px;padding:11px 13px}.native-cards .value{font-size:1.36rem}.mini small{display:block}.table-wrap{overflow:auto;width:100%;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;font-size:.87rem}th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#edf3fd;color:#294672;white-space:nowrap}tr:last-child td{border-bottom:0}td.num{white-space:nowrap;font-variant-numeric:tabular-nums}.brandlist{line-height:1.7}.empty{color:var(--muted);font-size:.88rem;padding:9px 0}.bars{display:grid;gap:8px}.bar{display:grid;grid-template-columns:minmax(90px,1.05fr) minmax(65px,2fr) minmax(112px,1.1fr);align-items:center;gap:8px;font-size:.83rem}.track{height:11px;background:#e9eff8;border-radius:3px;overflow:hidden}.fill{height:100%;background:#3162c5}.bar .number{text-align:right;font-variant-numeric:tabular-nums}.chart-label{display:flex;justify-content:space-between;color:var(--muted);font-size:.75rem;margin:.55rem 0 .2rem}.chart-group{margin:10px 0 0}.chart-group strong{font-size:.85rem}.trend svg{display:block;width:100%;height:auto;min-height:100px}.trend circle{fill:#2459c4}.trend text{font-size:12px;fill:#536580}.trend path{fill:none;stroke:#2459c4;stroke-width:2.4}.trend line{stroke:#dbe4f3}.action{border-left:4px solid #3063c8}.action strong{display:block;color:#214a91;margin:3px 0}.action p+p{margin-top:8px}.question{padding:8px 0;border-top:1px solid var(--line);margin-top:6px}.foot{padding:21px 0 36px;color:var(--muted);font-size:.83rem}.foot a+a{margin-left:12px}.compact{margin-top:10px}.brief{margin:-9px 0 19px;padding:11px 14px;display:flex;align-items:baseline;justify-content:space-between;gap:8px;background:#e8effd;color:#24436c;border-radius:10px;font-size:.85rem}.brief a{white-space:nowrap}.brief strong{color:#173a73}.native{grid-template-columns:minmax(0,1fr)}.definition details{padding-top:4px}.summary-link{font-size:.84rem}.pillnum{font-variant-numeric:tabular-nums}.soft{color:var(--muted)}.chart-mode{margin:5px 0 10px}.chart-mode select{padding:5px 8px;border:1px solid var(--line);border-radius:6px;color:var(--ink);background:white}
+@media(max-width:950px){.filter{grid-template-columns:repeat(4,minmax(0,1fr))}.filter button{justify-self:start}.wrap{padding:0 22px}}
+@media(max-width:650px){.wrap{padding:0 13px}.mast nav{gap:12px}.mast nav a{font-size:.76rem}.hero{grid-template-columns:1fr;margin-top:14px;padding:18px 16px}.filter{grid-template-columns:repeat(2,minmax(0,1fr));padding:10px}.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.card,.kpi{padding:12px}.native-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.native-cards .mini{padding:8px}.bar{grid-template-columns:minmax(75px,1.1fr) minmax(38px,1fr) minmax(106px,1.15fr);gap:5px}.bar-count{display:block;font-size:.75rem}.section{margin-top:20px}.mast .wrap{min-height:56px}.mark{width:27px;height:27px}}
+@media(max-width:360px){.mast nav{gap:7px}.brand{font-size:.85rem}.mast nav a{font-size:.71rem}.filter input[type=date]{font-size:.81rem;padding-inline:4px}.brief{display:block}.brief a{display:inline-block;margin-top:4px}.native-cards{grid-template-columns:1fr}}
+
+/* Overview and comparison */
+:root{--wash:#f2f5fb;--ink:#112546;--muted:#526680;--line:#dae4f2}
+.mast{background:#f9fbff}.hero{position:relative;isolation:isolate;overflow:hidden;min-height:154px;background:radial-gradient(ellipse at 90% 5%,#3267ac 0,transparent 53%),linear-gradient(120deg,#0c1b35,#193c73);padding:25px 28px;align-items:center}
+.hero::after{content:"";position:absolute;inset:0 0 0 50%;z-index:-1;background:repeating-linear-gradient(110deg,transparent 0 35px,#d8e9ff10 35px 36px);mask-image:linear-gradient(90deg,transparent,#000)}
+.hero-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:12px}.hero-actions a{white-space:nowrap}.hero-actions button{color:#0d3064;background:#eaf2ff;border:1px solid #d3e2fd;margin:0;padding:7px 12px}.hero-actions button[aria-expanded=true]{background:#cadfff}
+.filter-frame{border:1px solid var(--line);background:#fff;border-radius:16px;overflow:visible}.filter-frame .filter{border:0;background:none;padding:0 14px 12px}.filter-heading{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 14px 6px}.filter-heading b{font-size:.91rem}.filter-heading span{font-size:.76rem;color:var(--muted)}
+.pick-grid>div{min-width:0}.pick-grid{grid-template-columns:repeat(5,minmax(0,1fr)) repeat(2,minmax(0,.85fr)) auto}.picker{min-width:0;position:relative}.picker summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0;min-height:37px;margin-top:4px;padding:6px 9px;border:1px solid #c9d7eb;border-radius:8px;cursor:pointer;background:#f8faff;font-size:.86rem}.picker summary::-webkit-details-marker{display:none}.picker summary::after{content:"⌄";color:#3865a8}.picker summary span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.picker[open] summary,.picker.has-selection summary{border-color:#8db0ed;background:#edf4ff;color:#1c4388}
+.pick-menu{position:absolute;z-index:5;left:0;top:calc(100% + 3px);width:max(100%,190px);max-width:calc(100vw - 33px);padding:7px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px #112b4f26}.pick-list{max-height:196px;overflow:auto}.pick-list label{display:flex;align-items:center;gap:7px;padding:5px 4px;color:var(--ink);font-weight:500}.pick-list label:hover{background:#edf4ff}.pick-menu button{min-height:28px;padding:2px 7px;margin:0 0 5px;color:var(--blue);font-size:.75rem}.pick-menu .tag-rule{display:flex;justify-content:space-between;align-items:center;gap:4px;padding:0 3px 5px}.pick-menu .tag-rule select{width:auto;font-size:.75rem;min-height:26px;margin:0;padding:0 2px}
+.kpi{border-top:3px solid #b9d0f1;padding-top:11px}.kpi:nth-child(2){border-top-color:#3c6fcb}.scope{padding:9px 2px 5px}.compare{margin:18px 0 25px;border:1px solid #bfd1ee;background:#eaf1fc;padding:15px;border-radius:17px}.compare[hidden]{display:none}.compare-head{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;margin-bottom:10px}.compare-head p{color:var(--muted);font-size:.83rem}.compare-head button{margin:0;color:#204785}.compare .filter-frame{margin-bottom:10px}.compare-results{margin-top:10px}.cohorts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.cohort{background:white;border:1px solid var(--line);border-radius:11px;padding:9px 11px;min-width:0;overflow-wrap:anywhere}.cohort .tag{display:inline-grid;place-items:center;width:21px;height:21px;border-radius:6px;color:white;background:#2459c4;margin-right:5px;font-size:.76rem}.cohort.b .tag{background:#526888}.cohort small{display:block;margin-top:3px}.compare-chart{padding:10px 0}.compare-chart .bar:last-child .fill{background:#627b9f}.compare-results table td:not(:first-child){font-variant-numeric:tabular-nums}.delta{color:#244681;font-weight:670;white-space:nowrap}.compare .table-wrap{background:white}
+@media(max-width:950px){.pick-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:650px){.hero{min-height:0;padding:17px 14px}.hero-actions{justify-content:flex-start;gap:7px 10px}.hero-actions button{min-height:32px;padding:4px 8px;font-size:.83rem}.filter-frame .filter{padding:0 9px 9px}.filter-heading{padding:8px 9px 5px}.filter-heading span{font-size:.68rem}.pick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pick-grid>div:nth-child(even) .pick-menu{left:auto;right:0}.compare{padding:9px}.cohorts{grid-template-columns:1fr}}
+
+.native-cards{gap:12px}.native-cards .native-tab{text-align:left;width:100%;margin:0;border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:#f8faff;font-weight:500}.native-cards .native-tab[aria-pressed=true]{border-color:#779de0;background:#edf4ff;box-shadow:inset 0 3px #3466c8}.native-plot{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:14px}.native-plot>div{min-width:0;border:1px solid var(--line);border-radius:12px;padding:12px}.native-plot h3,.native-sources h3{margin-bottom:5px}.native-sources{margin-top:4px}.native-sources summary{color:var(--blue);font-size:.88rem;cursor:pointer}.native-ranking .own{color:#2256b0;font-weight:700}.native-plot .trend{margin-top:7px}.trend-legend{display:flex;flex-wrap:wrap;gap:4px 11px;font-size:.78rem;color:var(--muted)}.trend-legend i{display:inline-block;width:9px;height:9px;margin-right:4px;border-radius:3px}@media(max-width:650px){.native-plot{grid-template-columns:1fr}.native-plot>div{padding:8px}.native-cards .native-tab{padding:7px 8px}}
+.brand-logo{object-fit:contain;flex:0 0 auto}.compare{background:#f8fbff;border-color:#cdddf5;padding:16px 18px}.reference-editor{margin:7px 0 12px}.reference-editor>summary,.compare-detail>summary,.action-quality>summary{cursor:pointer;font-weight:650;color:#244d92;font-size:.87rem}.reference-editor .filter-frame{margin:7px 0 0}.reference-editor .filter-heading button{font-size:.76rem;min-height:29px;margin:0}.cohorts{margin-bottom:10px}.cohort .tag{display:inline-flex;width:auto;padding:0 6px;font-weight:600}.compare-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:10px 0}.compare-metric{padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:white;min-width:0}.compare-metric h3{font-size:.87rem}.compare-metric .delta{display:block;font-size:1.22rem;margin:2px 0 4px}.compare-points{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0;font-size:.79rem;color:var(--muted)}.compare-points span{min-width:0;overflow-wrap:anywhere}.compare-points b{display:block;color:#173c77;font-size:.92rem}.metric-track{height:20px;margin:6px 7px 0;position:relative;background:linear-gradient(#e2eaf8,#e2eaf8) center/100% 2px no-repeat}.metric-segment{position:absolute;top:9px;height:2px;background:#a4b9dc}.metric-dot{position:absolute;top:5px;border-radius:50%;width:10px;height:10px;transform:translateX(-50%);background:#2459c4;z-index:1}.metric-dot.reference{border:2px solid #657c9c;background:#fff;width:12px;height:12px;top:4px;z-index:0}.axis-caption{display:flex;justify-content:space-between;color:var(--muted);font-size:.71rem}.compare-detail{border-top:1px solid var(--line);padding-top:7px;margin-top:6px}.compare-detail .table-wrap{margin-top:8px}.compare-detail td:not(:first-child){font-variant-numeric:tabular-nums}.action-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.action-item{padding:14px 16px}.action-item .action-heading{display:flex;align-items:baseline;justify-content:space-between;gap:7px;flex-wrap:wrap}.action-item .action-heading span{color:#2459a9;font-weight:700;font-variant-numeric:tabular-nums}.action-item .action-scope{margin:4px 0 7px}.action-item dl{display:grid;grid-template-columns:4em minmax(0,1fr);gap:5px 7px;margin:8px 0;font-size:.86rem}.action-item dt{font-weight:650;color:#284a7d}.action-item dd{margin:0}.action-item .question{font-size:.82rem}.action-item .question small{display:block}.action-quality{margin-top:11px}.action-quality .definition{margin:.4rem 0}.action-item .sample-note{margin-top:5px}.action-module .section-head p{margin-top:2px}@media(max-width:650px){.compare{padding:11px}.compare-kpis,.action-list{grid-template-columns:1fr}.compare-metric{padding:8px 10px}.action-item{padding:11px}.brand-logo{width:25px;height:25px}}
+/* One analysis view per tab. */
+[data-page][hidden],#global-filters[hidden],.scope[hidden]{display:none}
+.mast-context{color:var(--muted);font-size:.79rem;font-weight:600}
+.page-tabs{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;margin:0 0 14px;padding:5px;background:#e8eff9;border:1px solid #dae4f2;border-radius:13px}
+.page-tabs a{text-align:center;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:8px 4px;border-radius:8px;text-decoration:none;color:#445e82;font-size:.87rem;font-weight:650}
+.page-tabs a:hover{background:#f4f8ff}.page-tabs a[aria-current=page]{background:#fff;color:#204d9d;box-shadow:0 1px 4px #142a5520}
+body:not([data-active-view=overview]) .hero{min-height:0;padding-block:16px}body:not([data-active-view=overview]) .hero h1{font-size:clamp(1.25rem,2vw,1.7rem)}body:not([data-active-view=overview]) .hero .eyebrow,body:not([data-active-view=overview]) .hero-shortcut{display:none}
+.hero-actions .hero-shortcut{color:#173b75;background:#eaf2ff;padding:6px 10px;border-radius:8px;font-weight:650;text-decoration:none}
+#overview{margin-top:6px}#overview .kpis{margin-bottom:22px}#sources .bars,#sources .chart-label{max-width:760px}.chart-label{display:grid;grid-template-columns:minmax(90px,1.05fr) minmax(65px,2fr) minmax(112px,1.1fr);gap:8px}.chart-label>div{grid-column:2;display:flex;justify-content:space-between}
+@media(max-width:650px){.chart-label{grid-template-columns:minmax(75px,1.1fr) minmax(38px,1fr) minmax(106px,1.15fr);gap:5px}.page-tabs{grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;padding:3px}.page-tabs a{font-size:.79rem;padding:6px 2px}.mast-context{font-size:.71rem}body:not([data-active-view=overview]) .hero{padding-block:12px}}
+.review-nav{display:flex;align-items:center;justify-content:flex-end;gap:9px;padding-top:7px;font-size:.82rem;color:var(--muted)}.review-reason{display:inline-flex;align-items:center;gap:7px;font-size:.84rem;color:var(--muted);margin-top:7px}.review-reason select{max-width:65vw;padding:5px 7px;border:1px solid var(--line);border-radius:7px;background:#f7faff;color:var(--ink)}.review-nav button:disabled{opacity:.55;cursor:default}.compare-metric .delta{font-size:1rem;white-space:normal}.compare-detail .delta{white-space:normal}
+.hero{box-shadow:0 10px 26px #152e5b22}
+.hero-actions a:first-child{padding:7px 10px;border:1px solid #b8d2ff55;border-radius:8px;text-decoration:none}
+.hero-actions a:first-child:hover{background:#d4e5ff19}
+.page-tabs a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid #3066bf;outline-offset:2px}
+.card,.filter-frame,.compare{box-shadow:0 2px 7px #17315109}
+.kpis{gap:14px}.kpi{padding:16px 18px;background:linear-gradient(155deg,#f8fbff,#fff 58%)}
+.kpi:nth-child(3){border-top-color:#5681b9}.kpi:nth-child(4){border-top-color:#508da1}
+.kpi b{color:#2c476c;font-size:.9rem}.kpi .value{margin:7px 0 5px;letter-spacing:-.04em}
+.kpi small{display:block;overflow-wrap:anywhere;font-size:.78rem}
+.section-head{margin-bottom:13px}.table-wrap tbody tr:nth-child(even){background:#f9fbff}
+.metric-guide .grid{counter-reset:guide;gap:16px;align-items:start}
+.metric-guide article{counter-increment:guide;padding:18px 21px}
+.metric-guide article h3{display:flex;align-items:center;gap:9px;font-size:1.08rem}
+.metric-guide article h3::before{content:counter(guide,decimal-leading-zero);font-variant-numeric:tabular-nums;letter-spacing:.04em;color:#2556a8;background:#edf3ff;border-radius:7px;padding:3px 7px;font-size:.75rem}
+.metric-guide dl{margin:7px 0 0}.metric-guide dt{font-weight:700;padding-top:12px;margin-top:12px;border-top:1px solid #e8eef6}
+.metric-guide dd{margin:3px 0 0;color:var(--muted);line-height:1.65}
+.metric-help{display:inline-block;font-size:.72rem;margin-top:7px;text-decoration:none}.metric-guide dd p{margin-top:5px}
+.home-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:15px}
+.home-actions .card{padding:14px 16px}.home-actions h3{font-size:.94rem}.home-actions p{font-size:.82rem;margin-top:6px}
+.home-actions small{display:block;margin-top:7px}.data-status,.named-topic{margin-bottom:15px}
+.named-topic summary,.data-status summary{cursor:pointer;color:#244d92;font-weight:650;font-size:.88rem}
+.named-topic .table-wrap{margin-top:10px}.home-actions .priority{display:inline-block;border-radius:5px;background:#e9f0ff;color:#2455a4;padding:1px 6px;margin-right:5px;font-size:.74rem}
+.mobile-hint{display:none}
+@media(max-width:650px){.home-actions{grid-template-columns:1fr}.home-actions .card{padding:12px 14px}.mobile-hint{display:block;color:var(--muted);font-size:.74rem;margin-top:5px}}
+@media(max-width:650px){.kpis{gap:9px}.kpi{padding:11px 12px}.metric-guide .grid{gap:11px}.metric-guide article{padding:14px 15px}.metric-guide article h3{font-size:1rem}}
+
+/* Executive layout: fixed navigation, restrained cards, one task per view. */
+:root{--ink:#172b4d;--muted:#61718a;--wash:#f0f4fa;--line:#dce5f1;--radius:16px;font-size:14px}
+body{background:radial-gradient(ellipse at 80% 0,#e7effd,transparent 55%),var(--wash)}
+.mast{position:fixed;inset:0 auto 0 0;width:224px;background:linear-gradient(155deg,#111c32,#142849 75%,#1c3c70);border:0;color:white;z-index:20;overflow:auto}
+.mast::after{content:"";position:absolute;bottom:-100px;left:-80px;width:370px;height:330px;border:1px solid #749be92b;border-radius:50%;transform:rotate(-35deg);background:linear-gradient(140deg,#284e8b33,transparent);pointer-events:none}
+.mast .wrap{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;padding:30px 17px;gap:8px;position:relative;z-index:1}
+.brand{font-size:20px;white-space:nowrap;letter-spacing:-.04em}.brand-logo{width:31px;height:31px}.mast-context{color:#bacbe5;padding-left:44px;font-size:12px;font-weight:400}
+.page-tabs{display:flex;flex-direction:column;margin:30px 0 0;padding:0;background:transparent;border:0;gap:10px}.page-tabs a{text-align:left;color:#c8d5e9;font-size:14px;font-weight:550;display:flex;align-items:center;gap:13px;min-height:48px;padding:12px 14px;white-space:normal;overflow:visible}.page-tabs a span{font-size:21px;width:23px;text-align:center}.page-tabs a:hover{background:#ffffff0d;color:#fff}.page-tabs a[aria-current=page]{background:linear-gradient(100deg,#415e95,#354c78);color:#fff;box-shadow:0 5px 15px #060c1926}
+main.wrap{max-width:1700px;margin:0 0 0 224px;padding:0 30px 25px}.hero,.hero::after{background:none;box-shadow:none}.hero::after,.hero .eyebrow{display:none}.hero{color:var(--ink);min-height:0;margin:0 0 16px;padding:23px 0 16px;border-bottom:1px solid var(--line);border-radius:0;gap:12px}.hero h1{font-size:26px!important;letter-spacing:-.03em;border-left:4px solid #2867dc;padding-left:12px}.hero p{color:var(--muted);font-size:12px;line-height:1.7}.hero-actions a:first-child{color:#365783;border:1px solid #c9d8ed;background:#fff;padding:8px 12px}.hero-actions .hero-shortcut{display:none}
+.workspace-nav{display:flex;gap:8px;margin:0 0 16px}.workspace-nav[hidden]{display:none}.workspace-nav a{padding:8px 17px;border:1px solid var(--line);border-radius:9px;text-decoration:none;background:#fff;color:var(--muted)}.workspace-nav a[aria-current=page]{background:#e5eeff;color:#225bc0;border-color:#b5ccef;font-weight:650}
+.filter-frame{border-radius:12px;background:#ffffffc9;box-shadow:none}.filter-heading{padding-block:9px 4px}.picker summary{background:#f8faff}.filter-frame .filter{padding-bottom:10px}.scope{font-size:12px;padding:10px 2px 14px}.section{margin-top:9px}.card{background:#ffffffdf;border-color:#d5e1f2;box-shadow:0 3px 13px #233e6c05;padding:20px 22px}.section-head h2{font-size:20px}.section-head h3{font-size:17px}.kpis{gap:14px;margin-bottom:20px!important}.kpi{position:relative;border:1px solid #ccddf7!important;background:linear-gradient(135deg,#f4f8ff,#eaf2ff);padding:19px 19px 16px;min-height:159px}.kpi:nth-child(2){background:linear-gradient(135deg,#f2fbff,#e9f5f8)}.kpi:nth-child(3){background:linear-gradient(135deg,#f8f7ff,#efeffc)}.kpi:nth-child(4){background:linear-gradient(135deg,#f8f7ff,#f0effb)}.kpi b{font-size:13px;color:#20375e}.kpi .value{font-size:clamp(25px,2.6vw,41px);letter-spacing:-.05em;line-height:1.2;margin:13px 0 9px;color:#152c55}.kpi small{font-size:11px;line-height:1.7}.metric-help{font-size:11px}.overview-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:17px;margin:18px 0 22px}.finding #headline{font-size:15px;line-height:1.95;border-left:3px solid #3472d7;padding-left:16px;margin:18px 0}.finding a{font-size:12px}.market-summary .bar{grid-template-columns:65px minmax(40px,1fr) 135px;gap:10px;margin-top:12px}.track{height:17px;background:#eaf0fa;border-radius:4px}.fill{border-radius:4px;background:linear-gradient(90deg,#2a6cdb,#5b96f1)}.bar .number{font-size:12px;color:#263d62}.chart-label{font-size:11px}.market-summary .chart-label{grid-template-columns:65px minmax(40px,1fr) 135px;gap:10px}.scenario-card{margin:16px 0}.scenario-card summary{font-size:13px;font-weight:600;cursor:pointer}.scenario-card[open] .table-wrap{margin-top:12px}.home-actions{gap:14px}.home-actions .card{padding:17px 18px}.home-actions h3{font-size:14px}.priority{background:#e5edff;color:#2f60b7;border-radius:6px;padding:4px 7px;margin-right:7px}.home-actions .card:nth-child(1) .priority{color:#a23e45;background:#fde8eb}.data-status{padding:14px 18px;margin:18px 0}.data-status h3{font-size:13px}.data-status .definition{margin:6px 0;font-size:12px}.named-topic{margin:16px 0}.table-wrap{border-radius:10px}th{font-size:12px;background:#eaf0fa;padding:12px;color:#3a5276}td{padding:12px;line-height:1.7;font-size:12px}tbody tr:hover{background:#eff5ff!important}.table-wrap tbody tr:nth-child(even){background:#f8faff}.grid{gap:17px}.action-list{gap:16px}.action-item{padding:21px}.action-item dt{font-size:12px}.action-item dd{line-height:1.8}.action-item .question{background:#f2f6fc;padding:12px;border:0;border-radius:9px}.compare{background:transparent;border:0;padding:0;box-shadow:none}.foot{font-size:12px}.metric-guide article{background:#fff}.source-evidence{margin-top:12px}
+@media(min-width:1500px){main.wrap{padding-inline:40px}.kpi{min-height:169px}}
+@media(max-width:1150px){.mast{width:194px}.mast .wrap{padding-inline:12px}.brand{font-size:18px}main.wrap{margin-left:194px;padding-inline:20px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.overview-grid{grid-template-columns:1fr}.home-actions{grid-template-columns:1fr}.kpi{min-height:145px}}
+@media(max-width:700px){.mast{position:relative;width:auto;overflow:visible}.mast::after{display:none}.mast .wrap{padding:14px 14px 0;gap:5px}.brand{font-size:18px}.mast-context{display:none}.page-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;margin:9px 0 0;padding-bottom:10px}.page-tabs a{display:flex;flex-direction:column;gap:2px;text-align:center;font-size:10px;line-height:1.4;min-height:54px;padding:7px 2px;border-radius:8px}.page-tabs a span{font-size:18px}.page-tabs a[aria-current=page]{background:#3b5687}main.wrap{margin:0;padding:0 13px 20px}.hero{padding-top:17px;grid-template-columns:1fr;gap:8px;margin-bottom:13px}.hero h1{font-size:21px!important}.hero-actions{justify-content:flex-start}.hero-actions a{font-size:11px!important}.hero p{font-size:11px}.kpis{gap:9px}.kpi{min-height:162px;padding:13px 12px}.kpi b{font-size:12px}.kpi .value{font-size:29px;margin:12px 0 8px}.kpi small{font-size:10px}.metric-help{font-size:10px}.card{padding:16px 14px}.market-summary .bar{grid-template-columns:48px minmax(30px,1fr) 110px;gap:5px;font-size:11px}.market-summary .chart-label{grid-template-columns:48px minmax(30px,1fr) 110px;gap:5px}.bar .number{font-size:11px}.bar-count{font-size:10px}.overview-grid{gap:12px;margin-bottom:18px}.finding #headline{font-size:13px;line-height:1.8}.workspace-nav{gap:5px;flex-wrap:wrap}.workspace-nav a{font-size:12px;padding:7px 11px}.table-wrap{max-width:100%}.grid{grid-template-columns:1fr}.action-list{grid-template-columns:1fr}.native-cards{grid-template-columns:1fr}.filter-heading span{max-width:50%;text-align:right}.section-head h2{font-size:19px}.source-evidence details{overflow-wrap:anywhere}}
+@media(prefers-reduced-motion:no-preference){a,button,summary{transition:background .15s,border-color .15s,box-shadow .15s}}
+
+.mast .wrap{min-height:0;height:auto;flex:none}.mast .page-tabs{display:flex;flex-direction:column;flex-wrap:nowrap;gap:10px}.mast .page-tabs a{color:#c8d5e9}.mast .page-tabs a[aria-current=page]{color:#fff}@media(max-width:700px){.mast .page-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;flex-direction:initial}.mast .page-tabs a{font-size:10px}}
+
+/* Matrix and mutually exclusive platform reputation, without decorative trends. */
+#overview .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.card-history{font-size:11px;color:#586c89;margin-top:10px;padding-top:8px;border-top:1px solid #cbd9ed;line-height:1.6}.overview-grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:start}.matrix-card .table-wrap{max-height:530px}.matrix-card table{min-width:490px}.matrix-card th{position:sticky;top:0;z-index:1;white-space:normal;min-width:112px}.matrix-card th:first-child{min-width:75px}.matrix-card td{padding:6px}.matrix-cell{display:block;width:100%;min-width:104px;min-height:81px;margin:0;border:1px solid #b7ccec;border-radius:6px;background:rgba(41,104,212,var(--heat));color:#102b51;padding:9px 5px}.matrix-cell:hover{background:#d9e7fc!important;box-shadow:inset 0 0 0 2px #3b73c9}.matrix-cell b{display:block;font-size:16px}.matrix-cell small{display:block;color:#1e3c66;font-size:11px}.matrix-cell em{font-size:9px;display:block;font-style:normal;margin-top:3px}.matrix-empty{display:block;background:#f0f2f6;padding:12px 6px;min-height:81px;color:#66758d;font-size:12px}.matrix-empty small{font-size:10px}.sent-stack{height:34px;display:flex;overflow:hidden;border-radius:7px;margin:16px 0 18px;background:#edf1f7}.sent-stack span{height:100%;min-width:0}.sent-key{width:11px;height:11px;border-radius:3px;display:inline-block;vertical-align:middle;margin-right:7px}.sentiment-summary .table-wrap{border:0}.sentiment-summary td,.sentiment-summary th{padding:9px 7px}.finding{margin:0 0 20px}.finding #headline{margin-block:8px}.home-actions{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+@media(max-width:1150px){.overview-grid{grid-template-columns:1fr}.home-actions{grid-template-columns:1fr}}
+@media(max-width:700px){#overview .kpis{grid-template-columns:1fr}.kpi{min-height:0!important;padding:17px!important}.kpi .value{font-size:34px}.card-history{font-size:11px}.matrix-card table{min-width:480px}.matrix-cell{min-width:99px}.overview-grid{gap:13px}.home-actions{grid-template-columns:1fr}.matrix-card .section-head{align-items:flex-start}}
+
+.matrix-card td:first-child{position:sticky;left:0;background:#f8fbff;z-index:1}.matrix-card th:first-child{left:0;z-index:2;width:90px}
+.data-reminder{margin:15px 0;border:1px solid #d8e3f2;border-radius:10px;background:#edf3fc;color:#4f6483;font-size:12px}.data-reminder>summary{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:11px 15px;cursor:pointer;list-style:none}.data-reminder>summary::-webkit-details-marker{display:none}.reminder-link{white-space:nowrap;color:#255da8;font-weight:600}.reminder-details{padding:4px 15px 15px;border-top:1px solid #d8e3f2}.reminder-details .table-wrap{margin:10px 0;background:white}.data-reminder[open] .reminder-link{color:#536a8c}.named-topic .definition{margin-top:9px}@media(max-width:700px){.data-reminder>summary{align-items:flex-start;padding:11px 12px;gap:8px;font-size:11px}.reminder-details{padding:6px 10px 12px}.reminder-link{font-size:11px}}
+</style>
+<style>:root{--ink:#172b49;--muted:#64768f;--line:#dfe7f0;--wash:#f2f5fa;--radius:13px;font-size:14px}
+[hidden]{display:none!important}
+.keyword-origin{font-size:10px!important;white-space:nowrap}.keyword-origin[data-origin=platform]{color:#60738c!important;background:#f2f5f9!important}.keyword-origin[data-origin=local]{color:#245b97!important;background:#edf5ff!important;border-color:#cddff4!important}.record-focus{background:#fff4c5!important;box-shadow:inset 3px 0 #3575bf;border-radius:5px;padding:8px 10px!important;outline:none}.record-focus-badge{display:inline-block;font-size:10px;font-weight:600;color:#245688;background:#fff;border:1px solid #d0ddec;border-radius:4px;padding:0 6px;margin-right:8px;white-space:nowrap}.record-related-metric{background:#edf5ff;border-radius:4px;padding:4px 8px!important}.record-original mark{background:#ffe586;color:#172b49;border-radius:3px;padding:1px 0}.table-keywords a{color:#315c91;text-decoration-color:#a8bfdc}.table-keywords .keyword-origin{margin-right:4px}.record-keywords li{overflow-wrap:anywhere}
+.keyword-evidence{list-style:none;margin:12px 0;padding:0;font-size:12px;line-height:1.8}.keyword-evidence li{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 8px;margin:6px 0;overflow-wrap:anywhere}.keyword-evidence li>b,.record-keywords li>b{font-size:10px;color:#58718f;border:1px solid #dce5f1;border-radius:4px;padding:0 5px;white-space:nowrap}.keyword-evidence li[data-polarity=negative]>b,.record-keywords li[data-polarity=negative]>b{color:#a33737;background:#fff4f3;border-color:#f2dedd}.keyword-evidence a{color:#274e83;text-decoration:underline;text-decoration-color:#b6c9e2;text-underline-offset:3px}.keyword-evidence small{font-size:10px;color:#71839b;white-space:nowrap}.keyword-empty{font-size:11px;color:#71839b}.record-keywords{list-style:none;margin:0;padding:0}.record-keywords li{margin:0 0 8px;line-height:1.9}.record-keywords li>b{margin-right:8px}.record-original{border-top:1px solid #e1e8f2;padding-top:15px}.record-original summary{font-size:13px;font-weight:600;color:#345e94;cursor:pointer}.record-original pre{font:inherit;font-size:13px;line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere;max-height:560px;overflow:auto;background:#f7f9fc;border:1px solid #e4ebf4;border-radius:8px;padding:18px;margin:13px 0 0}.table-keywords{min-width:230px;max-width:360px;font-size:11px;white-space:normal}.table-keywords p{margin:0 0 6px;line-height:1.8}.table-keywords b{font-weight:550;color:#637b98}.table-keywords small{font-size:10px;color:#71839b}.overview-actions .keyword-evidence{font-size:11px}.overview-actions .keyword-evidence small{font-size:9px}@media(max-width:700px){.keyword-evidence{font-size:11px}.record-original pre{font-size:12px;padding:12px;max-height:450px}}
+.action-sentiment{margin:13px 0}.action-field-label{display:block;font-size:11px;color:#64768f;margin-bottom:7px}.action-sentiment>div{display:flex;flex-wrap:wrap;gap:6px}.action-sentiment [data-sentiment]{font-size:11px;color:#3f5878;background:#f2f6fb;border:1px solid #e5ebf4;border-radius:5px;padding:4px 7px}.action-sentiment [data-sentiment=negative]{color:#a33737;background:#fff4f3}.action-sentiment [data-sentiment=mixed]{color:#8b631c;background:#fff9ed}.action-sentiment [data-sentiment=unknown]{color:#65758b}.action-field-note{font-size:11px;line-height:1.8;color:#64768f;margin:0 0 16px}.action-next{font-size:12px;line-height:1.9;margin:12px 0}.action-next>b{margin-right:9px}.action-retest{font-size:11px;line-height:1.8;margin:10px 0 14px;color:#526b8c}.action-retest summary{cursor:pointer;color:#365e94}.action-item .question{font-size:12px;overflow-wrap:anywhere}#answer-record{scroll-margin-top:20px}#answer-record:focus{outline:2px solid #8babdb;outline-offset:3px}.record-question{font-size:16px;font-weight:600;line-height:1.8}.record-fields{display:grid;grid-template-columns:135px minmax(0,1fr);gap:10px 18px;font-size:12px;line-height:1.8;margin:20px 0}.record-fields dt{color:#64768f}.record-fields dd{margin:0;overflow-wrap:anywhere}.record-cohort{border-top:1px solid #e5ebf4;padding-top:12px}.record-cohort>p{font-size:11px;color:#64768f;line-height:1.8}@media(max-width:700px){.record-fields{grid-template-columns:105px minmax(0,1fr);gap:9px;font-size:11px}.record-question{font-size:14px}.action-next{font-size:11px}.action-field-note{font-size:10px}}
+.picker[data-key=e] .pick-list label{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:8px;align-items:center}.platform-name{white-space:nowrap}.platform-status{font-size:10px;color:#6c819a;white-space:nowrap}.pick-list label[data-platform-state=not_configured] .platform-name{color:#76879c}.action-group{grid-column:1/-1;min-width:0}.action-group>.section-head{margin:5px 0 13px}.action-group>.section-head span{font-size:11px;color:#64768f}.action-group+.action-group{margin-top:12px}.action-group>.section-head h3{font-size:16px}#daily-trend-plot{overflow-x:auto}#daily-trend-plot svg{max-width:none}#daily-trend-plot .trend-sample{font-size:10px;fill:#71859e}
+.country-no-data{color:#879ab1;font-size:12px}#topics>.section-head,#named>.section-head,#traffic>.section-head,#metrics>.section-head,#compare .compare-head h2,#action>.section-head h2{display:none}#brand .chart-label{grid-template-columns:minmax(100px,1fr) minmax(120px,3fr) 155px;gap:16px}
+.country-row>span:first-child{white-space:nowrap;min-width:48px}
+.picker[data-key=e] .pick-menu{min-width:290px}
+#trends>.section-head{display:none}.trend-entry{font-size:11px;text-decoration:none}.trend-toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:8px 0 13px}.trend-toolbar label{font-size:11px;color:#637b98;display:flex;align-items:center;gap:9px}.trend-toolbar select{font:inherit;font-size:12px;color:#214c83;background:#fafcff;border:1px solid #ccd9e9;border-radius:7px;padding:7px 10px;min-width:195px}.trend-toolbar>a{font-size:11px;white-space:nowrap}.daily-trend-legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:11px;color:#526b8c;margin:16px 0 10px}.daily-trend-legend i,.trend-values i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px}#daily-trend-plot{width:100%;min-height:130px}#daily-trend-plot svg{display:block;width:100%;height:auto}#daily-trend-plot text{font-size:11px;font-family:inherit;fill:#637b97}#daily-trend-plot .trend-gridline{stroke:#e4ebf4;stroke-width:1;pointer-events:none}.daily-trend-line{stroke-width:2.2;fill:none;stroke-linejoin:round;stroke-linecap:round;pointer-events:none}.daily-trend-point{stroke-width:2;fill:white;pointer-events:none}.trend-hit{fill:transparent;pointer-events:all}.is-active .trend-hit{fill:#2459c408}#daily-trend-plot g:focus-visible{outline:none}#daily-trend-plot g:focus-visible .trend-hit{stroke:#3870c7;stroke-width:1}.trend-selected-day{display:flex;align-items:center;gap:13px;font-size:11px;color:#6c819a;margin:16px 0 10px}.trend-selected-day b{color:#254d7f;font-size:12px}.trend-values{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}.trend-values>div{padding:12px 14px;background:#f6f9fd;border:1px solid #e4ebf5;border-radius:9px;min-width:0}.trend-values span{display:block;color:#58718f;font-size:11px}.trend-values strong{display:block;color:#203f6a;font-size:15px;font-weight:650;margin-top:6px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.trend-data{border-top:1px solid #e4ebf4;margin-top:19px;padding-top:13px}.trend-data>summary{font-size:12px;color:#3d6599;cursor:pointer;font-weight:550}.trend-data .table-wrap{margin-top:12px}.trend-data th{white-space:normal;min-width:140px}.trend-data th:first-child{min-width:105px}.trend-data td{white-space:nowrap;font-variant-numeric:tabular-nums}
+@media(max-width:700px){.trend-toolbar{align-items:flex-start;gap:9px}.trend-toolbar label{font-size:10px;display:block}.trend-toolbar select{display:block;margin-top:6px;min-width:0;max-width:220px;font-size:11px}.trend-toolbar>a{font-size:10px;margin-top:7px}.daily-trend-legend{font-size:10px;gap:7px 13px}.trend-selected-day{font-size:10px;align-items:flex-start;gap:8px;flex-wrap:wrap}.trend-values{grid-template-columns:1fr}.trend-values>div{padding:11px 12px}.trend-values strong{font-size:14px}.trend-values span{font-size:10px}.trend-entry{font-size:10px}#daily-trend-plot text{font-size:10px}}
+.overview-lower #country-overview .country-row{grid-template-columns:49px minmax(25px,1fr) 72px 67px;gap:7px;min-height:48px}.overview-lower #country-overview .country-value{font-size:11px}.period-cell{text-align:right;white-space:nowrap}.period-change{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}.period-up{color:#15803d}.period-down{color:#dc2626}.period-flat,.period-unavailable{color:#718096}.period-note{grid-column:1/-1;font-size:10px;color:#697f99;border-top:1px solid #edf1f6;padding-top:11px;margin-top:8px;line-height:1.9}.period-note a{font-size:10px}.country-axis{align-items:flex-end;gap:10px;line-height:1.8}.country-axis span:first-child{line-height:1.8}.action-item .action-heading h3{line-height:1.8}
+.overview-lower{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(275px,1fr);gap:16px;align-items:start}.overview-lower>article{position:relative}.overview-lower #country-overview{grid-template-columns:1fr}.overview-lower .detail-link{position:static;display:block;margin:-4px 0 10px}.overview-actions>.section-head{margin:0 0 12px}.overview-actions .home-actions{grid-template-columns:1fr}.overview-actions .home-actions .card{padding:16px}.overview-actions>.section-head h2{font-size:16px}
+body{background:var(--wash)}.mast{width:194px;background:#14253f}.mast::after{display:none}.mast .wrap{padding:28px 15px}.brand{font-size:18px;gap:9px}.mast-context{font-size:11px;padding-left:40px}.mast .page-tabs{margin-top:32px;gap:9px}.mast .page-tabs a{font-size:13px;min-height:46px;padding:11px 12px;gap:12px;border-radius:8px}.mast .page-tabs a[aria-current=page]{background:#33527b;box-shadow:inset 3px 0 #7eafff}
+main.wrap{margin-left:194px;max-width:1660px;padding:0 28px 28px}.hero{padding:25px 0 18px;margin:0 0 18px;gap:14px}.hero h1{border:0;padding:0;font-size:25px!important}.hero p{font-size:11px;color:var(--muted)}.hero-actions{gap:9px}.hero-actions a:first-child{font-size:11px;padding:7px 10px}.local-badge{font-size:10px;border:1px solid var(--line);border-radius:6px;color:#6a7e98;background:#fff;padding:6px 9px}
+.workspace-nav{margin-bottom:17px;gap:6px}.workspace-nav a{font-size:12px;padding:8px 15px;border-radius:7px}.filter-frame{background:#fff;border:1px solid var(--line);border-radius:12px}.filter-heading{padding:11px 16px 0;gap:10px}.filter-heading b{font-size:11px;color:#6b7e96}.filter-heading .filter-reset{margin:0;padding:2px 9px;min-height:27px;background:#f8fafc;color:#47688f;font-size:10px}.filter-heading button{font-size:10px;min-height:27px;margin:0}.filter-frame .filter{grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;padding:3px 16px 11px}.filter label,.f-label{font-size:10px;font-weight:550}.picker summary,.filter input[type=date]{font-size:12px;margin-top:5px;min-height:35px;box-shadow:none}.picker summary{background:#fafcff}.pick-list label{font-size:12px;padding:7px 5px;font-weight:450}.pick-list input:disabled{opacity:1}.pick-menu{min-width:195px}.pick-menu .tag-rule{font-size:11px}.pick-menu .tag-rule select{font-size:11px}.pick-menu button{font-size:11px}.pick-list input{accent-color:#2f66c2}.advanced-filters{grid-column:1/-1;border-top:1px solid #edf1f6;margin-top:1px;padding-top:8px}.advanced-filters>summary{cursor:pointer;color:#53729a;font-size:11px;width:max-content}.advanced-grid{display:grid;grid-template-columns:minmax(0,340px);gap:12px;margin-top:10px}.scope{font-size:11px;padding:9px 0 14px;line-height:1.8;overflow-wrap:anywhere}
+.card{background:#fff;border-color:var(--line);padding:20px 22px;box-shadow:none}.section{margin-top:0}.section-head{margin-bottom:12px}.section-head h2{font-size:19px}.section-head h3{font-size:16px}.card>summary{cursor:pointer;font-size:13px;font-weight:600;color:#41618b}.nested-card{border:0;background:none;padding:14px 0 0;box-shadow:none}.nested-card .section-head{margin-top:0}.grid{gap:16px}.section>.card+.card{margin-top:16px}.section>.grid{margin-top:15px}
+.finding{border-left:4px solid #2b65cc;margin:0 0 15px;padding:18px 22px}.finding .section-head{margin:0}.finding h3{font-size:11px;font-weight:600;color:#55759b}.finding #headline{margin:7px 0 0;border:0;padding:0;font-size:18px;line-height:1.7;font-weight:650}.preview-facts{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:10px;color:var(--muted);margin-top:11px}.preview-facts b{font-weight:600;color:#3e5b7d}.preview-facts a{font-size:10px;margin-left:auto;text-decoration:none}
+#overview .kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:0 0 17px!important}.kpi{background:#fff!important;min-height:0!important;border:1px solid var(--line)!important;padding:16px 18px!important}.kpi b{font-size:12px;color:#546d8b;font-weight:550}.kpi .value{font-size:31px;letter-spacing:-.025em;margin:8px 0 6px;color:#173c70}.kpi small{font-size:10px;line-height:1.7}.kpi .metric-help{font-size:10px;margin-top:7px}.card-history{display:none}.detail-link{position:absolute;right:22px;top:22px;font-size:11px;text-decoration:none}#overview>.card:has(#country-overview){position:relative;margin-bottom:18px}#country-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 28px}.country-axis{grid-column:1/-1;display:flex;justify-content:space-between;font-size:10px;color:#7a8da5;margin:0 0 8px}.country-row{display:grid;grid-template-columns:52px minmax(35px,1fr) 108px;gap:11px;align-items:center;width:100%;margin:0;padding:8px 0;border:0;border-bottom:1px solid #f0f3f7;border-radius:0;background:none;font-size:12px;text-align:left;font-weight:450;min-height:45px}.country-row:hover{background:#f7faff}.country-row .track{height:8px;border-radius:3px}.country-row .fill{display:block;height:100%;background:#4a82d5;border-radius:3px}.country-value{text-align:right;color:#274e83;font-size:12px;font-weight:650}.country-value small{display:block;color:#71859e;font-size:9px;font-weight:450}.home-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.home-actions .card{padding:16px}.home-actions h3{font-size:12px;line-height:1.65}.home-actions p,.home-actions small{font-size:10px;line-height:1.8}.home-actions .priority{font-size:10px;padding:3px 6px;background:#edf3fd;color:#39649a}.home-actions .card:nth-child(1) .priority{background:#edf3fd;color:#39649a}
+#topics>.card{margin-bottom:16px}.matrix-card table{min-width:1060px}.matrix-card .table-wrap{max-height:570px;border-color:var(--line);scrollbar-width:thin}.matrix-card th{font-size:10px;padding:10px 8px;min-width:123px;background:#f4f7fc}.matrix-card th:first-child,.matrix-card td:first-child{width:84px;min-width:84px;max-width:84px;background:#f8faff;box-shadow:3px 0 4px #172e4b08}.matrix-card td{padding:6px;font-size:12px}.matrix-cell{min-width:107px;min-height:65px;padding:8px 5px}.matrix-cell b{font-size:14px}.matrix-cell small{font-size:10px}.matrix-cell em{font-size:8px}.matrix-empty{min-height:65px;font-size:11px;padding:10px 5px}.matrix-empty small{font-size:9px}.matrix-card .definition{font-size:11px}.matrix-card .section-head{gap:10px}.review-reason{font-size:11px}.review-reason select{font-size:11px;padding:5px 8px}.topic-naming{border-top:1px solid #edf1f6;padding-top:12px;margin-top:14px;font-size:11px;color:#627b9b}.topic-naming summary{cursor:pointer}.topic-naming p{margin:9px 0;line-height:1.9}.topic-naming a{font-size:11px}.scenario-card{margin:0}.scenario-card .table-wrap{margin-top:14px}.scenario-card .sub{font-size:11px;margin-top:7px}
+#brand .bar{grid-template-columns:minmax(100px,1fr) minmax(120px,3fr) 155px;font-size:12px;gap:16px;margin:18px 0}.track{height:11px;background:#edf2f9}.fill{background:#4a82d5}.bar .number{font-size:13px}.bar-count{display:inline;font-size:11px;color:#6a809b}.chart-label{font-size:10px}.legacy-note{font-size:11px;color:#6c819b;margin-top:15px}.definition{font-size:11px;margin:.45rem 0 .8rem}th{background:#f4f7fc;font-size:11px;color:#5c7391;padding:11px}td{font-size:11px;padding:11px;line-height:1.85}.table-wrap{border-color:var(--line);border-radius:9px}.table-wrap tbody tr:nth-child(even){background:#fafcff}.table-wrap tbody tr:hover{background:#f3f7fd!important}.cohorts{gap:13px;margin-bottom:14px}.cohort{padding:17px;border-radius:11px}.cohort h3{font-size:13px;color:#315a8e;line-height:1.9;margin-bottom:8px;overflow-wrap:anywhere}.cohort b{font-size:22px;color:#193e70;font-weight:650;display:block}.cohort small{font-size:10px;margin-top:6px}.cohort.b h3,.cohort.b b{color:#58718f}.compare-kpis{gap:13px}.compare-metric{padding:16px}.compare-metric h3{font-size:12px}.compare-metric .delta{font-size:24px;color:#204f94;line-height:1.5;margin:10px 0}.compare-points{gap:12px;font-size:10px;line-height:1.8}.compare-points span{overflow-wrap:anywhere}.compare-points b{font-size:13px;margin-top:6px}.compare-detail .delta{font-size:11px}.compare-detail th{white-space:normal;min-width:180px}.compare-head h2{font-size:19px}.compare-head p{font-size:11px;margin-top:4px}.reference-editor{margin:12px 0 15px}.reference-editor>summary{font-size:12px}.reference-editor .filter-frame{margin-top:10px}.compare-head{margin-bottom:14px}
+.sentiment-summary{margin-bottom:17px}.sentiment-summary .table-wrap{border:0}.sentiment-summary th,.sentiment-summary td{font-size:11px;padding:9px 5px}.sentiment-summary .section-head a,.sentiment-summary>a{font-size:11px}.sent-stack{height:30px;margin:14px 0}.sent-key{width:9px;height:9px}.sentiment-summary .definition{font-size:11px}#sources>.section-head{display:none}.source-evidence{margin-top:12px}.named-topic{margin:0}#named .named-topic>summary{font-size:15px}#named .named-topic .definition{margin-top:9px}.action-list{gap:15px}.action-item{padding:18px}.action-item h3{font-size:13px}.action-item dt,.action-item dd{font-size:11px}.action-item .question{font-size:11px;line-height:1.8}.action-heading span{font-size:12px}.action-item .sub{font-size:11px}.action-count{font-size:11px}#data>.card{margin-bottom:16px}#data>.section-head{display:none}#data .reminder-details{padding:0;border:0}#data .reminder-details .table-wrap{margin-top:13px}#data .reminder-details .definition{font-size:11px}.snapshot-state,.traffic-state{padding:10px 2px}.state-mark{display:inline-block;background:#edf2f8;color:#637d9d;padding:4px 8px;border-radius:5px;font-size:11px;margin-bottom:14px}.snapshot-state h3{font-size:18px;margin-bottom:9px}.snapshot-state p{font-size:12px;color:var(--muted);line-height:1.9}.snapshot-state dl{display:grid;grid-template-columns:70px 1fr;gap:13px;margin:20px 0;font-size:12px;line-height:1.9}.snapshot-state dt{font-weight:600}.snapshot-state dd{margin:0;color:#687f9a}.snapshot-state a{font-size:11px}.traffic-state{border:1px dashed var(--line);border-radius:10px;padding:22px;margin:15px 0}.traffic-state strong{font-size:24px;color:#8295ae}.traffic-state p{font-size:12px;color:var(--muted);margin:8px 0}.traffic-state small{font-size:11px;color:#7d90a8}
+.data-reminder{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;border:1px solid #e5e9f0;background:#edf3fb;border-radius:9px;padding:11px 14px;font-size:11px;color:#5d7695;margin:17px 0}.data-reminder a{font-size:11px;white-space:nowrap;text-decoration:none}.data-reminder[hidden]{display:none}.foot{font-size:10px;padding-top:12px}.metric-guide article{padding:20px}.metric-guide h3{font-size:16px}.metric-guide dd{font-size:12px}.workspace-nav[hidden],.scope[hidden]{display:none}
+@media(max-width:700px){#brand .chart-label{grid-template-columns:minmax(78px,1fr) minmax(32px,1fr) 118px;gap:8px}}
+@media(max-width:1100px){.overview-lower{grid-template-columns:1fr}}@media(min-width:1350px){.overview-lower #country-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.overview-lower .country-row{grid-template-columns:52px minmax(28px,1fr) 87px;gap:7px}.overview-lower #country-overview{column-gap:19px}.overview-lower .country-value{font-size:11px}.overview-lower .country-value small{font-size:9px}}
+@media(min-width:1500px){main.wrap{padding-inline:40px}}
+@media(max-width:1100px) and (min-width:701px){.home-actions{grid-template-columns:1fr}.country-row{grid-template-columns:43px minmax(25px,1fr) 92px;gap:7px}#overview .kpis{gap:9px}.kpi{padding:14px!important}.kpi .value{font-size:27px}.hero{grid-template-columns:1fr}.hero-actions{justify-content:flex-start}}
+@media(max-width:700px){.mast{position:relative;width:auto}.mast .wrap{padding:15px 13px 0}.brand{font-size:18px}.mast-context{display:none}.mast .page-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin-top:14px;gap:3px}.mast .page-tabs a{font-size:10px;padding:7px 2px;gap:2px;min-height:55px;text-align:center}.mast .page-tabs a[aria-current=page]{box-shadow:inset 0 -2px #7eafff}main.wrap{margin:0;padding:0 12px 20px}.hero{padding:17px 0 13px;gap:8px;margin-bottom:13px;grid-template-columns:1fr}.hero h1{font-size:22px!important}.hero p{font-size:10px;line-height:1.8}.hero-actions{gap:7px;justify-content:flex-start}.local-badge{font-size:9px}.hero-actions a:first-child{font-size:10px!important}.filter-frame .filter{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:4px 11px 10px}.filter-heading{padding:9px 11px 0}.picker summary,.filter input[type=date]{font-size:11px;min-height:35px}.filter input[type=date]{width:100%;min-width:0}.scope{font-size:10px;padding:8px 0 12px}.advanced-grid{grid-template-columns:1fr;gap:8px}.advanced-filters>summary{font-size:10px}.advanced-grid .pick-menu{left:0!important;right:auto!important;max-width:calc(100vw - 48px)}.filter-heading .filter-reset{font-size:10px;min-height:25px}.card{padding:16px 14px}.finding{padding:16px 14px;margin-bottom:12px}.finding #headline{font-size:16px;line-height:1.8}.preview-facts{font-size:10px;gap:5px 12px}.preview-facts a{margin:0}.section-head h2{font-size:18px}.section-head h3{font-size:15px}#overview .kpis{grid-template-columns:1fr;gap:8px;margin-bottom:14px!important}.kpi{padding:13px 15px!important}.kpi .value{font-size:29px;margin:7px 0}.kpi small{font-size:10px}.kpi .metric-help{font-size:9px;margin-top:5px}.detail-link{position:static;display:block;margin:-4px 0 10px;font-size:10px}#country-overview{grid-template-columns:1fr;gap:0}.country-axis{font-size:9px}.country-row{grid-template-columns:44px minmax(30px,1fr) 103px;gap:9px;font-size:11px;min-height:43px}.country-value{font-size:11px}.country-value small{font-size:9px}.home-actions{grid-template-columns:1fr;gap:10px}.home-actions .card{padding:14px}.workspace-nav{gap:5px;margin-bottom:13px;flex-wrap:wrap}.workspace-nav a{font-size:11px;padding:7px 10px}.matrix-card .section-head{flex-wrap:wrap;align-items:flex-start}.matrix-card th{min-width:119px}.matrix-card th:first-child,.matrix-card td:first-child{min-width:65px;width:65px;max-width:65px}.matrix-card table{min-width:1020px}.matrix-cell{min-width:105px}.topic-naming{font-size:10px;line-height:1.8}.topic-naming a{font-size:10px}#brand .bar{grid-template-columns:minmax(78px,1fr) minmax(32px,1fr) 118px;gap:8px;font-size:11px;margin:15px 0}.bar .number{font-size:11px}.bar-count{display:block;font-size:9px}.legacy-note{font-size:10px;line-height:1.8}.cohorts{grid-template-columns:1fr;gap:9px}.cohort{padding:14px}.cohort h3{font-size:12px}.cohort b{font-size:21px}.compare-kpis{grid-template-columns:1fr;gap:10px}.compare-metric{padding:14px}.compare-points{font-size:10px}.compare-points b{font-size:12px}.compare-metric .delta{font-size:24px}.compare-head p{font-size:10px;line-height:1.8}.compare{padding:0}.compare-detail th{min-width:155px}.data-reminder{font-size:10px;gap:10px;padding:10px 11px;line-height:1.8}.data-reminder a{font-size:10px}.snapshot-state h3{font-size:16px}.snapshot-state dl{grid-template-columns:1fr;gap:7px;font-size:11px}.snapshot-state dd{margin-bottom:10px}.snapshot-state p{font-size:11px}.traffic-state strong{font-size:21px}.metric-guide article{padding:16px}.metric-guide dd{font-size:11px}.review-nav{font-size:10px;gap:7px}.review-nav button{font-size:10px}.foot{font-size:10px}}
+</style></head>
+<body>
+<header class="mast"><div class="wrap"><div class="brand"><img class="brand-logo" alt="" width="28" height="28" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABQCAYAAAC6aDOxAAAR3klEQVR42s1cbXBcV3l+3nPO3Xvv7molyw62ZCeGUkoTE2DAhSkktjZfZID4A5ACpQWapE2YBseOP5LQGWR1WkpwcOy4QJM0YJgmQ9Yp2CkxARJW/iCZgiklkGFKGoidWCsnlqWV9uvee+55++PuSnJkx5a0u/GZ0Xg0mvFKz30/nvd5n3Op88DgLtjuhcHYyMpXLl/8PDIs0UMhzpnDBAawEzaNevdDWe+F9g0AUeePIRCHYIQAGFaMoP0f0sKnTzA5Lkyl/GsUSumBKxcNgVmAyJwT+PSyQB8ZfJ0XksFLIADGACTq/SAA0MS3AoDvgzr3DxqAQ5Gao8LS2FMxr3D54f6dPrAZ6DvHQNpa2kBJdwvKng+wAk/+i+p0CAxQhJVhLUBEIKHM6LCWidb3BbHkQ+jrM1gCAjOdEwD1kUEvC9wavwvFyleQsGMAhdHvXuevKDRF9d9JcUpCmfxwIFraVnfuz/0reihEP+S5AxIYvVnF69wNKHrfQsK2wEY3+mOp88AxflUuatHarsL8cF/u0vmbwaxApM+Nes2EHghgF+iSax5F3PkgimUNEqr+yBBgTCBOUauUGR3RMtna25kd+CyINO49ZJ0TABExLgIj023YH+lB2X8acVeBWTcxggAwM6Q0FLNlWMx/dLDr/O8iywrpcySSakX7Lp5HdnAQMeutKJcNSIjGR1D0Q4LWgoPACLflwY4nDl+KNGlks+rcqEdk0M0SG+g4+8HlCILnoCwCuO5d9/SIC0HQPojZEcnU9xY88cJFSKc1MizPCZAuqrZ4X1hghKDG9JLXDkkSgv1KCCnninjLY+f/6HAneigEs3idU0yhjzTuLr6XWtR/QVl/isBHA9jjWdB1EpJLxVA47hvDZPLRubt/2wICo7dXvK7gbC1eQzH7SZB8A7yyAQlqfgRNpJs0hbwW8eS77fPmPbI82y+xZEmTiSQTMizRRxrbyzeQbe+B4QSCSn2L84wAqhHJ0RNatLRe9Zxa8k309ITo728OkWQm9ILQQ6HYXvl7cpz7EYYMoxsKDgBMryuRUGZkOBBt7X/ZsS93LLe8YwOyrADoBqZUbXBm7PB2sBO7GSUvrA7UDX8400efYJn8CS1b29d3Zgc2IN1AItnNEn1ksJ1t2uFlyI3djFJFAyybAc7MAIpCXpriqKZU65aF2YG/wo1Lg2ok1e9kWGIXhfhifi5J/3G4sW4UyhogBTSv9M0MICJCqCV75RCJxDc69h29KiKSdQKplxV6KMTW8h9RayKLWKwLhUpjZq6GABTVI4LWhFBLchKPdPzk8LuRJg2eJZGcaONLyVb7IOXFKFU0iF4XFj+7DkAk2PeZQC0UTz06f1/uTSAKZ8y2a+BsL19NduxJkFyESjl8vcCZPUARRxLslUJSVqe0Yo8teupIO3ooRO902DbTODjbSp8my/pPMFLwKwYkXtfRpj4cgoTkUkELN36hYXfP4uwfHGAzzooj1ThOH2lsq2wix90JHUqEjec4M5c7ZkzojBatc5UZy3934JLzPjoeHSA+LcfZDAYR047yVjjOuojjGNGo0WGKrHM6uvCacsfMI6nKtlMf6Thw7OuLs39wTiusd2cijnMfFG2vPATXWYeSpyMC2ARwYAxUjMDMjU+xkz6XhSmMski03OSRfTGIzJTpP8MSu3pC3D3cRkGwFwn7EyhWNADVFALIHMJ2BXQwGOlIMM0BiE1ItiOgrIopjK4e7Or8+ZQdW43jbCtdQLFkFjHrChQqVQLYlKFXI+lIeP5eJv/t0P6/IWmL08m2oo5PRVM8KUH0MpfzH8gtW7B70hwVnWxNxym8k6zYfkj1zqZxHGYGQSPhKJS8b/DBPStwS+oV7nRvQsF/FElHnWpLIupWnJMpxVo/F5aHu3Jdiw9UwTg5ctKksXXsCorZWZBc3DSOw4YhiOHYiov+F3mNcz0uepaRYYluGNaxj6Ps//SkBQAzQJCqLuCk2pUpF38mx8ZWD1z1pgFks5MEfib0ItJx7vE+QVJ8C0wWgkrYFI7DbCCVgFLE5coa3OLuqAEDqi4k+6jMO/IryaN9cJwl0YMTErPnGaxF2zxlSmOPeceOXfHiVYsHkGGJdFqPc5wMBPpIi3sq68iKPYTQKOjAgEg2pRhbloAgj/3gWtzi7hivgVSlHrUFwOdah7hQ/DC0fhExR8KYEGAjZpPPorVdhYWRbwz8cMeKoVUXjoFZjDtDaky6h0La4d3Jjr0VgRdGxgMSTUirELYjAR5iX1+NW+zMOFt/9dlVHY/umPMCe9414HAEjiuhnBlMx2wYQrBItiozlv/n3PvP+3zEmDdPFOTa3moJS/oX/wE41qdR9KJBtjltXMN1FQL9e/Yqq7C+5denBad2ovFIYT39ireUVlKSHobWv5sek2ZjIBVRzCFUimuPXrpg+6R85nGO00Mheo+naF7qYbjW1ZFU0aQ2zhx1Kk8f4oK/GrcnXjojOK9m931k8KUTrSjPKarp5DPFbMkkfC4VPjWwvOPhKdvWKL81vlJcSLbaDdtaikIlAJHVNHCSjkLZf5yPj12Lvnmj1Qd29pJwzUlyO+XPfhZjE5KTkGzMMHljHzu6/PyfTDE1jOs43hKyxR4o9WaUm8lxKETCVih73+bjT1+PvrRGd1WVnNn/SaCzEe3ZaJFIKRN4L1ChuPLoFec/g+yrwKlF0vbSclLyEQg5D6VyCCGaxHFExHHK/pfxOee2qCayQN8srITVkiHOFLIiNUeZwPtvjAwti8DJTk2rNGlsK3WTsh4HaB68SgjRDB2HDYQEYrbgkncrPmffNi7W1ckdp16T47S2K1MY+3G5NNI9fPVb8tUuNMFxdkGghzS2lW8mO7YDgQZMYJpEAEMoJQEEXCl/BmvjD0U1EOFp5ZW6CGY1jpNqV6Yw+u8D/jMfHL7yzXlkMhI0ieNsjhZ52Fb+R4o7OxAEBibkpohcxoSIORJAnn39wXFw+kjXE5ypEcSGIaQRyVYVFkfvyr1/3sZI8XsVAewjAzDRDv8+uNbfoFgJwWiWyBVxnFAf4cBbiVuT/zOtNj5jgJgNhCJyXGnGRjbmLp1/VzWfzXg+1zjOllyC7OAhuNaKSTpOc9p43FHwgme4oldgY/JwI8GZAMgYQzFbsJRBWBi9YbCr89tRZ5qUzzWOs43nk9Lfg63+vOkEMOkolIMnuZDrxh2Lh6fNcWYEkDEhuXHJzHkuF64d7Fr4w1MSwD7SuDv/VlL6UVjqTxpmnjwFMgCFSDoKJe87/JvffAr3LQ3QnWnKjQAlWlqlCbyXuDi6KnfZ4l/g3kMW0hScguO8j5T1XUg1PyKAolkE0CBuK5T8bbzGWVddEc2O40wHoNCv/FKWCz0vXbb4/6pgBFM4zvbKSlLqIYDiqFSatMhjA0EE25ZcLN+BtfEvVbVtbuY1CeUPHls+tOrCsUjHmSRyZaocZ3v5b0mpe2EMqruqJnAcY6AsAULInn8D1sZ3opcVqL4c56wI9cmtu0oAN4PQR0ZsL32BHbcPnm9gQmpOG69yHA7HOAg/jrXO3kZ3qtcu0sx0ko5TNSvRPZWvcdz+LIo1s1KTOI7jKoR6gCv+aqxP/GxKw5hIM24OQFN0nD84NK/zQbixj1Q5TpNELqMRdxUC/SwXiyuxqe358Ro4oW1PPMzqtN3olBMngfNPo+fReYt+BCf2ERS8oGpWak7kJF0FT+/ncrkLm9qeHzdsjmvbuwT6yHTuH+ztOPjyThAxMhCN9kiqCZFr5I/Jdvcgpi5CsaKbI3IxANQI4CP8+8FP4e4LyifdeuytplRPT7jwqeNb4MQ3CCuGjv2DL+eW0aZGeyQj9LcV/4ys2B5I1YFKU0Uug7gtuex/FWvsm0/RMKKamM2qTrVkp0jN+aQZPaEBsEi1WeHwidtyXR1fbuQ9EoFtldWkYk+AVEfTOM6EyCW56H0Ba+yb0ctRukye+4hM+97fpTrtdzwmWts+afJDutpYlCmMaplqvbOz/6XrGmkkJbrHZwiB6q6qGeuYaJEniNnXN2Kde/8U4b8aEZ2PP3c+tc3dTU78XWZ0+GT2zsyQypCyhCkWVucuW7inEZEkwAbQATdtV2XZAlIU2fdXYZ17/5RFXvWPfMMTL74dbXP3k+W8y4yOTB1tIiMpcaiZEonvdGSPXlJXI+mkLsZNaePGhHBcCfAge/6VWJd4dAoBrIKz8GAurZIt/STVG00xf/q0JxK1G0kUj++Znz3yNqSprjeSBJphOmajkXAltP5fLuvlWBd/+lXg0Hha7ctdy5b7OMHM4XLpzPt7EoJ9LySS7cJO7u348dEL0EMhMhlZL4CaAY6Cp5/icmUZNji/OwkcZkKGBdKkO/a/vIbiye9ABxb7/tnv74kkV4qhsO3zKek+tujxI+3o6anLta0GAsSIzEquQiXYw8dfvhIbW14+iQD29gps3kzooXDBT1/5J5lKbedKySDU09/fk5BcHNPCcd9mWuJVIyl4em7bM2nSdeU4MEg4ikvBfVgTu2n8l60RwBrHyWRkx1NDD8hk6jozeqK6v5/h3EekzFhei9Y5l/gF8zCAVeP3/2c4u4kGpFRkVnIdiZL/D1gTuxG9TKfiOHN3/7alc9Fle2Sy5TqTH9LgOngUiZTJn9CyZc6KjoOvPDDb+/9E2yt1tAGzgZQCUoH98t9hbeJr0dgAMz5UVp/mvB+80BFrS+0W8cR7TP5EAxRK1qJ1rgpHhrbkli3YVG0CYW2+aX4EMYewYgKCKuz7H8PaxNfGOc6E8C8AoOPAK++OtbceoJj9HpMfbpB8S8qMntAyNWdjR39uU5UjydcnxcbNSuY4l8ofwFrnP04pci3ZRSBi4rCNQG/kSikEGniL2kTXtkSq9c6OfUevn8lIIuoQORquKxHq59mrdGFjav9pFcCenhCZjBxYtuBJLhVWkRUjKMucycw9i3oUXduqlELhJO/v+MnRldO92yZmDU7CUfD1z7noL8OtLc+e2cnVEyLLaiC96PtcHLuBHFdCyrBxIEXXtthUR5L+o5dOZyQRsymCSDoKlWAvl0Yux22JgZM4zmudNGkcOmQNpBd9k8dGN4lESlX3/o2KJIGgOpK48d2L+o9cfLYjiZhB1DBQNWSXg528f/cK3Hbe2Ekc52zO0qUB7j1kDSzv2BKODm8Rre2NvRw8aSRhO/nYgicHFp/NSDK9Nj+h4wiu+HdijX375C3IjAS7bFYindYd+489INvarzMjQ40V7NiElEhJ9r3foFDqOtMrycQ0IicyK1m24LK3Dmvs29E9a7MSo6srRIZlbtn8601+eI9obVcNfXESCcnFUS0c922IO3sWPXXEjVj+qd8kIc4SnBDKElAy4Ir/F7jF2YZeVtg1SeSaeX1gdMOgl4Wlix83hfwB0TKn0SApMzaiRTL1/pDjDwOg071J4swpxiZEzJUwepi17sZa98mGLPKqYX7B9w/P0XMT+0TMvdgURxt7XYE5EG1zrXB06Fu5SxZ8BtmsQldXOPmhizNKFa4rwcFh9rx0w8CJHpVBJiOPfHjxMPLDH+LAP0xuQoK5cSYFIsvkh7RMzf30woODW5BOa/RDRrckzwQQc22R90se08uwPvmrhq+Ae3pCZFgOXP2WF3Vx9EMc6hMUsyXYNNCsQMrkhwNqad/Q0Z+7LWLbv1CvDVDNrOQHP+ZXCpfh9viRs+Y4swaJQmSz6tjli5/lUnkFAxUoi2BM4zaobJQpjGiZav1Sx76j1+PGiIJMrUGRjhMi4SguBw/i18/8dWRWmoUhe6anJsH2v3QNuck9rLVBqBv3QpPae9usmDTFwupceuFuZFlNAHTSIq+yFWvc9bPkOPUDaV/uMyLZ+k1TKWqEYeO8AsYwrBhDqoBLhSty6YUHibaVDQiRfdeOgUveJqxztqCbJTJ1aOOzPYcOWVi6NOjcl9so5sz9shkd1jAsI8sA171qj99JMeY4jL6S6Ku13NYea74et9gPRsW4+WalM0bS/sEvitScO0whX/VUNCCQCIDWEKk2hIX8swra+z7s2Du46N+E9cm9uJct3DjJhncunDRCMMsBos93Hjg2F7bbjUqZQSzqDxIDRMxeJQT4B/8PUaAZVnHRhEwAAAAASUVORK5CYII="><span>Kalodata GEO</span></div><span class="mast-context">GEO 运营看板</span><nav class="page-tabs" aria-label="看板分页">
+<a href="#overview"><span>⌂</span>总览</a><a href="#brand"><span>▥</span>市场与竞品</a><a href="#action"><span>☑</span>问题与行动</a><a href="#sources"><span>◎</span>来源与口碑详情</a><a href="#metrics"><span>ⓘ</span>指标说明</a></nav></div></header>
+<main class="wrap">
+<section class="hero"><div><div class="eyebrow">KALODATA · GEO MONITOR</div><h1>GEO 运营看板</h1><p id="batch"></p></div><div class="hero-actions"><a id="source" rel="noopener noreferrer" target="_blank">Answerbit 工作台 ↗</a><a class="hero-shortcut" href="#compare">进入对照分析 ↗</a></div></section>
+
+<nav id="workspace-nav" class="workspace-nav" aria-label="当前模块功能"></nav>
+<div id="failure" class="warning" role="status" hidden></div>
+<section id="global-filters" class="filter-frame" aria-labelledby="filter-a-title">
+<div class="filter-heading"><b id="filter-a-title">查看范围</b></div>
+<form class="filter pick-grid" id="filter-a" aria-label="当前范围筛选"></form></section>
+<div class="scope" id="scope" aria-live="polite"></div>
+<section id="overview" class="section" data-page aria-label="总览">
+<div id="kpis" class="kpis"></div>
+<p id="card-history-status" class="definition" hidden></p>
+<details class="card scenario-card"><summary>按运营场景看表现</summary><p class="sub">按 Answerbit 分组和标签名称识别，随顶部筛选更新；场景可重叠。</p><div id="scenario-results"></div></details>
+<div class="overview-grid"><article class="card matrix-card"><div class="section-head"><h3>国家 × 题类提及率</h3><label class="review-reason">题类来源 <select id="matrix-dimension"><option value="group">Answerbit 分组</option><option value="tag">Answerbit 标签</option></select></label></div><p class="definition">未点名题 · <a href="#metrics/metric-matrix">指标说明 ↗</a></p><div id="home-matrix"></div></article><article class="card sentiment-summary"><div class="section-head"><h3>Kalodata 口碑构成</h3><a href="#metrics/metric-sentiment">指标说明 ↗</a></div><div id="home-sentiment"></div><a href="#sources">查看来源与口碑详情 ↗</a></article></div>
+<article class="card finding"><div class="section-head"><h3>核心发现</h3></div><p id="headline"></p></article>
+<div class="section-head"><h2>优先行动</h2></div>
+<div id="home-actions" class="home-actions"></div>
+
+<article class="card"><div class="section-head"><h3>上次测量对比</h3><span class="label">整批范围</span></div><div id="previous-comparison"></div></article>
+</section>
+<section id="compare" class="compare" data-page aria-labelledby="compare-title" hidden>
+<div class="compare-head"><div><h2 id="compare-title">对照分析</h2><p>同批回答 · 当前范围与对照范围独立筛选</p></div></div>
+<details id="reference-editor" class="reference-editor"><summary>设置对照范围条件</summary>
+<div class="filter-frame"><div class="filter-heading"><b>对照范围筛选</b><button id="copy-a" type="button">复制当前范围条件</button></div><form class="filter pick-grid" id="filter-b" aria-label="对照范围筛选"></form></div>
+</details>
+<div class="compare-results" id="comparison"></div>
+</section>
+<section id="platform" class="section" data-page hidden><div class="section-head"><h2>Answerbit 平台快照</h2><span class="label">平台口径</span></div><div class="card native" id="native"></div></section>
+<section id="brand" class="section" data-page hidden>
+<details class="card named-topic"><summary>点名题专题 · 提及、推荐初判与口碑</summary><p class="definition">题文点名 Kalodata · 推荐为本地规则初判 · <a href="#metrics/metric-named">指标说明 ↗</a></p><div id="named-results"></div></details>
+<div class="section-head"><h2>市场与竞品</h2></div>
+<div class="grid">
+<article class="card wide"><div class="section-head"><h3 id="mention-title">品牌提及率</h3><label class="review-reason">查看其他市场 <select id="brand-market"><option value="">样本量最大市场</option></select></label></div><p class="definition">Kalodata 扣除明确负面；竞品保留全部正文命中。<a href="#metrics/metric-core">查看口径差异</a></p><div id="mention-chart"></div></article>
+<article class="card wide"><h3>市场与竞品表现</h3><div id="markets"></div><div id="model-availability"></div></article>
+</div></section>
+<section id="sources" class="section" data-page hidden>
+<div class="section-head"><h2>来源与口碑详情</h2></div>
+<div class="grid">
+<article class="card wide"><h3>官网链接出现率</h3><p class="definition"><a href="#metrics/metric-formal">来源与缺失处理</a></p><div id="website"></div><p class="definition">官网引用不代表流量、注册或转化。</p><div id="source-evidence"></div></article>
+<article class="card wide"><h3>Kalodata 平台口碑</h3><p class="definition"><a href="#metrics/metric-sentiment">口碑码与未知处理</a></p><div id="sentiment"></div></article></div></section>
+<section id="answers" class="section" data-page hidden>
+<div class="section-head"><h2>回答表现</h2></div>
+<div class="grid">
+<article class="card wide"><h3>Kalodata 推荐判断</h3><p class="definition">本地规则初判 · <a href="#metrics/metric-recommendation">指标说明 ↗</a></p><div id="recommendation"></div></article>
+
+<article class="card wide"><h3>中立推荐题单</h3><div id="neutral"></div></article>
+<article class="card wide"><h3 id="review-heading">推荐待确认记录</h3>
+<p class="definition" id="local-answer-note" hidden></p>
+<details class="definition"><summary>平台回查方法</summary><p>在 <a id="review-workbench" target="_blank" rel="noopener noreferrer">Answerbit 工作台</a>进入「大模型回答记录」，按题文、日期、平台和分组查找；该入口不能直达原文。题号用于飞书题库。</p></details>
+<div class="filter-frame"><div class="filter-heading"><b>记录筛选</b></div>
+<form class="filter pick-grid" id="filter-review" aria-label="推荐记录筛选"></form></div>
+<div id="review-pending"></div></article>
+<article class="card wide"><h3>原文质量 · 异常与待核查</h3><p class="definition">本地规则初判 · <a href="#metrics/metric-quality">查看判断规则</a></p><div id="answer-quality"></div></article>
+</div></section>
+<section id="action" class="section action-module" data-page hidden>
+<div class="section-head"><div><h2>问题与行动</h2></div><span id="action-count" class="label">随筛选更新</span></div>
+<div class="action-list" id="next"></div>
+<details class="card action-quality"><summary>批次信息</summary><div id="quality" class="compact"></div></details>
+</section>
+<section id="metrics" class="section metric-guide" data-page aria-labelledby="metrics-title" hidden>
+<div class="section-head"><h2 id="metrics-title">指标说明</h2><span class="label">看什么 · 怎么算 · 注意什么</span></div><div class="grid">
+<article class="card wide"><h3>样本与题文</h3><dl>
+<dt id="metric-samples">有效回答与题库匹配</dt><dd><p><b>看什么</b> 本次可用于计算的回答量和未纳入范围。</p><p><b>怎么算</b> 按唯一 Answerbit 任务 ID 去重，题目须唯一匹配飞书编号、任务完成分析且正文有效。</p><p><b>注意什么</b> 题库外记录单列数量，题号歧义需核对。采样覆盖率还需独立计划量，缺少计划时无法计算。</p></dd>
+<dt id="metric-quality">回答原文质量检查</dt><dd><p><b>看什么</b> 纯报错、空白、仅复述题文、纯拒答、明确截断，以及有缺项证据的疑似缩水。</p><p><b>怎么算</b> 仅长度下降仍纳入统计。先按同题号、题文、平台、语言、地区及已知终端/模式找参考：2条取较长回答，3条及以上取接近中位长度的回答；参考至少200文本单位，当前不超过35%且减少至少150单位时提示长度待核查。只有题文明示的至少两项要求均未检出、而同组参考具备对应信号时，才标数据异常并从所有Skill分子分母排除；优先以具备信号的较长回答作参考，防止多数不完整短回答成为参考。首版仅核对中英文明确要求的限制说明（估算、限制、核验等措辞）与来源链接（HTTP(S)/www）。</p><p><b>注意什么</b> 这不是通用语义完整性判断。题文含否定要求、未覆盖语言或要求、仅缺一项、参考也缺项时，仅提示长度待核查。纯拒答按已测试的中、英、日、韩、德、法、越、泰、印尼、马来语写法整段匹配，有有效后续内容时保留；错误JSON带有效数据/分析字段时不按纯报错排除。所有规则均可能漏检，不能证明平台故障。旧批保留原规则版本，新旧口径只并列；全批无有效回答时停止刷新并保留上一批。</p></dd>
+<dt id="metric-matrix">国家 × 题类矩阵</dt><dd><p><b>看什么</b> 各国家、题类内未点名题的提及率；点击单元格筛选。</p><p><b>怎么算</b> 按所选 Answerbit 分组或标签独立重算提及率，每格显示分子与分母。多标签可重叠，不可相加。</p><p><b>注意什么</b> 比较前核对题目、平台与样本量；色深用于定位差异。“样本最少”为本矩阵内相对提示，不是业务阈值。行动为待同条件复测的运营建议，不代表因果或转化；复测须固定题目、平台、市场、语言和采样条件。</p></dd>
+<dt id="metric-prompt">题文点名判定</dt><dd><p><b>看什么</b> 题目是否已经提示 Kalodata。</p><p><b>怎么算</b> 检查 Answerbit 返回的题文，按审核别名 Kalodata、Kalo Data、Kalo-Data、カロデータ及全半角等价写法判定。</p><p><b>注意什么</b> 题库编号用于定位；旧批缺少返回题文时按唯一匹配的题库题文回算并注明来源。点名状态来自题文，不按回答是否提及判定。</p></dd>
+</dl></article>
+<article class="card"><h3>品牌表现</h3><dl>
+<dt id="metric-core">提及率</dt><dd><p><b>看什么</b> 未被题目点名时，Kalodata 获得非明确负面提及的比例。</p><p><b>怎么算</b> 未点名题中正文命中 Kalodata、且平台口碑不是明确负面的有效回答数 ÷ 未点名题有效回答数。</p><p><b>注意什么</b> 同一回答最多计一次；正文 URL、开头题文原样复述不算命中。明确负面只从分子扣除，褒贬并存和口碑未知仍计入。零分母不适用。</p></dd>
+<dt id="metric-named">点名题专题</dt><dd><p><b>看什么</b> 已点名 Kalodata 的品牌介绍、推荐与口碑。</p><p><b>怎么算</b> 点名题内分别重算提及率、推荐率及口碑分布。</p><p><b>注意什么</b> 点名题不进入提及率；全部题型提及率只作补充。主题、平台、日期和标签不同会影响结果。</p></dd>
+<dt id="metric-share">品牌提及份额</dt><dd><p><b>看什么</b> 同一竞品集合内各品牌的正文可见度构成。</p><p><b>怎么算</b> 某品牌的正文命中回答数 ÷ 本市场配置品牌正文命中数之和。</p><p><b>注意什么</b> 份额保留负面命中。竞品提及率暂按全部正文命中，Kalodata 提及率扣除明确负面，品牌对比需注明差异。跨市场竞品集合不同不直接比较份额。</p></dd>
+<dt id="metric-first">首次出现第一比例</dt><dd><p><b>看什么</b> Kalodata 在配置品牌中是否先出现。</p><p><b>怎么算</b> Kalodata 最先出现的有效回答数 ÷ 所选范围全部有效回答数。</p><p><b>注意什么</b> 按正文标题、列表和表格阅读顺序扫描，URL 和开头题文复述排除；没有命中的回答仍在分母；出现顺序不等于推荐。</p></dd>
+<dt id="metric-rank">平均首次名次</dt><dd><p><b>看什么</b> Kalodata 首次出现的平均顺位。</p><p><b>怎么算</b> 首次出现名次之和 ÷ 有 Kalodata 名次的回答数。</p><p><b>注意什么</b> 数值越小越靠前。未提及的回答不进入该分母，不能与首次第一比例共用分母。</p></dd>
+</dl></article>
+<article class="card"><h3>官网引用</h3><dl>
+<dt id="metric-body">正文官网链接出现率</dt><dd><p><b>看什么</b> 回答正文是否给出品牌官网入口。</p><p><b>怎么算</b> 正文含该品牌官网 URL 或裸域名的有效回答数 ÷ 所选范围全部有效回答数。</p><p><b>注意什么</b> Kalodata 与 FastMoss 独立计算，官网子域计入；普通正文链接不等同于正式来源。</p></dd>
+<dt id="metric-formal">官网正式来源命中率</dt><dd><p><b>看什么</b> Answerbit 正式来源是否引用品牌官网。</p><p><b>怎么算</b> 正式来源命中官网的有效回答数 ÷ 正式来源字段可判定的有效回答数。</p><p><b>注意什么</b> 明确无来源仍在分母；字段缺失或不可解析为未知。域名命中不验证页面内容是否支撑回答。</p></dd>
+<dt id="metric-field">正式来源字段覆盖率</dt><dd><p><b>看什么</b> 引用数据的可判定程度。</p><p><b>怎么算</b> 正式来源字段可判定的有效回答数 ÷ 全部有效回答数。</p><p><b>注意什么</b> 覆盖不足时先核查接口字段，再解释官网正式来源命中率。</p></dd>
+</dl></article>
+<article class="card"><h3>推荐与口碑</h3><dl>
+<dt id="metric-recommendation">推荐判断与覆盖率</dt><dd><p><b>看什么</b> Kalodata 是否被建议使用，以及规则能否作出判断。</p><p><b>怎么算</b> 明确推荐为直接建议，条件推荐须满足明确条件，中立推荐为同一回答针对不同场景同时给出两者。各类回答数 ÷ 全部有效回答数；有明确分类（含未推荐）回答数 ÷ 全部有效回答数为覆盖率。</p><p><b>注意什么</b> 分类互斥。仅列举、指代或条件不清等记未知。规则自动判定，未经人工复核。</p></dd>
+<dt id="metric-neutral">中立推荐题单</dt><dd><p><b>看什么</b> 哪些题目产生场景不同的混合推荐。</p><p><b>怎么算</b> 按飞书题号归并命中的回答，每条保留平台、日期和分组。</p><p><b>注意什么</b> 零条显示“规则未检出中立推荐”，推荐未知记录仍可能需要核查。</p></dd>
+<dt id="metric-sentiment">平台口碑分布</dt><dd><p><b>看什么</b> 平台对 Kalodata 的评价倾向。</p><p><b>怎么算</b> 口碑码 0 未提及、1 正面、2 负面、3 褒贬并存、4 中性。全样本用有效回答作分母，仅看已提及时用口碑码 1–4 作分母。</p><p><b>注意什么</b> 六类互斥，未提及不算中性。可识别字段覆盖率 = 非未知回答数 ÷ 全部有效回答数。缺失、格式异常或未识别口碑码记未知。平台口碑与本地推荐判断、正文品牌命中分别判定，未知不能当作正面。</p></dd>
+</dl></article>
+<article class="card"><h3>平台快照与对比</h3><dl>
+<dt id="metric-native">Answerbit 平台指标</dt><dd><p><b>看什么</b> 平台原有品牌提及率、平均排名、曝光效果分数和引用排行。</p><p><b>怎么算</b> 直接读取平台返回值、时间窗和来源；引用排行展示平台引用次数。</p><p><b>注意什么</b> 统一标注“平台口径”，不会套用 Skill 的提及率公式。平台分母未返回时明确说明；曝光分数不自行重算。</p></dd>
+<dt id="metric-compare">范围对照与上次测量</dt><dd><p><b>看什么</b> 当前范围与对照范围的差异，及两次成功测量的变化。</p><p><b>怎么算</b> 比例差用百分点、排名差用名、曝光分差用分。上次对比来自上一份成功 HTML 的两批全量数据。</p><p><b>注意什么</b> 两次窗口、来源、题库、题目范围及分析口径必须列明；不具可比性时并列数据并说明限制。顶部筛选改变后，上次对比仍为整批范围，单独提示。比较前核对题目、平台与样本量；差值 = 当前范围 − 对照范围。</p><p><b>补充口径</b> 全部题型提及率：全部有效回答中，正文命中且非明确负面的回答数 ÷ 全部有效回答数。平台已提及的正面率：正面回答数 ÷ 平台口碑码1–4的回答数。</p></dd>
+</dl></article>
+</div></section>
+<details class="data-reminder" id="data-reminder"><summary><span id="home-status"></span><span class="reminder-link">查看详情 →</span></summary><div id="status-details" class="reminder-details"></div></details>
+<footer class="foot"><a id="answerbit-footer" rel="noopener noreferrer" target="_blank">Answerbit 工作台</a><a id="bank-link" rel="noopener noreferrer" target="_blank">飞书一期题库</a></footer>
+</main>
+<script id="geo-data" type="application/json">__GEO_PAYLOAD__</script>
+<script>
+"use strict";
+const D=JSON.parse(document.querySelector("#geo-data").textContent), $=id=>document.getElementById(id);
+const metricPolicy={"supported": ["geo-core/4-answer-quality", "geo-core/3-answer-quality", "geo-core/2-unnamed-negative"], "historical": false, "warnings": []};
+const metricSupported=metricPolicy.supported.includes(D.analysis_version);
+const sampleLabel=metricPolicy.historical?"历史回答":"有效回答";
+const N=new Intl.NumberFormat("zh-CN"), pct=(n,d)=>d?(100*n/d).toFixed(2)+"%":"不适用", num=n=>N.format(n);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+const ratio=(n,d)=>d?`${pct(n,d)}（${num(n)}/${num(d)}）`:"不适用";
+const empty=s=>`<p class="empty">${esc(s)}</p>`;
+const fmtDate=s=>new Date(s).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai",hour12:false});
+const batch=D.batch, marketName=m=>D.markets[m]||m, groupName=g=>D.groups[g]||"分组未知";
+// The review data contains only answers whose original recommendation was unknown.
+if(D.review){
+  const byDimensions=new Map(D.rows.map(r=>[JSON.stringify(r.d),r]));
+  for(const entry of D.review.rows){
+    const row=byDimensions.get(JSON.stringify(entry.d));
+    if(!row)continue;
+    if(entry.status!=="ok"||entry.label==="unknown"){
+      if(entry.text)(row.evidence??={}).recommendation=entry;
+      continue;
+    }
+    const label=entry.label==="negative"?"no_recommendation":entry.label;
+    row.rec.unknown--;
+    row.rec[label]=(row.rec[label]||0)+1;
+    if(label==="neutral")D.neutral.push(entry);
+  }
+}
+const groupPairs=Object.entries(D.groups).filter(([k])=>k).map(([k,v])=>[k,v]);
+const tagPairs=Object.entries(D.tags), ns=([,a],[,b])=>a.localeCompare(b,"zh-CN");
+function engineName(e){return ({doubao:"豆包",qianwen:"千问",yiyan:"文心一言",yuanbao:"腾讯元宝",deepseek:"DeepSeek",kimi:"Kimi",chatgpt:"ChatGPT",gemini:"Gemini",perplexity:"Perplexity",google_ai_overviews:"Google AIO",google_ai_mode:"Google AI Mode"})[e]||e;}
+const observedEngines=new Set([...D.rows,...(D.quality?.records||[])].map(r=>r.d[1]));
+const enginePairs=[...new Set([...observedEngines,...Object.values(D.model_policy?.models||{}).flat()])].sort().map(x=>
+  [x,engineName(x)+(observedEngines.has(x)?"":"（暂无数据）")]);
+const defaultMarkets=D.presentation?.default_markets??D.market_scope?.default_markets??[];
+const dimensions=[
+  ["m","市场",Object.entries(D.markets)],
+  ["e","平台",enginePairs],
+  ["g","Answerbit 分组",[...groupPairs.sort(ns),["__unknown","分组未知"]]],
+  ["tags","Answerbit 标签",tagPairs.sort(ns)],
+  ["named","题文状态",[["0","未点名 Kalodata"],["1","点名 Kalodata"]]]
+];
+function makeFilters(side){
+  const form=$("filter-"+side);
+  const scopeLabel={a:"当前范围",b:"对照范围",review:"推荐记录"}[side];
+  const update=()=>{
+    if(side!=="b"){
+      const other=side==="a"?"review":"a";
+      setFilters(other,filters(side));
+      filters(other);
+    }
+    render();
+  };
+  for(const [key,label,opts] of dimensions){
+    const pick=document.createElement("details");
+    pick.className="picker";
+    pick.dataset.key=key;
+    pick.innerHTML=`<div class="f-label">${label}</div><summary><span>${key==="m"?"全部国家":"全部"}</span></summary><div class="pick-menu">${key==="m"?"":'<button type="button">清空选择</button>'}<div class="pick-list"></div></div>`;
+    const title=pick.querySelector(".f-label");
+    form.append(pick);
+    // Native details requires its summary to be first for keyboard activation.
+    const wrap=document.createElement("div");
+    pick.before(wrap);wrap.append(title,pick);
+    const summary=pick.querySelector("summary");
+    summary.setAttribute("aria-label",`${scopeLabel}范围${label}多选`);
+    const choices=key==="m"?[["__all","全部国家"],...opts]:opts;
+    for(const [value,name] of choices){
+      const l=document.createElement("label"), i=document.createElement("input");
+      i.type="checkbox";i.value=value;
+      i.defaultChecked=key==="m" && (value==="__all"?defaultMarkets.length===0:defaultMarkets.includes(value));
+      l.append(i,document.createTextNode(name+(opts.filter(([,v])=>v===name).length>1?" · "+value:"")));pick.querySelector(".pick-list").append(l);
+    }
+    if(!opts.length)pick.querySelector(".pick-list").textContent="本批暂无选项";
+    pick.querySelector("button")?.addEventListener("click",()=>{
+      for(const i of pick.querySelectorAll("input"))i.checked=false;
+      update();
+    });
+    if(key==="tags"){
+      const rule=document.createElement("label");
+      rule.className="tag-rule";
+      rule.innerHTML='匹配方式 <select name="tagMode"><option value="all">全部标签</option><option value="any">任一标签</option></select>';
+      pick.querySelector(".pick-menu").prepend(rule);
+    }
+  }
+  for(const [key,label,value] of [["from","开始日期",batch.begin_date],["to","结束日期",batch.end_date]]){
+    const l=document.createElement("label"),i=document.createElement("input");
+    i.type="date";i.name=key;i.min=batch.begin_date;i.max=batch.end_date;i.value=i.defaultValue=value;
+    l.append(document.createTextNode(label),i);form.append(l);
+  }
+  const reset=document.createElement("button");
+  reset.type="button";reset.textContent="重置";
+  reset.addEventListener("click",()=>{form.reset();update();});
+  form.append(reset);
+  form.addEventListener("change",event=>{
+    const input=event.target, picker=input.closest('.picker[data-key="m"]');
+    if(picker&&input.matches('input[type="checkbox"]')&&input.checked){
+      if(input.value==="__all"){
+        for(const other of picker.querySelectorAll('input:not([value="__all"])'))other.checked=false;
+      }else picker.querySelector('input[value="__all"]').checked=false;
+    }
+    update();
+  });
+  form.addEventListener("submit",e=>e.preventDefault());
+}
+makeFilters("a");makeFilters("b");makeFilters("review");
+filters("a");filters("b");filters("review");
+document.addEventListener("pointerdown",e=>{
+  for(const item of document.querySelectorAll(".picker[open]"))if(!item.contains(e.target))item.open=false;
+});
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape")return;
+  const pick=document.activeElement.closest(".picker[open]");
+  if(pick){pick.open=false;pick.querySelector("summary").focus();}
+});
+for(const id of ["source","answerbit-footer","review-workbench"]) $(id).href=D.links.answerbit;
+if(D.links.bank){$("bank-link").href=D.links.bank;}else{$("bank-link").hidden=true;}
+$("batch").textContent=`查询窗口 ${batch.begin_date} 至 ${batch.end_date} · 最后成功取数 ${fmtDate(batch.fetched_at_utc)}（北京时间）`;
+if(D.last_failure){
+  $("failure").hidden=false;
+  $("failure").textContent=`上次刷新失败 · ${D.last_failure.stage} · ${D.last_failure.error}。当前保留最后成功数据。`;
+}
+const sum=(rs,fn)=>rs.reduce((x,r)=>x+fn(r),0), total=rs=>sum(rs,r=>r.n);
+const mentionCount=(r,brand="Kalodata")=>(r.mentions[brand]||0)-(brand==="Kalodata"?(r.negative_mentions||0):0);
+function table(headers,rows){
+  return `<div class="table-wrap" tabindex="0" aria-label="数据表，可横向滚动查看"><table><thead><tr>${headers.map(h=>`<th scope="col">${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>${headers.length>3?'<p class="mobile-hint">左右滑动表格可查看完整数据</p>':""}`;
+}
+function kpi(title,value,detail,definition="metric-samples"){return `<div class="card kpi"><b>${esc(title)}</b><div class="value">${esc(value)}</div><small>${esc(detail)}</small><a class="metric-help" href="#metrics/${definition}">指标说明 ↗</a></div>`;}
+function filters(side="a"){
+  const form=$("filter-"+side), result={from:form.elements.from.value||batch.begin_date,
+    to:form.elements.to.value||batch.end_date,tagMode:form.elements.tagMode.value};
+  for(const pick of form.querySelectorAll(".picker")){
+    const all=pick.querySelector('input[value="__all"]');
+    if(all){
+      for(const input of pick.querySelectorAll('input:not([value="__all"])')){
+        input.disabled=false;
+      }
+    }
+    const checked=[...pick.querySelectorAll("input:checked")];
+    const values=checked.map(i=>i.value);
+    result[pick.dataset.key]=all?.checked?[]:all&&!values.length?["__none"]:values;
+    const text=checked.length===0?(all?"请选择国家":"全部"):checked.length===1?(pick.dataset.key==="e"?engineName(checked[0].value):checked[0].parentElement.textContent):`已选 ${checked.length} 项`;
+    pick.querySelector("summary span").textContent=text;
+    pick.classList.toggle("has-selection",checked.length>0);
+  }
+  return result;
+}
+function setFilters(side, f){
+  const form=$("filter-"+side);
+  form.elements.from.value=f.from;form.elements.to.value=f.to;form.elements.tagMode.value=f.tagMode;
+  for(const pick of form.querySelectorAll(".picker")){
+    for(const i of pick.querySelectorAll("input")){
+      i.checked=i.value==="__all"?f.m.length===0:f[pick.dataset.key].includes(i.value);
+    }
+  }
+}
+const includes=(values,v)=>!values.length||values.includes(v);
+function matches(d,f){
+  const [m,e,day,g,named,tags]=d;
+  const tagMatch=!f.tags.length||(f.tagMode==="all"?f.tags.every(t=>tags.includes(t)):f.tags.some(t=>tags.includes(t)));
+  return includes(f.m,m)&&includes(f.e,e)&&includes(f.g,g||"__unknown")&&includes(f.named||[],String(named))&&day>=f.from&&day<=f.to&&tagMatch;
+}
+function describe(f){
+  return [f.m.includes("__none")?"未选择国家":f.m.length?f.m.map(marketName).join("、"):(D.market_scope?"交付国家："+D.market_scope.markets.map(marketName).join("、"):"全部市场"),f.e.length?f.e.map(engineName).join("、"):"全部平台",
+    f.g.length?f.g.map(groupName).join("、"):"全部分组",
+    f.tags.length?f.tags.map(t=>D.tags[t]).join(f.tagMode==="all"?" ∩ ":" ∪ "):"全部标签",
+    f.named?.length?f.named.map(x=>x==="0"?"未点名":"点名").join("、"):"全部题文状态",
+    f.from+" 至 "+f.to].join(" · ");
+}
+function breakdown(rs){
+  const b=new Map();
+  for(const r of rs){
+    const k=JSON.stringify([r.d[0],r.d[4]]);
+    if(!b.has(k))b.set(k,[]);
+    b.get(k).push(r);
+  }
+  return [...b.values()].sort((a,b)=>a[0].d[0].localeCompare(b[0].d[0])||a[0].d[4]-b[0].d[4]);
+}
+const bar=(label,n,d)=>`<div class="bar"><span>${esc(label)}</span><div class="track" aria-hidden="true"><div class="fill" style="width:${d?100*n/d:0}%"></div></div><span class="number">${esc(pct(n,d))}${d?`<span class="bar-count">（${num(n)}/${num(d)}）</span>`:""}</span></div>`;
+const scaleLabel='<div class="chart-label" aria-hidden="true"><div><span>0%</span><span>100%</span></div></div>';
+function sourceTrend(data,title,unit,competitors){
+  const colors=["#285fc4","#6b7f9d","#087b91","#7863ac","#9e6332","#446c85"];
+  const series=[{label:"Kalodata",points:data},...competitors.slice().sort((a,b)=>a.label.localeCompare(b.label,"zh-CN"))].filter(x=>x.points.length)
+    .map((x,i)=>({...x,color:colors[i%colors.length],points:[...x.points].sort((a,b)=>a.date.localeCompare(b.date))}));
+  const pts=series.flatMap(x=>x.points).sort((a,b)=>a.date.localeCompare(b.date));
+  if(pts.length<2||pts[0].date===pts.at(-1).date)return empty("有效日期不足，暂用平台概览值。");
+  const width=540,left=46,right=510,top=15,bottom=124,span=Date.parse(pts.at(-1).date)-Date.parse(pts[0].date);
+  const rank=unit==="名", min=rank?1:0;
+  const max=rank?Math.max(2,Math.ceil(Math.max(...pts.map(x=>x.value)))):unit==="%"?100:Math.max(1,Math.ceil(Math.max(...pts.map(x=>x.value))/10)*10);
+  const xs=p=>left+(Date.parse(p.date)-Date.parse(pts[0].date))/span*(right-left);
+  const ys=p=>rank?top+(bottom-top)*(p.value-min)/(max-min):bottom-(bottom-top)*p.value/max;
+  const marks=series.map(item=>{
+    const groups=[];
+    for(const p of item.points){
+      if(!groups.length||Date.parse(p.date)-Date.parse(groups.at(-1).at(-1).date)>86400000)groups.push([]);
+      groups.at(-1).push(p);
+    }
+    return groups.map(g=>`<path style="stroke:${item.color}" d="${g.map((p,i)=>`${i?"L":"M"}${xs(p)} ${ys(p)}`).join(" ")}"/>`).join("")+
+      item.points.map(p=>`<circle style="fill:${item.color}" cx="${xs(p)}" cy="${ys(p)}" r="3.5"><title>${esc(item.label)} · ${esc(p.date)} · ${p.value}${unit} · 平台监测回答 ${p.count??"未提供"}</title></circle>`).join("");
+  }).join("");
+  return `<div class="trend"><div class="trend-legend">${series.map(x=>`<span><i style="background:${x.color}"></i>${esc(x.label)}</span>`).join("")}</div><svg viewBox="0 0 ${width} 155" role="img" aria-label="${esc(title)}">${[...new Set([min,rank?Math.round((min+max)/2):max/2,max])].map(v=>`<line x1="${left}" x2="${right}" y1="${ys({value:v})}" y2="${ys({value:v})}"/><text x="2" y="${ys({value:v})+4}">${v}${unit}</text>`).join("")}${marks}<text x="${left}" y="148">${esc(pts[0].date)}</text><text x="${right}" y="148" text-anchor="end">${esc(pts.at(-1).date)}</text></svg></div>`;
+}
+let nativeMetric="exposure";
+function native(f){
+  const p=D.platform;
+  if(!p||!Object.keys(p.data).length){
+    $("native").innerHTML=empty("本次没有可展示的原生平台快照。可通过上方 Answerbit 入口查看。");return;
+  }
+  const data=p.data, cards=data["/geo/base/dashboard"]||{};
+  const metricNames={exposure:"品牌提及率",avg_rank:"平均排名",score:"曝光效果分数"};
+  const available=Object.keys(metricNames).filter(k=>Object.hasOwn(cards,k));
+  if(available.length&&!available.includes(nativeMetric))nativeMetric=available[0];
+  const adjusted=f.m.length||f.e.length||f.g.length||f.tags.length||f.named.length||f.from!==batch.begin_date||f.to!==batch.end_date;
+  const unit=nativeMetric==="exposure"?"%":nativeMetric==="avg_rank"?"名":"";
+  const display=(v,u)=>v===null||v===undefined?"—":v.toFixed(2)+u;
+  let view=`<p class="sub">范围 ${esc(p.begin)} 至 ${esc(p.end)} · 全部平台、分组和标签 · 读取 ${esc(fmtDate(p.fetched))}（北京时间）。${adjusted?" 当前筛选与对照分析重算 Skill 指标，原生快照保持其读取范围。":""}</p>`;
+  view+=`<p class="definition">平台原值 · 平台口径 · <a href="#metrics/metric-native">查看平台指标说明</a></p><div class="native-cards" aria-label="切换 Answerbit 指标">${available.map(k=>`<button type="button" class="native-tab" data-metric="${k}" aria-pressed="${k===nativeMetric}"><small>${metricNames[k]}</small><div class="value">${display(cards[k],k==="exposure"?"%":"")}</div><small>平台口径</small></button>`).join("")}</div>`;
+  const trendPath=nativeMetric==="score"?"/geo/score/trends":"/geo/exposure/trends";
+  const metricPoints=rows=>nativeMetric==="avg_rank"?rows.filter(p=>p.rank>0).map(p=>({...p,value:p.rank})):rows;
+  const points=metricPoints(data[trendPath]||[]);
+  const competitorPoints=(p.competitor_trends?.[trendPath]||[]).map(x=>({...x,points:metricPoints(x.points)}));
+  const ranking=(data[nativeMetric==="score"?"/geo/score/rank":"/geo/exposure/rank"]||[])
+    .map(r=>({...r,current:nativeMetric==="avg_rank"?(r.rank>0?r.rank:null):r.value}))
+    .filter(r=>r.current!==null).sort((a,b)=>nativeMetric==="avg_rank"?a.current-b.current:b.current-a.current);
+  if(points.length||ranking.length){
+    view+=`<div class="native-plot"><div><h3>品牌趋势</h3><p class="sub">${metricNames[nativeMetric]} · 缺少日值的日期留空</p>${sourceTrend(points,metricNames[nativeMetric],unit,competitorPoints)}
+      ${points.length?`<details class="definition"><summary>查看平台日值与监测回答数</summary>${table(["日期","平台数值","监测回答数"],points.map(r=>[esc(r.date),display(r.value,unit),r.count??"未提供"]))}</details>`:""}</div>
+      ${ranking.length?`<div class="native-ranking"><h3>品牌及竞品排行</h3><p class="sub">按 Answerbit 配置的竞品及平台口径展示</p><div class="compact">${table(["排名","品牌","数值"],ranking.map((r,i)=>[i+1,r.own?`<span class="own">${esc(r.label)}</span>`:esc(r.label),display(r.current,unit)]))}</div></div>`:empty("本范围没有可展示的原生竞品排行。")}</div>`;
+  }
+  const sources=[["/geo/domain/rank","引用域名排行"],["/geo/article/rank","引用文章排行"]].filter(([k])=>data[k]?.length);
+  if(sources.length)view+=`<details class="native-sources"><summary>查看 Answerbit 引用排行</summary><div class="grid compact">${sources.map(([k,title])=>`<div><h3>${title}</h3>${table(["来源","平台引用次数"],data[k].map(r=>[esc(r.label),num(r.count)]))}</div>`).join("")}</div></details>`;
+  if(Object.keys(p.issues).length)view+=`<details class="definition"><summary>原生快照缺项</summary>${table(["接口","状态"],Object.entries(p.issues).map(([k,v])=>[esc(k),esc(v)]))}</details>`;
+  $("native").innerHTML=view;
+  $("native").querySelectorAll(".native-tab").forEach(tab=>tab.addEventListener("click",()=>{
+    nativeMetric=tab.dataset.metric;native(f);
+    $("native").querySelector('[aria-pressed="true"]')?.focus();
+  }));
+}
+function renderScenarios(rows){
+  const inScene=(r,words)=>[D.groups[r.d[3]]||"",...(r.d[5]||[]).map(t=>D.tags[t]||"")].some(name=>words.some(w=>name.includes(w)));
+  const specs=[
+    ["发现度 / 数据引用",["发现度","数据引用"],0],
+    ["对比 · 未点名",["对比"],0],
+    ["对比 · 点名",["对比"],1],
+    ["品牌健康",["品牌健康"],null]
+  ];
+  $("scenario-results").innerHTML=table(["场景","有效回答","优先指标","解读"],specs.map(([name,words,named])=>{
+    const rs=rows.filter(r=>inScene(r,words)&&(named===null||r.d[4]===named)), n=total(rs);
+    if(!n)return [name,"0","暂无数据","当前范围无匹配样本；核对平台分组和标签名称"];
+    if(named===1){const count=sum(rs,r=>r.rank[1]);return [name,num(n),`平均首次出现名次 ${count?(sum(rs,r=>r.rank[0])/count).toFixed(2):"不适用"} · 有名次 ${num(count)}/${num(n)}`,"越小越靠前；正文顺序，非平台排名"]}
+    if(named===0)return [name,num(n),`提及率 ${ratio(sum(rs,r=>mentionCount(r)),n)}；首次出现第一 ${ratio(sum(rs,r=>r.first),n)}`,"自然发现与出现顺序；首位不扣负面，不等于推荐"];
+    const known=sum(rs,r=>r.links.Kalodata?.[3]||0),bodyKnown=sum(rs,r=>r.links.Kalodata?.[1]||0);
+    return [name,num(n),[["positive","正面"],["negative","负面"],["mixed","褒贬并存"],["neutral","中性"],["not_mentioned","未提及"],["unknown","未知"]].map(([k,t])=>`${t} ${ratio(sum(rs,r=>r.sent[k]||0),n)}`).join(" · ")+`；官网正式来源 ${ratio(sum(rs,r=>r.links.Kalodata?.[2]||0),known)}；正文官网链接 ${ratio(sum(rs,r=>r.links.Kalodata?.[0]||0),bodyKnown)}`,`仅 Kalodata；正式来源字段覆盖 ${ratio(known,n)}`];
+  }));
+}
+const sentimentTypes=[["positive","正面","#1952a0"],["neutral","中性","#5293ee"],["negative","负面","#df6f53"],["mixed","褒贬并存","#d2a443"],["not_mentioned","未提及","#698b83"],["unknown","未知","#9da8b9"]];
+function sentimentCounts(rows){
+  const n=total(rows),counts=sentimentTypes.map(([key])=>sum(rows,r=>r.sent?.[key]||0));
+  counts[5]+=Math.max(0,n-counts.reduce((a,b)=>a+b,0));
+  return {n,counts,known:n-counts[5]};
+}
+function matrixData(rows,kind){
+  const unnamed=rows.filter(r=>r.d[4]===0), source=kind==="tag"?D.tags:D.groups;
+  const columns=Object.entries(source).filter(([id])=>unnamed.some(r=>kind==="tag"?r.d[5].includes(id):r.d[3]===id)).sort((a,b)=>a[1].localeCompare(b[1],"zh-CN"));
+  const markets=Object.keys(D.markets).filter(m=>rows.some(r=>r.d[0]===m));
+  const cells=markets.map(m=>columns.map(([id])=>{const rs=unnamed.filter(r=>r.d[0]===m&&(kind==="tag"?r.d[5].includes(id):r.d[3]===id));return {m,id,n:total(rs),hits:sum(rs,r=>mentionCount(r)),platforms:[...new Set(rs.map(r=>r.d[1]))].sort()};}));
+  const nonempty=cells.flat().filter(c=>c.n>0).map(c=>c.n);
+  return {columns,markets,cells,min:nonempty.length?Math.min(...nonempty):null};
+}
+function renderMatrix(rows,f){
+  const kind=$("matrix-dimension").value, data=matrixData(rows,kind);
+  if(!data.columns.length){$("home-matrix").innerHTML=empty("当前筛选没有带该题类元数据的未点名有效回答；可切换分组 / 标签或调整题文状态。");return;}
+  $("home-matrix").innerHTML=table(["国家 / "+(kind==="tag"?"标签":"分组"),...data.columns.map(([,name])=>esc(name))],data.markets.map((m,i)=>[
+    esc(marketName(m)),...data.cells[i].map(c=>!c.n?'<span class="matrix-empty">不适用<br><small>无未点名有效样本</small></span>':`<button type="button" class="matrix-cell" data-market="${esc(m)}" data-topic="${esc(c.id)}" style="--heat:${(.06+.42*c.hits/c.n).toFixed(3)}" title="${esc(c.platforms.map(engineName).join('、'))} · 点击筛选该国家与题类"><b>${pct(c.hits,c.n)}</b><small>${num(c.hits)} / ${num(c.n)}</small>${c.n===data.min?'<em>样本最少</em>':''}</button>`)
+  ]));
+  $("home-matrix").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+    const next={...f,m:[b.dataset.market]};if(kind==="tag"){next.tags=[b.dataset.topic];next.tagMode="all";}else next.g=[b.dataset.topic];
+    setFilters("a",next);setFilters("review",next);filters("review");render();
+  }));
+}
+function renderSentimentSummary(rows){
+  const {n,counts,known}=sentimentCounts(rows);
+  if(!n){$("home-sentiment").innerHTML=empty("当前筛选没有有效回答，无法计算口碑构成或字段覆盖率。");return;}
+  $("home-sentiment").innerHTML=`<p class="definition">样本 ${num(n)} · 可识别字段覆盖率 ${ratio(known,n)}</p><div class="sent-stack" role="img" aria-label="${esc(sentimentTypes.map(([,t],i)=>t+' '+ratio(counts[i],n)).join('；'))}">${sentimentTypes.map(([,label,color],i)=>counts[i]?`<span style="width:${100*counts[i]/n}%;background:${color}" title="${esc(label+' '+ratio(counts[i],n))}"></span>`:'').join('')}</div>`+table(["平台状态","占比","回答数"],sentimentTypes.map(([,label,color],i)=>[`<i class="sent-key" style="background:${color}"></i>${label}`,pct(counts[i],n),num(counts[i])]));
+}
+function cardHistory(id,f){
+  const c=D.comparison;
+  if(!c?.previous_batch)return "";
+  const changed=f.m.length||f.e.length||f.g.length||f.tags.length||f.named.length||f.from!==batch.begin_date||f.to!==batch.end_date;
+  if(changed||c.limitations?.length)return "";
+  const metric=c.metrics.find(r=>r.id===id);
+  if(!metric||metric.change===null||metric.change===undefined)return "暂无变化值：上次未记录该指标或分母为0。";
+  return `较上次 ${metric.change>0?"+":""}${metric.change.toFixed(2)} 个百分点 · 整批同范围`;
+}
+function dataReminder(issues,{sentimentUnknown,missing,n,qualityExcluded=null,modelUnverified=false,analysisMissing=false}){
+  const notes=[];
+  if(!issues)notes.push("待核查：未保存全批异常统计");
+  else{
+    const unmatched=issues.unmatched_question||0, pending=(issues.ambiguous_question||0)+(issues.market_tag_conflict||0);
+    if(unmatched)notes.push(`待核查：全批 ${num(unmatched)} 条题目未匹配`);
+    if(pending)notes.push(`待核查：全批 ${num(pending)} 条题号待核对`);
+    const names={answer_unconfirmed:"回答尚未完成分析",tag_metadata_incomplete:"标签信息不完整"};
+    for(const [key,count] of Object.entries(issues)){
+      if(count&&!['unmatched_question','ambiguous_question','market_tag_conflict','citation_unknown','quality_invalid','quality_shrunken'].includes(key))
+        notes.push(`待核查：全批 ${num(count)} 条${names[key]||key}`);
+    }
+  }
+  if(!n)notes.push("当前筛选无有效回答");
+  else{
+    if(sentimentUnknown)notes.push(`待核查：当前筛选 ${num(sentimentUnknown)} 条口碑字段未识别`);
+    if(missing)notes.push(`待核查：当前筛选 ${num(missing)} 条引用字段缺失`);
+    if(!sentimentUnknown&&!missing)notes.push("当前筛选口碑与引用字段可判定");
+  }
+  // No independent sampling plan is stored by the Answerbit observation workflow.
+  if(qualityExcluded===null)notes.push("待检查：本批未保存原文质量结果");
+  else if(qualityExcluded)notes.push(`已排除：当前筛选 ${num(qualityExcluded)} 条数据异常`);
+  if(modelUnverified)notes.push("待核查：本批未校验国家模型范围");
+  else if(analysisMissing)notes.push("待分析：当前筛选无专项结论");
+  notes.push("暂无法计算：采样覆盖率缺少计划量");
+  return "数据提醒："+notes.join("；")+"。";
+}
+function compactReminder(text){
+  const notes=text.replace(/^数据提醒：/,"").replace(/。$/,"").split("；");
+  const important=notes.filter(note=>/原文质量|国家模型|题目未匹配/.test(note));
+  const ordered=[...important,...notes.filter(note=>!important.includes(note))];
+  return "数据提醒："+ordered.slice(0,3).map(note=>note.replace(/^(待核查|待检查)：/,"")).join(" · ")+
+    (ordered.length>3?` · 另 ${ordered.length-3} 项`:"");
+}
+function render(){
+  const f=filters(), rs=D.rows.filter(r=>matches(r.d,f)), n=total(rs), selected=breakdown(rs);
+  $("scope").textContent=describe(f)+` · ${num(n)} 条${sampleLabel}`+(f.from>f.to?" · 起始日应早于或等于结束日":n?"":" · 暂无数据");
+  if(activePage==="compare")renderComparison(f,rs);
+  if(activePage==="overview")renderPrevious(f);
+  renderScenarios(rs);
+  const un=rs.filter(r=>!r.d[4]), unr=total(un), kh=sum(rs,r=>mentionCount(r));
+  const namedCount=n-unr, nh=sum(un,r=>mentionCount(r)), first=sum(rs,r=>r.first);
+  const excluded=sum(rs,r=>r.negative_mentions||0), excludedUnnamed=sum(un,r=>r.negative_mentions||0);
+  const known=sum(rs,r=>r.links.Kalodata?.[3]||0), official=sum(rs,r=>r.links.Kalodata?.[2]||0);
+  const rankSamples=sum(rs,r=>r.rank[1]),rankSum=sum(rs,r=>r.rank[0]);
+  const negative=sum(rs,r=>r.sent.negative||0), mixed=sum(rs,r=>r.sent.mixed||0);
+  const notMentioned=sum(rs,r=>r.sent.not_mentioned||0),sentUnknown=sum(rs,r=>r.sent.unknown||0);
+  $("kpis").innerHTML=kpi("提及率",metricSupported?pct(nh,unr):"不适用",`${sampleLabel==="历史回答"?"历史统计 · ":""}${metricSupported?num(nh):"未知"}/${num(unr)} · 扣除明确负面 ${metricSupported?num(excludedUnnamed):"未知"}`,"metric-core")+
+    kpi("首次出现第一比例",pct(first,n),`${num(first)}/${num(n)} · 正文出现顺序`,"metric-first")+
+    kpi("负面与褒贬并存",pct(negative+mixed,n),`负面 ${ratio(negative,n)} · 褒贬并存 ${ratio(mixed,n)}`,"metric-sentiment");
+  const histories=["skill.core_mention_rate","skill.first_rate","skill.adverse_rate"].map(id=>cardHistory(id,f));
+  const sharedHistory=histories.every(text=>text===histories[0]);
+  $("card-history-status").hidden=!sharedHistory||!histories[0];
+  $("card-history-status").textContent=sharedHistory?histories[0]:"";
+  if(!sharedHistory)histories.forEach((text,i)=>{
+    if(text)$("kpis").children[i].insertAdjacentHTML("beforeend",`<p class="card-history">${esc(text)}</p>`);
+  });
+  renderMatrix(rs,f);
+  renderSentimentSummary(rs);
+  const named=rs.filter(r=>r.d[4]===1);
+  const namedHits=sum(named,r=>mentionCount(r)),namedNegative=sum(named,r=>r.negative_mentions||0);
+  $("named-results").innerHTML=namedCount?table(["点名题指标","数量与比例","来源与分母"],[
+    ["有效回答",num(namedCount),"当前筛选内点名题的有效回答"],
+    ["提及",ratio(namedHits,namedCount),`正文命中且扣除明确负面 ${num(namedNegative)} 条；负面保留分母`],
+    ...[["explicit","明确推荐初判"],["conditional","条件推荐初判"],["neutral","中立推荐初判"],["no_recommendation","未推荐初判"],["unknown","推荐判断未知"]].map(([key,label])=>[label,ratio(sum(named,r=>r.rec[key]||0),namedCount),"点名题有效回答"]),
+    ...sentimentTypes.map(([key,label])=>[`Kalodata 口碑：${label}`,ratio(sum(named,r=>r.sent[key]||0),namedCount),"Answerbit 平台字段 / 点名题有效回答"])
+  ]):empty("当前筛选没有点名题有效回答；可在顶部题文状态选择“点名 Kalodata”或“全部”。");
+  if(activePage==="platform")native(f);
+  $("markets").innerHTML=selected.length?table(["市场 / 点名状态","有效回答","各品牌提及率","各品牌提及份额","首次出现第一","平均首次名次"],
+    selected.map(rows=>{
+      const [m,,,,named]=rows[0].d, count=total(rows), brands=D.competitors[m];
+      const hits=brands.map(b=>sum(rows,r=>r.mentions[b]||0)), sov=hits.reduce((a,b)=>a+b,0);
+      const qualified=brands.map(b=>sum(rows,r=>mentionCount(r,b)));
+      const rankCount=sum(rows,r=>r.rank[1]), rankSum=sum(rows,r=>r.rank[0]);
+      const rateList=(counts,d)=>`<div class="brandlist">${brands.map((b,i)=>`${esc(b)} ${ratio(counts[i],d)}`).join("<br>")}</div>`;
+      return [`<strong>${esc(marketName(m))}</strong><br><span class="soft">${named?"点名":"未点名"}</span>`,num(count),
+        rateList(qualified,count),rateList(hits,sov),ratio(sum(rows,r=>r.first),count),rankCount?`${(rankSum/rankCount).toFixed(2)}（${rankSum}/${rankCount}）`:"不适用"];
+    })):empty("当前筛选没有有效回答。");
+  if(new Set(selected.map(rs=>D.competitors[rs[0].d[0]].join("|"))).size>1){
+    $("markets").insertAdjacentHTML("afterbegin",'<p class="warning">当前市场的竞品集合不同。品牌名称逐市场列出，提及份额需在同一竞品集合内比较。</p>');
+  }
+  const choices=selected.filter(x=>!x[0].d[4]).sort((a,b)=>total(b)-total(a));
+  if(brandMarket&&!choices.some(x=>x[0].d[0]===brandMarket))brandMarket="";
+  const chosen=(brandMarket?choices.find(x=>x[0].d[0]===brandMarket):choices[0]);
+  $("brand-market").innerHTML=`<option value="">${f.m.length?"当前范围样本量最大市场":"全部国家"}</option>${f.m.length?'<option value="__all">全部国家</option>':""}`+Object.entries(D.markets).map(([code,name])=>`<option value="${esc(code)}"${code===brandMarket?" selected":""}>${esc(name)}</option>`).join("");
+  $("mention-title").textContent=chosen?`${marketName(chosen[0].d[0])} · 未点名题 · ${num(total(chosen))} 条有效回答`:"品牌提及率";
+  $("mention-chart").innerHTML=chosen?`<p class="sub">${brandMarket?"当前所选市场":"默认显示当前样本量最大的市场"} · 竞品集合 ${esc(D.competitors[chosen[0].d[0]].join("、"))}</p>${scaleLabel}<div class="bars">${D.competitors[chosen[0].d[0]].map(b=>bar(b,sum(chosen,r=>mentionCount(r,b)),total(chosen))).join("")}</div>`:empty("当前筛选没有未点名题样本。");
+  const byBrand=(brand,i)=>sum(rs,r=>r.links[brand]?.[i]||0);
+  $("website").innerHTML=n?scaleLabel+[[0,1,"正文链接"],[2,3,"正式来源"]].map(([a,b,name])=>`<div class="chart-group"><strong>${name}</strong><div class="bars">${["Kalodata","FastMoss"].map(x=>bar(x,byBrand(x,a),byBrand(x,b))).join("")}</div></div>`).join("")+
+    `<p class="definition">正式来源字段覆盖 ${ratio(known,n)}。</p>`:empty("当前筛选没有有效回答。");
+  const sourceEvidence=rs.filter(r=>r.evidence?.formal).map(r=>({...r.evidence.formal,d:r.d})).slice(0,12);
+  $("source-evidence").innerHTML=sourceEvidence.length?`<details><summary>官网正式来源缺席的代表回答 · ${num(sourceEvidence.length)} 条</summary>${table(["题号与提问","市场 / 平台 / 日期","核查"],sourceEvidence.map(x=>[`${esc(x.q)}<br>${esc(x.text)}`,esc([marketName(x.d[0]),engineName(x.d[1]),x.d[2]].join(" / ")),`<a href="${esc(D.links.answerbit)}" target="_blank" rel="noopener noreferrer">Answerbit 工作台</a> · 按题文查找`]))}<p class="definition">范围：当前快照保留的代表记录，最多12条。</p></details>`:empty("当前快照未保留官网来源缺席的代表记录。");
+  const unknown=sum(rs,r=>r.rec.unknown||0);
+  $("recommendation").innerHTML=n?table(["分类","比例与计数"],Object.entries(recommendationLabels).map(([k,label])=>[label,ratio(sum(rs,r=>r.rec[k]||0),n)]))+`<p class="definition">可判定覆盖 ${ratio(n-unknown,n)}。</p>`:empty("当前筛选没有有效回答。");
+  const sent=[["not_mentioned","未提及"],["positive","正面"],["neutral","中性"],["negative","负面"],["mixed","褒贬并存"],["unknown","未知"]];
+  const sentimentUnknown=sum(rs,r=>r.sent.unknown||0);
+  const sn=n-sum(rs,r=>(r.sent.not_mentioned||0)+(r.sent.unknown||0));
+  const sentReasons=[["missing","字段缺失"],["format","字段格式异常"],["enum","枚举未识别"],["unrecorded","历史快照未记录原因"]];
+  const sentReasonText=sentReasons.map(([k,label])=>[label,sum(rs,r=>r.sent_issues?.[k]||0)]).filter(([,c])=>c)
+    .map(([label,c])=>`${label} ${num(c)} 条`).join("、");
+  $("sentiment").innerHTML=n?table(["平台状态","占全部有效回答","占平台已提及"],sent.filter(([k])=>k!=="unknown"||sentimentUnknown>0).map(([k,label])=>{
+    const hits=sum(rs,r=>r.sent[k]||0);return [label,ratio(hits,n),["unknown","not_mentioned"].includes(k)?"—":ratio(hits,sn)];
+  }))+`<p class="definition">${sentimentUnknown?`口碑未知 ${num(sentimentUnknown)} 条${sentReasonText?`（${sentReasonText}）`:""}。`:"口碑字段均可识别。"}</p>`:empty("当前筛选没有有效回答。");
+  const neutral=new Map();
+  for(const q of D.neutral.filter(q=>matches(q.d,f))){
+    if(!neutral.has(q.q))neutral.set(q.q,[]);neutral.get(q.q).push(q);
+  }
+  $("neutral").innerHTML=neutral.size?table(["题号与提问","命中回答","分组、平台、日期"],[...neutral.entries()].map(([qid,qs])=>[
+    `<strong>${esc(qid)}</strong><br>${esc(qs[0].text||"题文待核对")}`,num(qs.length),
+    qs.map(x=>esc([groupName(x.d[3]),engineName(x.d[1]),x.d[2]].join(" / "))).join("<br>")])):
+    empty(n?`规则未检出中立推荐。当前范围推荐未知 ${num(unknown)} 条。`:"当前筛选没有有效回答。");
+  if(activePage==="answers")renderReview(f,unknown);
+  renderActions(rs);
+  const qualityRows=(D.quality?.records||[]).filter(r=>matches(r.d,f));
+  renderQuality(qualityRows);
+  const missing=n-known;
+  const bankStatus=!D.bank_source?"未知：本批未记录题库来源":D.bank_source.source==="feishu-live"?
+    `飞书修订 ${D.bank_source.revision??"未知"} · 读取 ${D.bank_source.read_at||"未记录"}`:
+    "本地历史题库 · 未核对在线最新版";
+  $("quality").innerHTML=table(["批次项目","数据"],[
+    ["数据窗口",esc(batch.begin_date+" 至 "+batch.end_date)],
+    ["本批返回记录",num(batch.returned_records)],
+    ["题库版本",esc(batch.question_version.slice(0,12))],
+    ["指标版本",esc(batch.metric_version)],
+    ["题库来源",esc(bankStatus)],
+    ["交付范围",D.market_scope?esc(D.market_scope.markets.map(m=>marketName(m)).join("、")):"全批"]
+  ]);
+
+  const issueNames={unmatched_question:"题库无匹配",ambiguous_question:"题号待确认",market_tag_conflict:"市场标签冲突",
+    citation_unknown:"引用字段缺失",answer_unconfirmed:"回答待确认",tag_metadata_incomplete:"标签信息不完整",
+    quality_invalid:"数据异常：无效原文",quality_shrunken:"数据异常：疑似缩水"};
+  $("home-status").textContent=compactReminder(dataReminder(D.issues,{sentimentUnknown,missing,n,
+    qualityExcluded:D.quality?qualityRows.filter(r=>r.status!=="accepted").length:null,
+    modelUnverified:!D.model_policy,analysisMissing:n>0&&!!D.model_policy&&!findingEntry(rs)})+
+    (D.model_policy?.excluded_records.length?` 已排除：本批 ${num(D.model_policy.excluded_records.length)} 条国家模型范围外记录。`:""));
+  $("status-details").innerHTML=
+    table(["全批异常原因","记录数","影响范围","核查入口"],D.issues?Object.entries(D.issues).map(([code,count])=>[
+      esc(issueNames[code]||code),num(count),D.market_scope?"交付国家批次；不随页内筛选缩小":"全部取数批次；不随当前筛选缩小",["unmatched_question","ambiguous_question","market_tag_conflict"].includes(code)?"飞书题库与 Answerbit 用户提问":"Answerbit 大模型回答记录"
+    ]):[["历史快照未保存异常统计","未知","全批","重新取数核对，不能视作零异常"]])+
+    table(["当前筛选问题","记录数","影响与核查入口"],[["口碑未知",num(sentimentUnknown),"影响平台口碑判定覆盖；回 Answerbit 核对口碑字段"],["正式来源字段缺失",num(missing),"不进入正式来源可判定分母；回 Answerbit 回答记录核对引用"],["推荐判断未知",num(unknown),"不能作为明确推荐；在问题与行动 → 推荐记录查看题文和原文"]])+
+    `<p class="definition">异常可重叠，数量不相加当作独立回答总数。点名判定来源 ${esc(D.prompt_basis||"旧批来源待核对")}。同批 Excel「数据异常」保留题号、原因及回查字段；题库外记录仅列全批数量，不进入有编号明细。${D.issues&&Object.keys(D.issues).length===0?"本批未记录取数或匹配异常。":""}</p>`;
+
+  $("status-details").innerHTML+=table(["批次校验","状态"],[
+    ...metricPolicy.warnings.map(warning=>[esc(warning),"待核查"]),
+    ["采样覆盖率","缺少独立计划量，暂无法计算"]
+  ]);
+  if(D.model_policy){
+    const missingModels=Object.entries(D.model_policy.models).flatMap(([m,models])=>models
+      .filter(e=>(!f.m.length||f.m.includes(m))&&(!f.e.length||f.e.includes(e))&&!rs.some(r=>r.d[0]===m&&r.d[1]===e))
+      .map(e=>[esc(marketName(m)),esc(engineName(e)),D.rows.some(r=>r.d[0]===m&&r.d[1]===e)?"暂无数据：当前筛选无有效回答":"暂无数据：本批无有效回答"]));
+    $("model-availability").innerHTML="";
+    if(missingModels.length){
+      const counts=new Map();for(const [market] of missingModels)counts.set(market,(counts.get(market)||0)+1);
+      $("home-status").textContent+=" 暂无数据："+[...counts].map(([market,count])=>`${market} ${count} 个平台无有效回答`).join("、")+"。";
+      $("status-details").innerHTML+=table(["市场","已配置平台","数据状态"],missingModels);
+    }
+    $("status-details").innerHTML+=table(["本批国家","已确认的模型范围"],Object.entries(D.model_policy.models).map(([m,models])=>[esc(marketName(m)),esc(models.map(engineName).join("、"))]))+
+      table(["排除题号","平台 / 日期","原因"],D.model_policy.excluded_records.slice(0,25).map(r=>[esc(r.question_id),esc(engineName(r.platform)+" / "+r.task_date),esc(r.reason)]))+
+      `<p class="definition">国家模型排除属于本批审计，不随页内筛选重算；此处最多25条，完整记录见同批 Excel「国家模型排除」。</p>`;
+  }
+
+}
+$("matrix-dimension").addEventListener("change",()=>render());
+let brandMarket="";
+$("brand-market").addEventListener("change",e=>{
+  const value=e.target.value;
+  brandMarket=value==="__all"?"":value;
+  if(value){
+    const next={...filters(),m:value==="__all"?[]:[brandMarket]};
+    setFilters("a",next);setFilters("review",next);filters("review");
+  }
+  render();
+});
+function renderPrevious(f){
+  const c=D.comparison;
+  if(!c?.previous_batch){
+    $("previous-comparison").innerHTML=empty(c?.limitations?.length?"暂不比较："+[...new Set(c.limitations)].join("；")+"。":"暂无对比：未记录上次成功批次。");
+    return;
+  }
+  const before=new Map(c.previous_metrics.map(r=>[r.id,r]));
+  const value=r=>{
+    if(!r||r.value===null)return "暂无数据";
+    const units={count:" 条",percent:"%",rank:" 名",score:" 分"};
+    const formatted=(r.kind==="count"?num(r.value):r.value.toFixed(2))+units[r.kind];
+    return esc(formatted)+(r.denominator? `<small>（${num(r.numerator)}/${num(r.denominator)}）</small>`:"");
+  };
+  const change=r=>{
+    if(r.change===null)return "—";
+    if(Math.abs(r.change)<.005)return "持平";
+    const unit={count:"条",percent:"个百分点",rank:"名",score:"分"}[r.kind];
+    return `${r.change>0?"+":"−"}${r.kind==="count"?num(Math.abs(r.change)):Math.abs(r.change).toFixed(2)} ${unit}`;
+  };
+  const a=c.current_batch,b=c.previous_batch;
+  const changed=f.m.length||f.e.length||f.g.length||f.tags.length||f.named.length||f.from!==batch.begin_date||f.to!==batch.end_date;
+  const limitations=[...new Set([...(c.limitations||[]),...(changed?["上次仅有整批数据，缺少当前筛选的同条件数据"]:[])])];
+  $("previous-comparison").innerHTML=`<p class="definition">整批对比 · 本次 ${esc(a.begin_date)} 至 ${esc(a.end_date)} · 上次 ${esc(b.begin_date)} 至 ${esc(b.end_date)} · 上次取数 ${esc(fmtDate(b.fetched_at_utc))}</p>`+
+    (limitations.length?`<p class="warning">暂不比较：${esc(limitations.join("；"))}。</p>`:"")+
+    table(["核心指标","来源","本次","上次","变化"],c.metrics.map(r=>[esc(r.name),esc(r.source),value(r),value(before.get(r.id)),esc(change(r))]));
+}
+const reviewReasons={description:"仅介绍或列举",target:"推荐对象不清",scope:"条件或否定范围不清",conflict:"转述或语义冲突",uncovered:"规则未覆盖",
+  read_failed:"详情读取失败",mismatch:"详情或首轮判定与快照不符",task_missing:"平台返回任务不存在",deferred:"旧任务暂缓核查"};
+const recommendationLabels={explicit:"明确推荐",conditional:"条件推荐",neutral:"中立推荐",no_recommendation:"未推荐",unknown:"未知"};
+const hasOriginals=Array.isArray(D.recommendations);
+const sharedPreview=D.delivery?.mode==="feishu";
+const localViewer=!sharedPreview&&hasOriginals&&location.protocol==="http:"&&location.hostname==="127.0.0.1";
+let qualityPage=0,qualityScope="";
+function renderQuality(records){
+  if(!D.quality){$("answer-quality").innerHTML=empty("旧批未保存原文质量检查，需刷新；不能视为零异常。");return;}
+  const signature=JSON.stringify(records.map(r=>r.task));
+  if(signature!==qualityScope){qualityScope=signature;qualityPage=0;}
+  const coverage=`<p class="definition">全批检查 ${num(D.quality.checked)} 条 · 有长度参考 ${num(D.quality.comparable)} 条 · 无长度参考 ${num(D.quality.checked-D.quality.comparable)} 条</p>`;
+  if(!records.length){$("answer-quality").innerHTML=coverage+empty("当前筛选规则未检出异常或长度待核查记录。");return;}
+  const size=25,start=qualityPage*size;
+  const locate=r=>localViewer?`<a href="./answer?task=${encodeURIComponent(r.task)}" target="_blank" rel="noopener noreferrer">查看原文</a>${r.reference_task?` · <a href="./answer?task=${encodeURIComponent(r.reference_task)}" target="_blank" rel="noopener noreferrer">对照原文</a>`:""}`:"";
+  const excluded=records.filter(r=>r.status!=="accepted").length;
+  $("answer-quality").innerHTML=coverage+`<p class="definition">当前筛选 ${num(excluded)} 条数据异常已排除，${num(records.length-excluded)} 条仅长度待核查仍纳入统计；本地库保留原文，Excel“回答质量”保留同批判定。</p>`+table(["题号与提问","市场 / 平台 / 日期","分组 / 标签","判断与原因","文本对照",...(localViewer?["本地原文"]:[])],records.slice(start,start+size).map(r=>[
+    `<strong>${esc(r.q)}</strong><br>${esc(r.text)}`,esc([marketName(r.d[0]),engineName(r.d[1]),r.d[2]].join(" / ")),
+    esc(groupName(r.d[3])+" / "+r.d[5].map(t=>D.tags[t]||t).join("、")),`<strong>${r.status==="accepted"?"长度待核查 · 仍纳入统计":"数据异常 · 已排除"}</strong><br>${esc(r.reason)}`,
+    `${num(r.units)} 单位${r.reference_units?` / 参考 ${num(r.reference_units)} · ${(100*r.ratio).toFixed(1)}%<br><small>对照任务 ${esc(r.reference_task)}</small>`:""}`,...(localViewer?[locate(r)]:[])
+  ]))+`<div class="pager"><button id="quality-prev" ${qualityPage===0?"disabled":""}>上一页</button><span>${num(start+1)}–${num(Math.min(start+size,records.length))} / ${num(records.length)}</span><button id="quality-next" ${start+size>=records.length?"disabled":""}>下一页</button></div>`;
+  $("quality-prev").onclick=()=>{qualityPage--;renderQuality(records);};
+  $("quality-next").onclick=()=>{qualityPage++;renderQuality(records);};
+}
+if(hasOriginals)$("review-heading").textContent="非明确推荐记录";
+$("local-answer-note").hidden=localViewer;
+$("local-answer-note").textContent=sharedPreview?"飞书共享版不提供本机数据库查询。原文请到 Answerbit 工作台 → 大模型回答记录，按本表题文、日期、平台、分组定位；工作台链接不能直达某条原文。":localViewer?"点「查看原文」可打开该题号下的这条 Answerbit 回答。":
+  hasOriginals?"当前 HTML 可直接筛选和对照。查原文时，用同批 SQLite 启动本机查询，再从返回的地址打开看板。":"本批是历史快照，重新取数后可逐条查看本地原文。";
+let pendingPage=0, pendingScope="", pendingReason="", pendingLabel="";
+function reviewTable(records){
+  const headers=["飞书题号","题文","市场","平台","回答日期","Answerbit 分组",...(D.answer_details?["题型","口碑","口碑关键词"]:[]),"待确认原因","对比表标签"];
+  if(hasOriginals)headers.splice(6,0,"推荐判断");
+  if(localViewer)headers.push("本地原文");
+  return table(headers,records.map(r=>[
+    D.answer_details?answerRecordLink(r,r.q):esc(r.q),esc(r.text||"题文待核对"),esc(marketName(r.d[0])),esc(engineName(r.d[1])),esc(r.d[2]),esc(groupName(r.d[3])),
+    ...(D.answer_details?[r.d[4]?"点名题":"未点名题",esc(answerSentimentName(r.sentiment)),recordKeywordSummary(r)]:[]),
+    ...(hasOriginals?[esc(recommendationLabels[r.label])]:[]),
+    esc(reviewReasons[r.reason||r.status]||(r.label==="unknown"?"待确认":"—")),
+    r.status==="ok"?(r.table?"对比表提及":"—"):"未判定",
+    ...(localViewer?[`<a href="./answer?task=${encodeURIComponent(r.task)}" target="_blank" rel="noopener noreferrer">查看原文</a>`]:[])
+  ]));
+}
+function renderReview(f,unknown){
+  const key=JSON.stringify(f);
+  if(key!==pendingScope){pendingScope=key;pendingPage=0;pendingReason="";pendingLabel="";}
+  const records=D.answer_details?.records??D.recommendations??(D.review?.rows||[]).filter(r=>r.status!=="ok"||r.label==="unknown");
+  const pending=records.filter(r=>matches(r.d,f));
+  if(!pending.length){
+    $("review-pending").innerHTML=empty(!hasOriginals&&!D.review&&unknown?
+      `推荐未知 ${num(unknown)} 条，当前快照没有待确认明细。`:"当前筛选没有记录。");
+    return;
+  }
+  const subset=pending.filter(r=>(!pendingLabel||r.label===pendingLabel)&&(!pendingReason||(r.reason||r.status)===pendingReason));
+  const pages=Math.ceil(subset.length/20);
+  pendingPage=Math.min(pendingPage,Math.max(0,pages-1));
+  const reasons=Object.entries(reviewReasons).map(([code,label])=>[code,label,pending.filter(r=>(r.reason||r.status)===code).length]).filter(([, ,count])=>count);
+  const categories=Object.entries(recommendationLabels).filter(([code])=>D.answer_details||code!=="explicit")
+    .map(([code,label])=>[code,label,pending.filter(r=>r.label===code).length]);
+  const options=(items,current)=>items.map(([code,label,count])=>`<option value="${code}"${code===current?" selected":""}>${label}（${num(count)}）</option>`).join("");
+  $("review-pending").innerHTML=`<p class="sub">${num(subset.length)} 条 / 当前范围 ${num(pending.length)} 条</p>
+    ${hasOriginals?`<label class="review-reason">推荐判断 <select id="review-label"><option value="">全部判断</option>${options(categories,pendingLabel)}</select></label>`:""}
+    ${reasons.length?`<label class="review-reason">待确认原因 <select id="review-reason"><option value="">全部原因</option>${options(reasons,pendingReason)}</select></label>`:""}
+    ${pages?`<div class="compact">${reviewTable(subset.slice(pendingPage*20,(pendingPage+1)*20))}</div>
+    <div class="review-nav"><button type="button" data-step="-1" ${pendingPage===0?"disabled":""}>上一页</button>
+    <span>第 ${pendingPage+1} / ${pages} 页</span>
+    <button type="button" data-step="1" ${pendingPage+1===pages?"disabled":""}>下一页</button></div>`:empty("没有符合所选判断和原因的记录。")}`;
+}
+$("review-pending").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-step]");
+  if(b){pendingPage+=Number(b.dataset.step);renderReview(filters());}
+});
+$("review-pending").addEventListener("change",e=>{
+  if(e.target.id==="review-reason")pendingReason=e.target.value;
+  else if(e.target.id==="review-label")pendingLabel=e.target.value;
+  else return;
+  pendingPage=0;
+  renderReview(filters());
+  $(e.target.id)?.focus();
+});
+function findingEntry(rows){
+  const ids=rows.map(r=>D.rows.indexOf(r)).sort((a,b)=>a-b);
+  return D.core_findings?.entries.find(e=>JSON.stringify(e.row_indices)===JSON.stringify(ids));
+}
+function coreFinding(rows){
+  if(!rows.length)return "";
+  if(!metricSupported)return "当前范围指标口径待校验，请按题号回查记录。";
+  const entry=findingEntry(rows);
+  const scope=[...new Set(rows.map(r=>marketName(r.d[0])))].join("、");
+  if(entry)return `${entry.conclusion}${entry.judgment?` 下一步：${entry.judgment}`:""}`;
+  const unnamed=rows.filter(r=>!r.d[4]),n=total(rows);
+  return `${sampleLabel==="历史回答"?"历史统计 · ":""}${scope} · 提及率 ${ratio(sum(unnamed,r=>mentionCount(r)),total(unnamed))}；首次出现第一比例 ${ratio(sum(rows,r=>r.first),n)}。`;
+}
+function actionName(item){
+  const affected=item.low?item.den-item.hits:item.hits;
+  return ({formal:`核对 ${num(affected)} 条回答的官网来源`,recommendation:`复核 ${num(affected)} 条推荐判定`,absence:`回查 ${num(affected)} 条未提及或负面回答`,rank:`核对 ${num(affected)} 条品牌出现顺序`,sentiment:`复核 ${num(affected)} 条负面或褒贬说法`})[item.key];
+}
+const actionSentimentFields=[['positive','正面'],['negative','负面'],['mixed','褒贬不一'],['unknown','无法判断'],['neutral','中性'],['not_mentioned','未提及']];
+const hasAnswerDetails=Array.isArray(D.answer_details?.records);
+function answerSentimentName(key){return actionSentimentFields.find(([code])=>code===key)?.[1]||'无法判断';}
+function recordKeywordItems(record){
+  const items=[],seen=new Set(),groupedTexts=new Set();
+  for(const [polarity,words] of Object.entries(record.keyword_groups||{}))for(const text of words){
+    const key=JSON.stringify([polarity,text]);
+    if(!seen.has(key)){items.push({text,polarity,origin:'platform'});seen.add(key);groupedTexts.add(text);}
+  }
+  for(const text of record.keywords||[])if(!groupedTexts.has(text)){items.push({text,polarity:'unclassified',origin:'platform'});groupedTexts.add(text);}
+  if(!items.length)items.push(...(record.local_keywords||[]));
+  return items.sort((a,b)=>(a.polarity==='negative'?0:1)-(b.polarity==='negative'?0:1));
+}
+function keywordPolarityName(key){return ({positive:'正面',negative:'负面',mixed:'褒贬不一',neutral:'中性',unknown:'无法判断',unclassified:'未判极性'})[key]||key;}
+function keywordOriginName(origin){return origin==='local'?'本地提取':'平台返回';}
+function keywordBadges(item){return `<b class="keyword-origin" data-origin="${esc(item.origin)}">${keywordOriginName(item.origin)}</b><b>${esc(keywordPolarityName(item.polarity))}</b>`;}
+function keywordEmptyLabel(record){return record.local_keyword_status?'未提取到可靠关键词':'平台未返回关键词';}
+function recordKeywordSummary(record){
+  const items=recordKeywordItems(record);
+  return items.length?`<div class="table-keywords">${items.slice(0,2).map(item=>`<p>${keywordBadges(item)} ${answerRecordLink(record,item.text,{...item,metric:'sentiment'})}</p>`).join('')}${items.length>2?`<small>另 ${items.length-2} 条，点击题号查看</small>`:''}</div>`:keywordEmptyLabel(record);
+}
+function answerDimensionKey(dim){return JSON.stringify([...dim.slice(0,5),dim[5].slice().sort()]);}
+const answerDetailsByDimension=new Map();
+for(const record of D.answer_details?.records||[]){
+  const key=answerDimensionKey(record.d);if(!answerDetailsByDimension.has(key))answerDetailsByDimension.set(key,[]);answerDetailsByDimension.get(key).push(record);
+}
+function actionKeywordItems(item){
+  const records=item.rows.flatMap(row=>answerDetailsByDimension.get(answerDimensionKey(row.d))||[]),groups=new Map();
+  for(const record of records){
+    if(item.key==='sentiment'&&!['negative','mixed'].includes(record.sentiment))continue;
+    if(item.key==='recommendation'&&record.label!=='unknown')continue;
+    for(const entry of recordKeywordItems(record)){
+      const key=JSON.stringify([entry.origin,entry.polarity,entry.text]);
+      if(!groups.has(key))groups.set(key,{...entry,tasks:new Set(),reference:record});groups.get(key).tasks.add(record.task);
+    }
+  }
+  return [...groups.values()].sort((a,b)=>(a.polarity==='negative'?0:1)-(b.polarity==='negative'?0:1)||b.tasks.size-a.tasks.size);
+}
+function actionKeywordMarkup(item){
+  if(!hasAnswerDetails)return '';
+  const keywords=actionKeywordItems(item);
+  return keywords.length?`<ul class="keyword-evidence">${keywords.slice(0,3).map(k=>`<li data-polarity="${esc(k.polarity)}" data-origin="${esc(k.origin)}">${keywordBadges(k)}${answerRecordLink(k.reference,k.text,{...k,metric:'sentiment'})}<small>${num(k.tasks.size)} 条回答</small></li>`).join('')}</ul>`:'<p class="keyword-empty">未提取到可靠口碑关键词，可查看原文。</p>';
+}
+function actionSentimentMarkup(rows){
+  const n=total(rows),counts=actionSentimentFields.map(([key,label])=>({key,label,n:sum(rows,r=>r.sent[key]||0)}));
+  const types=new Set(rows.map(r=>r.d[4])),type=types.size===1?(types.has(1)?'named':'unnamed'):'mixed';
+  const label=type==='named'?'点名题口碑':type==='unnamed'?'未点名题口碑':'当前题型口碑';
+  return `<div class="action-sentiment" data-question-type="${type}"><span class="action-field-label">${label} · ${num(n)} 条</span><div>${counts.filter((s,i)=>i<4||s.n).map(s=>`<span data-sentiment="${s.key}">${s.label} <b>${num(s.n)}</b></span>`).join('')}</div></div>`;
+}
+function actionNextStep(item){
+  if(item.key==='sentiment'){
+    if(hasAnswerDetails&&actionKeywordItems(item).length)return '核对上述负面要点的原文与产品现行说明；确认有偏差后更新，再用同题复测。';
+    const negative=sum(item.rows,r=>r.sent.negative||0),mixed=sum(item.rows,r=>r.sent.mixed||0);
+    return `核对${negative?' '+num(negative)+' 条负面':''}${negative&&mixed?'和':''}${mixed?' '+num(mixed)+' 条褒贬不一':''}回答中的具体说法，再确定需要补充或更新的内容。`;
+  }
+  return ({absence:`回看 ${num(item.affected)} 条未提及或负面回答，记录被推荐工具及选型理由。`,
+    rank:`核对 ${num(item.affected)} 条品牌未首次居首的回答，记录前置工具和对比维度。`,
+    formal:`核对 ${num(item.affected)} 条未命中官网正式来源的回答，确认引用了哪些页面。`,
+    recommendation:`复核 ${num(item.affected)} 条推荐判断未知的回答，区分列举、条件不清和规则漏判。`})[item.key];
+}
+const answerRecordIndex=new Map(),answerRecordBuckets=new Map();
+function indexAnswerRecord(reference){
+  if(!reference?.task||!reference.q||!Array.isArray(reference.d))return;
+  const task=String(reference.task),record=answerRecordIndex.get(task)||{task};
+  for(const key of ['q','text','d','category'])if(reference[key]!==undefined)record[key]=reference[key];
+  for(const key of ['body','sentiment','reputation_code','keywords','keyword_groups','fetched_at','local_keywords','local_keyword_status'])if(reference[key]!==undefined)record[key]=reference[key];
+  if(reference.label)record.recommendation=reference.label==='negative'?'no_recommendation':reference.label;
+  answerRecordIndex.set(task,record);
+}
+for(const reference of [...(D.recommendations||[]),...(D.review?.rows||[]),...(D.neutral||[])])indexAnswerRecord(reference);
+for(const reference of D.answer_details?.records||[])indexAnswerRecord(reference);
+for(const row of D.rows)for(const [signal,reference] of Object.entries(row.evidence||{})){
+  indexAnswerRecord(reference);
+  const record=answerRecordIndex.get(String(reference.task));
+  if(record){answerRecordBuckets.set(record.task,row);if(signal==='sentiment')record.adverseSignal=true;}
+}
+function answerRecordLink(reference,label='查看对应回答 →',focus={}){
+  const params=new URLSearchParams();
+  if(focus.metric)params.set('metric',focus.metric);
+  if(focus.text){params.set('keyword',focus.text);params.set('origin',focus.origin||'platform');params.set('polarity',focus.polarity||'unclassified');}
+  const suffix=params.size?'/'+params.toString():'';
+  return answerRecordIndex.has(String(reference?.task))?`<a href="#answers/${encodeURIComponent(reference.task)}${esc(suffix)}">${esc(label)}</a>`:'<span>未保存可定位记录</span>';
+}
+let selectedAnswerTask='';
+let selectedAnswerFocus={};
+function markAnswerFocus(panel,record,items){
+  const requested=selectedAnswerFocus.metric,metric=['sentiment','recommendation','body'].includes(requested)?requested:'sentiment';
+  const index=items.findIndex(k=>k.text===selectedAnswerFocus.keyword&&k.origin===selectedAnswerFocus.origin&&k.polarity===selectedAnswerFocus.polarity);
+  const target=index>=0?panel.querySelector(`[data-keyword-index="${index}"]`):panel.querySelector(`[data-record-metric="${metric}"]`);
+  if(!target)return;
+  target.classList.add('record-focus');target.tabIndex=-1;
+  const badge=document.createElement('span');badge.className='record-focus-badge';badge.textContent='本次定位';target.prepend(badge);
+  panel.dataset.focusMetric=index>=0?'keyword':metric;
+  if(index<0)return;
+  const item=items[index],body=record.body||'';let start=item.start,end=item.end;
+  panel.querySelector('[data-record-metric="sentiment"]')?.classList.add('record-related-metric');
+  if(item.origin!=='local'||!Number.isInteger(start)||!Number.isInteger(end)||body.slice(start,end)!==item.text){
+    start=body.indexOf(item.text);end=start+item.text.length;
+    if(start<0||body.indexOf(item.text,end)>=0)return;
+  }
+  const pre=panel.querySelector('.record-original pre');
+  if(pre){
+    pre.innerHTML=esc(body.slice(0,start))+`<mark id="answer-source-hit">${esc(body.slice(start,end))}</mark>`+esc(body.slice(end));
+    const hit=panel.querySelector('#answer-source-hit');
+    pre.scrollTop=hit.getBoundingClientRect().top-pre.getBoundingClientRect().top+pre.scrollTop-pre.clientHeight/3;
+  }
+}
+function renderAnswerRecord(){
+  const panel=$('answer-record');if(!panel)return;
+  delete panel.dataset.focusMetric;
+  panel.hidden=!selectedAnswerTask;if(panel.hidden)return;
+  const record=answerRecordIndex.get(selectedAnswerTask);
+  if(record&&!matches(record.d,filters())){selectedAnswerTask='';panel.hidden=true;return;}
+  panel.dataset.task=selectedAnswerTask;
+  if(!record){panel.innerHTML='<h3>暂无对应回答记录</h3>'+empty('该任务编号未保存在本批快照中，请返回行动清单选择。');return;}
+  const [market,platform,day,group,named]=record.d,bucket=answerRecordBuckets.get(record.task),typeLabel=named?'点名题':'未点名题';
+  const recommendation=recommendationLabels[record.recommendation];
+  const keywordItems=recordKeywordItems(record);
+  const detailFields=hasAnswerDetails?`<dt>该回答口碑</dt><dd data-record-metric="sentiment">${esc(answerSentimentName(record.sentiment))}（平台字段${record.reputation_code===null?'缺失':` ${esc(record.reputation_code)}`}）</dd><dt>${typeLabel}口碑关键词</dt><dd>${keywordItems.length?`<ul class="record-keywords">${keywordItems.map((k,i)=>`<li data-keyword-index="${i}" data-polarity="${esc(k.polarity)}" data-origin="${esc(k.origin)}">${keywordBadges(k)}${esc(k.text)}</li>`).join('')}</ul>`:keywordEmptyLabel(record)}</dd><dt>原文补读时间</dt><dd>${esc(fmtDate(record.fetched_at))}（北京时间）</dd>`:
+    `<dt>该回答口碑</dt><dd>${record.adverseSignal?'已命中负面或褒贬不一线索；逐条口碑字段未保存。':'本批未保存逐条口碑字段。'}</dd><dt>${typeLabel}口碑关键词</dt><dd>本批未保存</dd>`;
+  panel.innerHTML=`<div class="section-head"><h3>回答记录 · ${esc(record.q)}</h3><a href="#action">返回行动清单 →</a></div>
+    <p class="record-question">${esc(record.text)}</p><p class="sub">${esc(marketName(market))} · ${esc(engineName(platform))} · ${esc(day)} · ${esc(groupName(group))}</p>
+    <dl class="record-fields"><dt>提问类型</dt><dd>${typeLabel}（按提问题文判断）</dd><dt>任务编号</dt><dd>${esc(record.task)}</dd>${detailFields}<dt>推荐判断</dt><dd data-record-metric="recommendation">${recommendation?esc(recommendation)+'（既有规则判定）':'本批未保存逐条推荐判定'}</dd></dl>
+    ${hasAnswerDetails?`<details class="record-original" open><summary data-record-metric="body">该条回答原文</summary><pre>${esc(record.body)}</pre></details>`:''}
+    ${!hasAnswerDetails&&bucket?`<div class="record-cohort"><p>以下是同国家、平台、日期、分组、标签和题型的样本汇总，不代表该条回答的口碑字段。</p>${actionSentimentMarkup([bucket])}</div>`:''}`;
+  markAnswerFocus(panel,record,keywordItems);
+}
+function actionCandidates(rows){
+  const cuts=new Map();
+  for(const r of rows){
+    const key=JSON.stringify([r.d[0],r.d[1],r.d[3],r.d[4]]);
+    if(!cuts.has(key))cuts.set(key,[]);cuts.get(key).push(r);
+  }
+  // Explicit adverse statements precede visibility gaps; rule/source gaps are separate checks.
+  const rules=[
+    {key:"sentiment",kind:"business",metric:"已提及中的负面或褒贬并存",low:false,
+     counts:r=>[(r.sent.negative||0)+(r.sent.mixed||0),r.n-(r.sent.not_mentioned||0)-(r.sent.unknown||0)],
+     retest:"同题、同平台复测负面与褒贬并存数量，并回查对应说法。"},
+    {key:"absence",kind:"business",metric:"提及率",low:true,
+     counts:r=>[mentionCount(r),r.n],
+     retest:"同题、同平台、同窗口复测提及率和首次出现第一比例。"},
+    {key:"rank",kind:"business",metric:"已提及但未首次居首",low:false,
+     counts:r=>[r.rank[1]-r.first,r.rank[1]],
+     retest:"同题、同平台、同竞品集合复测首次出现第一比例及平均名次。"},
+    {key:"formal",kind:"data",metric:"官网正式来源命中率",low:true,
+     counts:r=>[r.links.Kalodata?.[2]||0,r.links.Kalodata?.[3]||0],
+     retest:"同题、同平台复测官网正式来源命中率及字段覆盖率。"},
+    {key:"recommendation",kind:"data",metric:"推荐判断未知率",low:false,
+     counts:r=>[r.rec.unknown||0,r.n],
+     retest:"同题、同平台复测推荐可判定覆盖率，并抽查规则结果。"}
+  ];
+  return rules.flatMap(rule=>[...cuts.values()].flatMap(rs=>{
+    const lead=rs.find(r=>r.evidence?.[rule.key]?.q&&r.evidence[rule.key].text);
+    if(!lead)return [];
+    const [hits,den]=rs.reduce(([a,b],r)=>{const [x,y]=rule.counts(r);return [a+x,b+y];},[0,0]);
+    const affected=rule.low?den-hits:hits;
+    return den>0&&affected>0?[{...rule,lead,hits,den,affected,rows:rs}]:[];
+  }).sort((a,b)=>b.affected-a.affected||b.den-a.den));
+}
+function renderActions(rows){
+  $("headline").textContent=coreFinding(rows);
+  $("headline").closest("article").hidden=!$("headline").textContent;
+  const actions=actionCandidates(rows),business=actions.filter(item=>item.kind==='business');
+  const chosen=business.filter((item,i)=>business.findIndex(other=>other.key===item.key)===i);
+  $("action-count").textContent=`${business.length} 项内容线索 · ${actions.length-business.length} 项来源与规则核查`;
+  $("home-actions").innerHTML=chosen.slice(0,3).map((item,i)=>{
+    const [market,platform,,group]=item.lead.d,example=item.lead.evidence[item.key],day=example.d?.[2]||item.lead.d[2];
+    return `<article class="card" data-action-kind="business" data-action-key="${item.key}"><h3><span class="priority">P${i+1}</span>${esc(actionName(item))}</h3>
+      <p>${esc(marketName(market))} · ${esc(groupName(group))} · ${esc(engineName(platform))}</p>
+      <p>${esc(item.metric)} ${ratio(item.hits,item.den)}</p>
+      ${actionSentimentMarkup(item.rows)}
+      ${actionKeywordMarkup(item)}
+      <small>示例 ${esc(example.q)} · ${esc(day)} · ${answerRecordLink(example,'查看对应回答 →',{metric:item.key==='recommendation'?'recommendation':item.key==='sentiment'?'sentiment':'body'})}</small></article>`;
+  }).join("")||empty('当前筛选暂无可定位的内容优化线索。')+'<a href="#action">查看来源与规则核查 →</a>';
+  $("next").innerHTML=[['business','内容优化线索'],['data','来源与规则核查']].map(([kind,title])=>{
+    const group=actions.filter(item=>item.kind===kind);
+    return `<section class="action-group" data-action-kind="${kind}"><div class="section-head"><h3>${title}</h3><span>${group.length} 项</span></div><div class="action-list">${group.map((item,i)=>{
+      const [m,platform,,g,named]=item.lead.d,example=item.lead.evidence[item.key],day=example.d?.[2]||item.lead.d[2];
+      return `<article class="card action-item" data-action-key="${item.key}"><div class="action-heading"><h3>${kind==='business'?'P':'核查'}${i+1} · ${esc(actionName(item))}</h3><span>${ratio(item.hits,item.den)}</span></div>
+        <p class="sub action-scope">${esc(marketName(m))} · ${esc(engineName(platform))} · ${esc(groupName(g))} · ${named?"点名":"未点名"} · ${num(item.den)} 条样本 · ${esc(item.metric)}</p>
+        ${actionSentimentMarkup(item.rows)}
+        ${actionKeywordMarkup(item)}
+        <p class="action-next"><b>下一步</b>${esc(actionNextStep(item))}</p>
+        <details class="action-retest"><summary>复测方法</summary><p>${esc(item.retest)}</p></details>
+        <div class="question"><b>${esc(example.q)}</b> · ${esc(example.text)}<small>${esc(day)} · ${esc(engineName(platform))} · ${answerRecordLink(example,'查看对应回答 →',{metric:item.key==='recommendation'?'recommendation':item.key==='sentiment'?'sentiment':'body'})}</small></div></article>`;
+    }).join('')||empty('当前筛选暂无可回查记录。')}</div></section>`;
+  }).join('');
+}
+
+let comparisonOpened=false;
+let activePage="overview";
+const pages=[...document.querySelectorAll("[data-page]")];
+const navLinks=[...document.querySelectorAll(".page-tabs a")];
+const moduleFor={overview:"overview",brand:"brand",platform:"brand",compare:"brand",action:"action",answers:"action",sources:"sources",metrics:"metrics"};
+const pageNames={overview:"GEO 运营总览",brand:"市场与竞品",platform:"Answerbit 平台快照",compare:"范围对照分析",action:"问题与行动",answers:"推荐判断与记录",sources:"来源与口碑详情",metrics:"指标说明"};
+function showPage(resetScroll=false,route=location.hash.slice(1)){
+  const [hash,target]=route.split("/"), requested=hash==="analysis"?"brand":hash;
+  activePage=pages.some(page=>page.id===requested)?requested:"overview";
+  for(const page of pages)page.hidden=page.id!==activePage;
+  for(const link of navLinks){
+    if(link.hash==="#"+moduleFor[activePage])link.setAttribute("aria-current","page");
+    else link.removeAttribute("aria-current");
+  }
+  document.body.dataset.activeView=activePage;
+  document.querySelector(".hero h1").textContent=pageNames[activePage];
+  const subpages=moduleFor[activePage]==="brand"?[["brand","市场与竞品"],["platform","平台快照"],["compare","对照分析"]]:moduleFor[activePage]==="action"?[["action","行动清单"],["answers","推荐判断与记录"]]:[];
+  $("workspace-nav").innerHTML=subpages.map(([id,label])=>`<a href="#${id}" ${activePage===id?'aria-current="page"':''}>${label}</a>`).join("");
+  $("workspace-nav").hidden=!subpages.length;
+  const staticPage=activePage==="platform"||activePage==="metrics";
+  $("global-filters").hidden=staticPage;
+  $("data-reminder").hidden=staticPage;
+  $("filter-a-title").textContent=activePage==="compare"?"当前范围筛选":"查看范围";
+  $("scope").hidden=staticPage;
+  if(activePage==="compare"&&!comparisonOpened){
+    setFilters("b",filters());
+    $("reference-editor").open=true;
+    comparisonOpened=true;
+  }
+  render();
+  if(target&&activePage==="metrics")$(target)?.scrollIntoView({block:"start"});
+  else if(resetScroll)window.scrollTo(0,0);
+}
+window.addEventListener("hashchange",()=>showPage(true));
+// Embedded previews resolve fragments against the wrapper, even without delivery metadata.
+window.addEventListener("click",e=>{
+  const link=e.target.closest('a[href^="#"]');
+  if(link){e.preventDefault();e.stopImmediatePropagation();showPage(true,link.getAttribute("href").slice(1));}
+},true);
+$("copy-a").addEventListener("click",()=>{setFilters("b",filters());render();});
+function comparableSet(rows){
+  const sets=new Set(rows.map(r=>JSON.stringify(D.competitors[r.d[0]].slice().sort())));
+  return sets.size===1?[...sets][0]:null;
+}
+function compareStats(rows){
+  const un=rows.filter(r=>!r.d[4]), n=total(rows);
+  return {
+    n, unnamed:total(un),
+    mention:[sum(rows,r=>mentionCount(r)),n],
+    unmentioned:[sum(un,r=>mentionCount(r)),total(un)],
+    first:[sum(rows,r=>r.first),n],
+    rank:[sum(rows,r=>r.rank[0]),sum(rows,r=>r.rank[1])],
+    body:[sum(rows,r=>r.links.Kalodata?.[0]||0),n],
+    formal:[sum(rows,r=>r.links.Kalodata?.[2]||0),sum(rows,r=>r.links.Kalodata?.[3]||0)],
+    recommendation:[sum(rows,r=>r.rec.explicit||0),n],
+    coverage:[n-sum(rows,r=>r.rec.unknown||0),n],
+    sentiment:[sum(rows,r=>r.sent.positive||0),n-sum(rows,r=>(r.sent.not_mentioned||0)+(r.sent.unknown||0))],
+    sov:[sum(rows,r=>r.mentions.Kalodata||0),sum(rows,r=>Object.values(r.mentions).reduce((a,b)=>a+b,0))]
+  };
+}
+function filterSummary(f){
+  const parts=[f.m.includes("__none")?"未选择国家":f.m.length?f.m.map(marketName).join("、"):"全部国家",
+    f.e.length?f.e.map(engineName).join("、"):"全部平台"];
+  if(f.g.length)parts.push(f.g.map(groupName).join("、"));
+  if(f.tags.length)parts.push(f.tags.map(t=>D.tags[t]||t).join(f.tagMode==="all"?" ∩ ":" ∪ "));
+  if(f.named?.length)parts.push(f.named.map(x=>x==="0"?"题文未点名":"题文点名").join("、"));
+  parts.push(f.from+"—"+f.to);
+  return parts.join(" · ");
+}
+function renderComparison(f,aRows){
+  const f2=filters("b"), bRows=D.rows.filter(r=>matches(r.d,f2)), a=compareStats(aRows),b=compareStats(bRows);
+  const labelA=filterSummary(f),labelB=filterSummary(f2);
+  const sameSet=comparableSet(aRows)!==null&&comparableSet(aRows)===comparableSet(bRows);
+  const overlap=sum(aRows,r=>matches(r.d,f2)?r.n:0);
+  const score=(x,rank)=>!x[1]?"不适用":rank?`${(x[0]/x[1]).toFixed(2)}（${num(x[0])}/${num(x[1])}）`:ratio(...x);
+  function diff(x,y,rank){
+    if(!x[1]||!y[1])return "差值不适用";
+    const raw=(x[0]/x[1]-y[0]/y[1])*(rank?1:100), v=Number(raw.toFixed(2));
+    const direction=rank?(v>0?"靠后":"靠前"):(v>0?"高":"低");
+    return `<span class="delta">${v>0?"+":v<0?"−":""}${Math.abs(v).toFixed(2)} ${rank?"名":"pp"}</span>`;
+  }
+  const comparisons=[
+    ["全部题型提及率","mention"],["提及率","unmentioned"],["Kalodata 提及份额","sov"],
+    ["首次出现第一比例","first"],["平均首次名次","rank"],["正文官网链接","body"],
+    ["官网正式来源命中","formal"],["明确推荐初判","recommendation"],
+    ["推荐可判定覆盖率","coverage"],["平台已提及的正面率","sentiment"]
+  ];
+  const heading=(label,x,scope,side)=>`<div class="cohort ${side}" aria-label="${label}"><h3>${esc(filterSummary(scope))}</h3><b>${num(x.n)} 条有效回答</b><small>点名 ${num(x.n-x.unnamed)} · 未点名 ${num(x.unnamed)}</small></div>`;
+  let view=`<div class="cohorts">${heading("当前范围",a,f,"a")}${heading("对照范围",b,f2,"b")}</div>`;
+  const sets=rs=>[...new Set(rs.map(r=>r.d[0]))].map(m=>`${marketName(m)}（${D.competitors[m].join("、")}）`).join("；");
+  view+=`<details class="definition"><summary>查看两组市场与竞品集合</summary><p>当前范围 ${esc(sets(aRows))}</p><p>对照范围 ${esc(sets(bRows))}</p></details>`;
+  const summaryMetrics=[["提及率","unmentioned"],["首次出现第一比例","first"],["官网正式来源命中率","formal"]];
+  view+=`<div class="compare-kpis">${summaryMetrics.map(([title,key])=>{
+    const x=a[key], y=b[key], xx=x[1]?100*x[0]/x[1]:null, yy=y[1]?100*y[0]/y[1]:null;
+    const track=xx!==null&&yy!==null?`<div class="metric-track" aria-hidden="true">
+      <span class="metric-segment" style="left:${Math.min(xx,yy)}%;width:${Math.abs(xx-yy)}%"></span>
+      <span class="metric-dot reference" style="left:${yy}%"></span><span class="metric-dot" style="left:${xx}%"></span>
+      </div><div class="axis-caption" aria-hidden="true"><span>0%</span><span>100%</span></div>`:"";
+    return `<article class="compare-metric"><h3>${title}</h3>${x[1]&&y[1]?diff(x,y,false):'<span class="delta">差值不适用</span>'}${track}
+      <div class="compare-points"><span>● ${esc(labelA)}<b>${score(x,false)}</b></span><span>○ ${esc(labelB)}<b>${score(y,false)}</b></span></div></article>`;
+  }).join("")}</div>`;
+  view+=`<p class="definition">重叠样本 ${num(overlap)} 条 · <a href="#metrics/metric-compare">对比说明 ↗</a></p>`;
+  if(f2.from>f2.to)view+=empty("对照范围起始日应早于或等于结束日。");
+  const detailsOpen=$("comparison").querySelector(".compare-detail")?.open??true;
+  view+=`<details class="compare-detail"${detailsOpen?" open":""}><summary>指标对照明细</summary>${
+    table(["指标",labelA,labelB,"差值（左−右）"],comparisons.map(([title,k])=>{
+      const rank=k==="rank";
+      return [esc(title),...(k==="sov"&&!sameSet?["—","—","暂不比较：竞品集合不同"]: [score(a[k],rank),score(b[k],rank),diff(a[k],b[k],rank)])];
+    }))}</details>`;
+  $("comparison").innerHTML=view;
+}
+showPage();
+</script>
+<script>"use strict";
+function previousPeriod(f){
+  const start=Date.parse(f.from+'T00:00:00Z'),end=Date.parse(f.to+'T00:00:00Z');
+  if(!Number.isFinite(start)||!Number.isFinite(end)||end<start)return null;
+  const days=Math.round((end-start)/86400000)+1;
+  return [new Date(start-days*86400000).toISOString().slice(0,10),new Date(start-86400000).toISOString().slice(0,10)];
+}
+function countryPeriodComparison(current,previous,f,market,match){
+  const window=previousPeriod(f),result={window,status:'unavailable',value:null,reasons:[]};
+  if(!window){result.reasons=['日期区间无效'];return result;}
+  const select={...f,m:[market],named:['0']};
+  const count=rows=>rows.reduce(([hits,n],r)=>[hits+(r.mentions.Kalodata||0)-(r.negative_mentions||0),n+r.n],[0,0]);
+  // A named-only selection has no applicable unprompted population.
+  const a=f.named?.length&&!f.named.includes('0')?[]:current.rows.filter(r=>match(r.d,select));
+  result.current=count(a);
+  if(!result.current[1]){result.reasons=['本期没有未点名有效回答'];return result;}
+  if(!previous){result.reasons=['未取得上期同条件数据'];return result;}
+  const b=previous.rows.filter(r=>match(r.d,{...select,from:window[0],to:window[1]}));result.previous=count(b);
+  const c=current.source_batch||current.batch,p=previous.source_batch||previous.batch;
+  if(!result.previous[1])result.reasons.push('上期没有同条件未点名回答');
+  if(!c.question_version||c.question_version!==p.question_version)result.reasons.push('题库版本不同');
+  if(!c.metric_version||c.metric_version!==p.metric_version)result.reasons.push('指标口径版本不同');
+  if(!current.analysis_version||current.analysis_version!==previous.analysis_version)result.reasons.push('分析口径版本不同');
+  const cs=current.question_scope,ps=previous.question_scope;
+  if(!cs?.verified||!ps?.verified||!cs.signature||cs.signature!==ps.signature)result.reasons.push('题目、平台、分组或标签范围未匹配');
+  if(!current.model_policy?.signature||current.model_policy.signature!==previous.model_policy?.signature)result.reasons.push('国家模型范围未通过同口径校验');
+  const set=d=>JSON.stringify((d.competitors?.[market]||[]).slice().sort());
+  if(!current.competitors?.[market]||!previous.competitors?.[market]||set(current)!==set(previous))result.reasons.push('竞品集合不同或缺失');
+  for(const [data,label,w] of [[current,'本期',[f.from,f.to]],[previous,'上期',window]]){
+    const v=data.period_validation;
+    if(!v?.complete||JSON.stringify(v.window)!==JSON.stringify(w)||v.scope_signature!==data.question_scope?.signature)
+      result.reasons.push(label+'采样完成状态未验证');
+  }
+  for(const pair of [result.current,result.previous])if(pair&&(!pair.every(Number.isFinite)||pair[0]<0||pair[0]>pair[1]))result.reasons.push('分子分母校验未通过');
+  if(result.reasons.length)return result;
+  result.value=Number((100*result.current[0]/result.current[1]-100*result.previous[0]/result.previous[1]).toFixed(2));
+  result.status='comparable';return result;
+}
+function periodDeltaMarkup(result){
+  if(result.status!=='comparable')return '<span class="period-change period-unavailable">— pp</span>';
+  const value=result.value,kind=value>0?'up':value<0?'down':'flat';
+  return `<span class="period-change period-${kind}">${value>0?'+':value<0?'−':''}${Math.abs(value).toFixed(2)} pp</span>`;
+}
+</script><script>"use strict";
+const trendChoices=[['core','核心指标'],['mention','提及率'],['first','首次出现第一比例'],['adverse','负面与褒贬并存'],['sentiment','Kalodata 口碑构成'],['brands','品牌提及率'],['formal','官网正式来源命中率'],['field','正式来源字段覆盖率'],['body','正文官网链接出现率'],['recommendation','明确推荐初判'],['recCoverage','推荐可判定覆盖率'],['rank','平均首次名次'],['samples','有效回答数']];
+function trendDays(from,to){
+  const start=Date.parse(from+'T00:00:00Z'),end=Date.parse(to+'T00:00:00Z');
+  if(!Number.isFinite(start)||!Number.isFinite(end)||start>end)return [];
+  const days=[];for(let value=start;value<=end;value+=86400000)days.push(new Date(value).toISOString().slice(0,10));return days;
+}
+function trendSpecs(choice,f){
+  const spec=(id,label,key,unit='percent')=>({id,label,key,unit});
+  const common={mention:spec('mention','提及率','unmentioned'),first:spec('first','首次出现第一比例','first'),adverse:spec('adverse','负面与褒贬并存','adverse'),formal:spec('formal','官网正式来源命中率','formal'),field:spec('field','正式来源字段覆盖率','field'),body:spec('body','正文官网链接出现率','body'),recommendation:spec('recommendation','明确推荐初判','recommendation'),recCoverage:spec('recCoverage','推荐可判定覆盖率','coverage'),rank:spec('rank','平均首次名次','rank','rank')};
+  let specs;
+  if(choice==='core')specs=[common.mention,common.first,common.adverse];
+  else if(choice==='adverse')specs=[common.adverse,spec('negative','负面','negative'),spec('mixed','褒贬并存','mixed')];
+  else if(choice==='sentiment')specs=sentimentTypes.map(([key,label,color])=>({...spec('sent-'+key,label,'sent:'+key),color}));
+  else if(choice==='brands'){
+    const market=f.m.length===1&&D.markets[f.m[0]]?f.m[0]:null;
+    specs=(market?D.competitors[market]:['Kalodata','FastMoss']).map(brand=>spec('brand-'+brand,brand,'brand:'+brand));
+  }else if(choice==='samples')specs=[spec('all','全部有效回答','all','count'),spec('unnamed','未点名回答','unnamed','count'),spec('named','点名回答','named','count')];
+  else specs=[common[choice]||common.mention];
+  const colors=['#2563eb','#0f766e','#dc6254','#8b5bb7','#b87b22','#4f7e96','#72894a','#b55f88'];
+  return specs.map((s,i)=>({...s,color:s.color||colors[i%colors.length]}));
+}
+function dailyTrendData(rows,f,choice){
+  const specs=trendSpecs(choice,f), byDate=new Map();
+  for(const row of rows.filter(r=>matches(r.d,f))){if(!byDate.has(row.d[2]))byDate.set(row.d[2],[]);byDate.get(row.d[2]).push(row);}
+  const days=trendDays(f.from,f.to).map(date=>{
+    const rs=byDate.get(date)||[],n=total(rs),stats=compareStats(rs),sent=sentimentCounts(rs);
+    const tuples={...stats,adverse:[sum(rs,r=>(r.sent.negative||0)+(r.sent.mixed||0)),n],negative:[sum(rs,r=>r.sent.negative||0),n],mixed:[sum(rs,r=>r.sent.mixed||0),n],field:[sum(rs,r=>r.links.Kalodata?.[3]||0),n],all:[n,null],unnamed:[stats.unnamed,null],named:[n-stats.unnamed,null]};
+    const points=specs.map(s=>{
+      let tuple=tuples[s.key];
+      if(s.key.startsWith('sent:'))tuple=[sent.counts[sentimentTypes.findIndex(([key])=>key===s.key.slice(5))],n];
+      if(s.key.startsWith('brand:'))tuple=[sum(rs.filter(r=>!r.d[4]),r=>mentionCount(r,s.key.slice(6))),stats.unnamed];
+      const [numerator,denominator]=tuple;
+      let status=!n?'no_records':!metricSupported&&s.unit!=='count'?'unsupported':s.unit!=='count'&&!denominator?'zero_denominator':'ok';
+      if(status==='ok'&&(!Number.isFinite(numerator)||(s.unit!=='count'&&(!Number.isFinite(denominator)||numerator<0||s.unit==='percent'&&numerator>denominator||s.unit==='rank'&&numerator<denominator))))status='invalid';
+      return {...s,date,numerator,denominator,status,value:status==='ok'?(s.unit==='count'?numerator:numerator/denominator*(s.unit==='percent'?100:1)):null};
+    });
+    return {date,n,unknownSentiment:sent.counts[5],points};
+  });return {specs,days};
+}
+function trendSegments(points){
+  const groups=[];let segment=[];
+  for(const p of points){if(p.value===null){if(segment.length)groups.push(segment);segment=[];}else segment.push(p);}
+  if(segment.length)groups.push(segment);return groups;
+}
+function trendPointText(p){
+  if(p.status==='no_records')return '暂无记录';
+  if(p.status==='zero_denominator')return '不适用（分母0）';
+  if(p.status==='unsupported')return '指标口径未通过校验';
+  if(p.status!=='ok')return '数据异常';
+  if(p.unit==='count')return num(p.value)+' 条';
+  return (p.unit==='rank'?p.value.toFixed(2)+' 名':p.value.toFixed(2)+'%')+`（${num(p.numerator)}/${num(p.denominator)}）`;
+}
+function trendAxis(points,unit){
+  const highest=Math.max(0,...points.filter(p=>p.value!==null).map(p=>p.value));
+  if(unit==='rank'){
+    const max=Math.max(2,Math.ceil(highest));return {min:1,max,ticks:[1,(1+max)/2,max]};
+  }
+  const rawStep=Math.max(1,highest)*1.05/4,power=10**Math.floor(Math.log10(rawStep));
+  const step=Math.max(unit==='count'?1:0,[1,2,2.5,5,10].find(v=>v*power>=rawStep)*power);
+  const max=unit==='percent'?Math.min(100,Math.max(1,Math.ceil(highest/step)*step)):Math.max(step,Math.ceil(highest/step)*step);
+  const ticks=[];for(let value=0;value<max;value+=step)ticks.push(Number(value.toFixed(4)));ticks.push(max);
+  return {min:0,max,ticks};
+}
+let dailyTrendBundle=null;
+function showTrendDay(date){
+  const day=dailyTrendBundle?.days.find(d=>d.date===date);if(!day)return;
+  $('trend-day-detail').innerHTML=`<div class="trend-selected-day"><b>${esc(date)}</b><span>${day.n?num(day.n)+' 条有效回答':'暂无记录'}${day.unknownSentiment?' · 口碑未知 '+num(day.unknownSentiment)+' 条':''}</span></div><div class="trend-values">${day.points.map(p=>`<div><span><i style="background:${p.color}"></i>${esc(p.label)}</span><strong>${esc(trendPointText(p))}</strong></div>`).join('')}</div>`;
+  for(const node of $('daily-trend-plot').querySelectorAll('[data-trend-day]'))node.classList.toggle('is-active',node.dataset.trendDay===date);
+}
+function renderDailyTrend(){
+  const f=filters(),choice=$('trend-metric').value,bundle=dailyTrendData(D.rows,f,choice);dailyTrendBundle=bundle;
+  const {specs,days}=bundle,valid=days.flatMap(d=>d.points).filter(p=>p.value!==null),observed=days.filter(d=>d.n);
+  $('trend-chart-title').textContent=trendChoices.find(([key])=>key===choice)?.[1]||'指标趋势';
+  $('trend-chart-range').textContent=`${f.from}—${f.to} · ${num(days.reduce((n,d)=>n+d.n,0))} 条有效回答 · 同批日值`+(choice==='brands'?' · Kalodata扣除明确负面，竞品按正文命中':'');
+  $('trend-legend').innerHTML=specs.map(s=>`<span><i style="background:${s.color}"></i>${esc(s.label)}</span>`).join('');
+  const plot=$('daily-trend-plot');
+  delete plot.dataset.axisMin;delete plot.dataset.axisMax;
+  if(!days.length||!valid.length){
+    plot.innerHTML=empty(!days.length?'日期区间无效。':observed.length?'当前筛选没有可计算的日值；分母和状态见逐日数据。':'当前筛选暂无回答记录。');
+  }else{
+    // Use the existing SVG chart pattern, retaining every requested calendar day.
+    const width=Math.max(300,Math.round(plot.clientWidth||900),days.length*60+70),height=310,left=52,right=width-18,top=25,bottom=245;
+    const unit=specs[0].unit,{min,max,ticks}=trendAxis(valid,unit);
+    plot.dataset.axisMin=min;plot.dataset.axisMax=max;
+    const x=index=>days.length===1?(left+right)/2:left+index/(days.length-1)*(right-left);
+    const y=value=>unit==='rank'?top+(value-min)/(max-min)*(bottom-top):bottom-(value-min)/(max-min)*(bottom-top);
+    const label=value=>unit==='percent'?Number(value.toFixed(3))+'%':unit==='rank'?Number(value.toFixed(2))+'名':num(value);
+    const step=days.length>1?(right-left)/(days.length-1):right-left;
+    let svg=`<svg viewBox="0 0 ${width} ${height}" style="width:${width}px" role="img" aria-label="${esc($('trend-chart-title').textContent+'，'+f.from+'至'+f.to)}"><desc>同一批次、当前筛选下的每日观察值。缺少记录或分母为0的日期不连线。日期下方为当日有效回答数。</desc>`;
+    svg+=ticks.map(v=>`<line class="trend-gridline" x1="${left}" x2="${right}" y1="${y(v)}" y2="${y(v)}"/><text x="${left-8}" y="${y(v)+4}" text-anchor="end">${label(v)}</text>`).join('');
+    svg+=days.map((d,i)=>{
+      const a=Math.max(left,x(i)-step/2),b=Math.min(right,x(i)+step/2);
+      const title=d.date+' · '+(d.n?num(d.n)+' 条有效回答':'暂无记录')+'；'+d.points.map(p=>p.label+' '+trendPointText(p)).join('；');
+      return `<g data-trend-day="${d.date}" tabindex="0" role="button" aria-label="${esc(title)}"><title>${esc(title)}</title><rect class="trend-hit" x="${a}" y="${top}" width="${Math.max(1,b-a)}" height="${bottom-top}"/></g>`;
+    }).join('');
+    svg+=specs.map((s,j)=>{
+      const points=days.map((d,i)=>({...d.points[j],index:i}));
+      return trendSegments(points).filter(g=>g.length>1).map(g=>`<path class="daily-trend-line" data-series="${esc(s.id)}" style="stroke:${s.color}" d="${g.map((p,i)=>`${i?'L':'M'}${x(p.index)} ${y(p.value)}`).join(' ')}"/>`).join('')+
+        points.filter(p=>p.value!==null).map(p=>`<circle class="daily-trend-point" style="stroke:${s.color}" cx="${x(p.index)}" cy="${y(p.value)}" r="4"/>`).join('');
+    }).join('');
+    svg+=days.map((d,i)=>`<text class="trend-date" x="${x(i)}" y="${bottom+23}" text-anchor="${i===0?'start':i===days.length-1?'end':'middle'}">${d.date.slice(5).replace('-','/')}</text><text class="trend-sample" x="${x(i)}" y="${bottom+41}" text-anchor="${i===0?'start':i===days.length-1?'end':'middle'}">${d.n?num(d.n)+' 条':'暂无记录'}</text>`).join('');
+    svg+=`<text x="${left}" y="15">${unit==='percent'?'比例（%）':unit==='rank'?'平均首次名次（越小越靠前）':'回答数（条）'}</text></svg>`;plot.innerHTML=svg;
+    for(const node of plot.querySelectorAll('[data-trend-day]')){
+      const select=()=>showTrendDay(node.dataset.trendDay);node.addEventListener('pointerenter',select);node.addEventListener('focus',select);node.addEventListener('click',select);
+      node.addEventListener('keydown',event=>{
+        if(event.key==='Enter'||event.key===' '){event.preventDefault();select();}
+        if(event.key==='ArrowLeft'||event.key==='ArrowRight'){
+          event.preventDefault();const nodes=[...plot.querySelectorAll('[data-trend-day]')],i=nodes.indexOf(node);nodes[Math.max(0,Math.min(nodes.length-1,i+(event.key==='ArrowLeft'?-1:1)))].focus();
+        }
+      });
+    }
+  }
+  $('trend-daily-data').innerHTML=table(['日期','有效回答',...specs.map(s=>s.label)],days.map(d=>[esc(d.date),d.n?num(d.n):'暂无记录',...d.points.map(p=>esc(trendPointText(p)))]));
+  const active=days.filter(d=>d.points.some(p=>p.value!==null)).at(-1)||observed.at(-1)||days[0];
+  $('trend-day-detail').innerHTML='';if(active)showTrendDay(active.date);
+}
+</script><script>"use strict";
+const PV=D.preview, originalBatch=PV.source_batch;
+if(!sharedPreview&&window.self===window.top)window.history.scrollRestoration='manual';
+const windowLength=f=>f.from<=f.to?Math.round((Date.parse(f.to)-Date.parse(f.from))/86400000)+1:0;
+function addPage(id,title){
+  const section=document.createElement('section');section.id=id;section.className='section';section.dataset.page='';section.hidden=true;
+  section.innerHTML=`<div class="section-head"><h2>${title}</h2></div>`;
+  $("data-reminder").before(section);pages.push(section);pageNames[id]=title;return section;
+}
+function card(title,content=''){
+  const node=document.createElement('article');node.className='card';node.innerHTML=`<div class="section-head"><h3>${title}</h3></div>${content}`;return node;
+}
+document.querySelector('.hero-actions').insertAdjacentHTML('beforeend','<span class="local-badge">本地预览 · 已存数据</span>');
+$("batch").textContent=`${batch.begin_date}—${batch.end_date} · 最后成功取数 ${fmtDate(originalBatch.fetched_at_utc)}（北京时间）`;
+if(hasAnswerDetails)$('batch').textContent+=` · 原文补读 ${fmtDate(D.answer_details.completed_at)}（北京时间）`;
+$("bank-link").textContent='飞书题库';
+const topicsPage=addPage('topics','国家与题类'), namedPage=addPage('named','点名题分析');
+const trafficPage=addPage('traffic','官网 AI 引荐'), dataPage=addPage('data','数据与说明');
+const trendsPage=addPage('trends','指标趋势');
+trendsPage.append(card('核心指标',`<div class="trend-toolbar"><label>指标 <select id="trend-metric">${trendChoices.map(([key,label])=>`<option value="${key}" ${key==='mention'?'selected':''}>${label}</option>`).join('')}</select></label><a href="#metrics/metric-trend">指标说明 ⓘ</a></div><p id="trend-chart-range" class="definition"></p><div id="trend-legend" class="daily-trend-legend"></div><div id="daily-trend-plot"></div><div id="trend-day-detail" aria-live="polite"></div><details class="trend-data"><summary>逐日数据</summary><div id="trend-daily-data"></div></details>`));
+trendsPage.querySelector('h3').id='trend-chart-title';
+$('trend-metric').addEventListener('change',renderDailyTrend);
+window.addEventListener('resize',()=>{if(activePage==='trends')renderDailyTrend();});
+Object.assign(moduleFor,{topics:'brand',trends:'brand',named:'action',traffic:'sources',data:'data',metrics:'data'});
+const lastNav=navLinks.at(-1);lastNav.href='#data';lastNav.innerHTML='<span>ⓘ</span>数据与说明';
+const findingCard=$("headline").closest('article');$("overview").prepend(findingCard);findingCard.after($("kpis"));
+findingCard.querySelector('h3').textContent='核心发现';
+findingCard.insertAdjacentHTML('beforeend','<div id="preview-facts" class="preview-facts"></div>');
+const countryCard=card('国家表现','<a class="detail-link" href="#topics">查看国家与题类 →</a><div id="country-overview"></div>');
+countryCard.querySelector('.section-head').insertAdjacentHTML('beforeend','<a class="trend-entry" href="#trends">指标趋势 →</a>');
+const overviewLower=document.createElement('div');overviewLower.className='overview-lower';
+const actionColumn=document.createElement('div');actionColumn.className='overview-actions';
+actionColumn.append($("home-actions").previousElementSibling,$("home-actions"));
+overviewLower.append(countryCard,actionColumn);$("kpis").after(overviewLower);
+const matrixCard=document.querySelector('.matrix-card');topicsPage.append(matrixCard);
+matrixCard.querySelector('h3').textContent='国家 × 题类';
+matrixCard.querySelector('.definition').innerHTML='Kalodata · 题文未点名 · <a href="#metrics/metric-matrix">指标说明 ↗</a>';
+matrixCard.insertAdjacentHTML('beforeend','<details class="topic-naming"><summary>为什么「负面倾向」也有未点名题？</summary><div id="topic-naming"></div></details>');
+const scenario=document.querySelector('.scenario-card');topicsPage.append(scenario);scenario.querySelector('summary').textContent='运营场景汇总';
+const sentimentCard=document.querySelector('.sentiment-summary');$("sources").prepend(sentimentCard);
+document.querySelector('.overview-grid').remove();
+const namedTopic=document.querySelector('.named-topic');namedPage.append(namedTopic);namedTopic.open=true;
+namedTopic.querySelector('summary').textContent='题文已点名 Kalodata';
+const answerRecordPanel=card('回答记录');answerRecordPanel.id='answer-record';answerRecordPanel.hidden=true;answerRecordPanel.tabIndex=-1;
+answerRecordPanel.classList.add('wide');
+$('answers').querySelector('.grid').prepend(answerRecordPanel);
+const actionFieldNote=document.createElement('p');actionFieldNote.className='action-field-note';
+actionFieldNote.textContent=hasAnswerDetails?'点名题与未点名题分开；关键词标明平台返回或本地提取，点击后定位原文。':'点名题与未点名题分开展示口碑字段。本批未保存逐条口碑关键词；点击示例可定位回答记录。';
+$('next').before(actionFieldNote);
+if(hasAnswerDetails)$('review-heading').textContent='回答记录';
+const marketsCard=$("markets").closest('article'), marketDetails=document.createElement('details');
+marketDetails.className='card wide';marketDetails.innerHTML='<summary>逐国明细与竞品集合</summary>';
+marketsCard.before(marketDetails);marketDetails.append(marketsCard);marketsCard.classList.add('nested-card');
+$("brand-market").closest('label').hidden=true;
+$("mention-chart").previousElementSibling.innerHTML='现行口径 · <a href="#metrics/metric-core">指标说明 ↗</a>';
+const brandHeading=$("brand").querySelector('.section-head>h2');if(brandHeading)brandHeading.closest('.section-head').remove();
+const sentimentDetail=$("sentiment").closest('article'), sentimentMore=document.createElement('details');
+sentimentMore.className='card wide';sentimentMore.innerHTML='<summary>口碑分母与未知明细</summary>';
+sentimentDetail.before(sentimentMore);sentimentMore.append(sentimentDetail);sentimentDetail.classList.add('nested-card');
+const batchDetails=$("quality").closest('details'), batchCard=card('批次信息');
+batchCard.append($("quality"));dataPage.append(batchCard);batchDetails.remove();
+const statusCard=card('数据检查');statusCard.append($("status-details"));dataPage.append(statusCard);
+dataPage.append($("answer-quality").closest('article'));
+const previousCard=$("previous-comparison").closest('article'), history=document.createElement('details');
+history.className='card';history.innerHTML='<summary>历史测量记录</summary>';
+history.append(previousCard,$("card-history-status"));previousCard.classList.add('nested-card');dataPage.append(history);
+const reminder=document.createElement('aside');reminder.id='data-reminder';reminder.className='data-reminder';
+reminder.innerHTML='<span id="home-status" role="status"></span><a href="#data">查看详情 →</a>';
+$("data-reminder").replaceWith(reminder);
+trafficPage.append(card('Kalodata 官网 · GA4','<div class="traffic-state"><strong>待接入</strong><p>当前没有已验证的 GA4 数据连接。</p><small>数据窗口 — · 最后成功更新 —</small></div><a href="#metrics/metric-preview-ga4">指标说明 ↗</a>'));
+$("metrics").querySelector('.grid').insertAdjacentHTML('afterbegin',`<article class="card wide"><h3>本地版的范围与状态</h3><dl><dt id="metric-preview-core">现行口径与拟统一规则</dt><dd><p>本看板保留原成功批次的 geo-core/4 计算结果。Kalodata 的明确负面按平台字段扣除，竞品保留全部正文命中。拟统一的逐品牌独立负面核验尚未具备数据，未用旧值冒充新值。</p></dd><dt id="metric-preview-period">时间与对照</dt><dd><p>本次窗口为 ${batch.begin_date}—${batch.end_date}。范围对照使用同批样本及两组明确的筛选条件，差值为左侧减右侧，pp 表示百分点。完整7天上期及冻结基线均未建立，不计算历史周期涨跌。</p></dd><dt id="metric-preview-ga4">官网 AI 引荐</dt><dd><p>仅用于 Kalodata 自有官网的 GA4 AI 引荐会话。当前未接入；无数据时不填0，不展示竞品流量。</p></dd><dt id="metric-preview-naming">题类名称与题文点名</dt><dd><p>题类按 Answerbit 分组或标签归类；点名状态独立检查提问题文是否出现 Kalodata 及已审核别名。负面题类不等于点名题，回答中出现品牌也不会改变题目的点名状态。</p></dd></dl></article>`);
+$("metric-preview-period").nextElementSibling.innerHTML='<p>上周期按当前所选窗口等长向前平移，且不重叠。本期提及率减上期提及率，单位为 pp（百分点）：增加为绿，减少为红，持平为灰。</p><p>两期题库、分析口径、国家模型与题目范围须一致，并有对应窗口的采样完成记录。当前历史候选未通过，不计算真实涨跌。回答内容或源文件哈希变化本身不阻止对比。</p>';
+$("metrics").querySelector('.grid').insertAdjacentHTML('beforeend','<article class="card"><h3 id="metric-action">统计事实与优先行动</h3><dl><dt>看什么</dt><dd>卡片列出对应样本的正面、负面、褒贬不一、无法判断等口碑数量，下一步由实际字段生成。示例链接按任务编号定位看板内的回答记录。</dd><dt>怎么算</dt><dd>仅列有题号和题文可回查的线索。内容线索先列平台标注的负面与褒贬说法，再列未提及和出现位置；同类按受影响回答数排序。官网来源缺口与本地推荐规则未知单列核查，不占总览优先行动。</dd><dt>注意什么</dt><dd>卡片口碑分布为所选样本汇总，不能当成示例单条回答的字段。本批未保存逐条口碑关键词与回答原文，缺失处明确显示。推荐未知表示推荐规则无法判断，与口碑无法判断分别展示。确认具体原因后，才决定内容优化。</dd></dl></article>');
+if(hasAnswerDetails)$('metric-action').nextElementSibling.innerHTML='<dt>看什么</dt><dd>卡片展示对应题型的口碑数量与平台抽取关键词。点击关键词或题号，查看绑定任务编号的逐条口碑和原文。</dd><dt>怎么算</dt><dd>点名题、未点名题按完整提问题文区分，分别汇总关键词；同一回答、同一极性的相同关键词只计一次，正负分组按平台返回保留。卡片最多展示3条要点；负面线索优先展示负面或褒贬不一回答的关键词，点击后可查看该条的全部要点。</dd><dt>数据来源与限制</dt><dd>关键词复用 Answerbit 的 brand_reputation_keywords 和 brand_reputation_keyword_groups，是平台抽取结果。平台未返回时显示“未返回关键词”。口碑分类与推荐判断分别展示；平台归类和关键词仍需结合原文判断。本次仅补读已有任务，原有汇总指标和质量判定未重算。补读后的逐条口碑须与598组冻结汇总逐组一致，才生成本地交付。</dd>';
+$("metrics").querySelector('.grid').insertAdjacentHTML('beforeend','<article class="card wide"><h3 id="metric-trend">每日指标趋势</h3><dl><dt>看什么</dt><dd>当前筛选内，同一成功批次按回答日期重算的日值；不混入 Answerbit 平台原生快照。</dd><dt>怎么算</dt><dd>每日独立累加分子和分母后计算比例，不平均各市场或题目的百分比。首次位置、来源、口碑和推荐沿用本页原有定义；平均首次名次使用有名次的回答作分母。</dd><dt>注意什么</dt><dd>比例纵轴从0开始，上限随当前日值调整并显示刻度；平均名次从1开始、越小越靠前。每日有效回答数显示在日期下方，指标分母见日期详情。没有记录或分母为0时留空，缺失日期不连接；只有1个日值时仅画点。完整周期涨跌仍需通过单独的可比性校验。</dd></dl></article>');
+$("local-answer-note").textContent=hasAnswerDetails?'点击题号可查看该条回答原文、平台口碑和口碑关键词。':'需核查原文时，将题号、日期、平台和分组提供给有 Answerbit 权限的同事。';
+if(hasAnswerDetails&&D.answer_details.local_extraction){
+  const explanation=$('metric-action').nextElementSibling;
+  explanation.querySelector('dd:last-child').textContent='平台关键词保持原样并标明“平台返回”。仅对平台无关键词的回答，本地从可归属 Kalodata 的原文段落摘取短语，标明“本地提取·未判极性”；保留逐字位置，不改写原文，不根据这些短语重判口碑。归属不明、竞品段落、代码和表格不强行提取。点击后标出本次定位的关键词与关联口碑字段，能逐字对应的原文一并高亮。点名题和未点名题始终分开，现有指标及质量判定不重算。';
+  $('local-answer-note').textContent='关键词标明平台返回或本地提取；点击后标出对应字段和可核对的原文出处。';
+}
+$("compare").querySelector('.compare-head p').innerHTML='同批样本 · 差值为左侧筛选减右侧筛选 · <a href="#metrics/metric-compare">对照说明 ↗</a>';
+for(const side of ['a','b','review']){
+  const form=$("filter-"+side), frame=form.closest('.filter-frame'), reset=form.querySelector(':scope>button');
+  reset.classList.add('filter-reset');frame.querySelector('.filter-heading').append(reset);
+  const more=document.createElement('details');more.className='advanced-filters';
+  more.innerHTML='<summary>更多筛选</summary><div class="advanced-grid"></div>';
+  more.querySelector('.advanced-grid').append(form.querySelector('.picker[data-key="named"]').parentElement);
+  form.append(more);
+  form.querySelector('.picker[data-key="tags"]').previousElementSibling.textContent=`Answerbit 标签（${Object.keys(D.tags).length}）`;
+  form.querySelector('.picker[data-key="named"]').previousElementSibling.textContent='提问是否点名';
+}
+const baseMatrixData=matrixData;
+matrixData=function(rows,kind){
+  const data=baseMatrixData(rows,kind), f=filters(), selected=Object.keys(D.markets).filter(m=>!f.m.length||f.m.includes(m));
+  const existing=new Map(data.markets.map((m,i)=>[m,data.cells[i]]));data.markets=selected;
+  data.cells=selected.map(m=>existing.get(m)||data.columns.map(([id])=>({m,id,n:0,hits:0,platforms:[]})));
+  return data;
+};
+const originalNative=native;
+native=function(f){
+  if(D.platform&&Object.keys(D.platform.data||{}).length)return originalNative(f);
+  $("native").innerHTML=`<div class="snapshot-state"><span class="state-mark">未采集</span><h3>这份批次未保存 Answerbit 平台原值</h3><p>${esc(PV.platform_snapshot)}</p><dl><dt>当前来源</dt><dd>按国家生成的本地成功批次，${esc(originalBatch.begin_date)}—${esc(originalBatch.end_date)}</dd><dt>恢复方式</dt><dd>后续在现有授权内单独读取品牌全量平台快照，并标明其独立窗口与范围。本次未重新取数。</dd></dl><a href="${esc(D.links.answerbit)}" target="_blank" rel="noopener noreferrer">前往 Answerbit 工作台查看 ↗</a></div>`;
+};
+const originalShowPage=showPage;
+showPage=function(resetScroll=false,route=location.hash.slice(1)){
+  if(resetScroll&&!sharedPreview&&window.self===window.top&&location.hash!=='#'+route)window.history.pushState(null,'','#'+route);
+  const [requested,target,context]=route.split('/');
+  selectedAnswerFocus=Object.fromEntries(new URLSearchParams(context||''));
+  try{selectedAnswerTask=requested==='answers'&&target?decodeURIComponent(target):'';}catch{selectedAnswerTask='__invalid';}
+  const record=answerRecordIndex.get(selectedAnswerTask);
+  if(record&&!matches(record.d,filters())){
+    const [m,e,day,g,named]=record.d,next={...filters(),m:[m],e:[e],g:[g||'__unknown'],named:[String(named)],tags:[],from:day,to:day};
+    setFilters('a',next);setFilters('review',next);
+  }
+  originalShowPage(resetScroll,route);
+  const module=moduleFor[activePage];
+  const subs={brand:[['brand','品牌对比'],['trends','指标趋势'],['topics','国家与题类'],['compare','范围对照'],['platform','平台快照']],
+    action:[['action','行动清单'],['named','点名题分析'],['answers','回答记录']],
+    sources:[['sources','来源与口碑'],['traffic','官网 AI 引荐']],data:[['data','数据检查'],['metrics','指标说明']]};
+  $("workspace-nav").innerHTML=(subs[module]||[]).map(([id,label])=>`<a href="#${id}" ${activePage===id?'aria-current="page"':''}>${label}</a>`).join('');
+  $("workspace-nav").hidden=!subs[module];
+  const staticPage=['platform','metrics','traffic'].includes(activePage);
+  $("global-filters").hidden=staticPage;$("scope").hidden=staticPage;$("data-reminder").hidden=staticPage||activePage==='data';
+  if(activePage==='answers'&&selectedAnswerTask){
+    const focus=answerRecordPanel.querySelector('.record-focus')||answerRecordPanel;
+    focus.scrollIntoView({block:context?'center':'start'});
+    (context?focus:answerRecordPanel).focus({preventScroll:true});
+  }
+};
+function absenceFinding(rows){
+  const groups=new Map();
+  for(const row of rows.filter(r=>!r.d[4])){
+    const key=JSON.stringify([row.d[0],row.d[1],row.d[3]]);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(row);
+  }
+  return [...groups.values()].map(rs=>({rs,lead:rs.find(r=>r.evidence?.absence),n:total(rs),hits:sum(rs,r=>mentionCount(r))}))
+    .filter(x=>x.lead&&x.n>x.hits).sort((a,b)=>(b.n-b.hits)-(a.n-a.hits)||b.n-a.n)[0];
+}
+let currentPeriodResults=[];
+function countryOverview(rows,f){
+  const countries=Object.keys(D.markets).filter(m=>!f.m.length||f.m.includes(m));
+  const previous=previousPeriod(f), periodLabel=previous?`${previous[0].slice(5)}—${previous[1].slice(5)}`:'日期无效';
+  currentPeriodResults=[];
+  $("country-overview").innerHTML=`<div class="country-axis"><span>Kalodata · 未点名题<br>本期 ${esc(f.from.slice(5))}—${esc(f.to.slice(5))} · 上期 ${esc(periodLabel)}</span><span>0—100%</span></div>`+countries.map(m=>{
+    const all=rows.filter(r=>r.d[0]===m),rs=all.filter(r=>!r.d[4]),n=total(rs),hits=sum(rs,r=>mentionCount(r));
+    const delta=countryPeriodComparison({...D,source_batch:originalBatch},PV.previous_candidate,f,m,matches);currentPeriodResults.push({market:m,...delta});
+    return `<button class="country-row" data-market="${esc(m)}" aria-label="查看${esc(marketName(m))}国家与题类"><span>${esc(marketName(m))}</span><span class="${n?'track':'country-no-data'}">${n?`<span class="fill" style="width:${100*hits/n}%"></span>`:'—'}</span><span class="country-value">${n?`${pct(hits,n)}<small>${num(hits)} / ${num(n)}</small>`:total(all)?'无未点名样本':'暂无数据'}</span><span class="period-cell" title="${esc(delta.reasons.join('；'))}">${periodDeltaMarkup(delta)}</span></button>`;
+  }).join('');
+  const compared=currentPeriodResults.filter(r=>r.status==='comparable').length;
+  const reasons=[...new Set(currentPeriodResults.filter(r=>r.current?.[1]).flatMap(r=>r.reasons))];
+  $("country-overview").insertAdjacentHTML('beforeend',`<div class="period-note">${compared?`已对比 ${compared} 个国家；差值为本期减上期。`:reasons.length?'暂不比较：'+esc(reasons.slice(0,2).join('；'))+'。':'暂无可对比的未点名回答。'} <a href="#data">查看对比条件 →</a></div>`);
+  $("country-overview").querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>{
+    const next={...filters(),m:[button.dataset.market]};setFilters('a',next);setFilters('review',next);showPage(true,'topics');
+  }));
+}
+function brandChart(rows,f){
+  const market=f.m.length===1&&D.markets[f.m[0]]?f.m[0]:null, brands=market?D.competitors[market]:['Kalodata','FastMoss'];
+  const rs=rows.filter(r=>!r.d[4]), n=total(rs);
+  $("mention-title").textContent=market?`${marketName(market)} · 品牌提及率`:'共同品牌提及率';
+  $("mention-chart").innerHTML=n?`${scaleLabel}<div class="bars">${brands.map(b=>bar(b,sum(rs,r=>mentionCount(r,b)),n)).join('')}</div><p class="legacy-note">Kalodata 扣除平台明确负面；竞品为正文命中。<a href="#metrics/metric-preview-core">口径差异 ↗</a></p>`:
+    empty(total(rows)?'当前筛选无未点名题。点名题表现请查看「问题与行动 → 点名题分析」。':'当前筛选暂无数据。');
+}
+function platformAvailability(rows,models,f,engine){
+  const markets=f.m.length?f.m:Object.keys(D.markets);
+  if(markets.includes('__none'))return {state:'no_market',count:0,batchCount:0,label:'请选择国家'};
+  const configured=markets.some(m=>(models[m]||[]).includes(engine));
+  const batchRows=rows.filter(r=>markets.includes(r.d[0])&&r.d[1]===engine),batchCount=total(batchRows);
+  const count=total(batchRows.filter(r=>matches(r.d,{...f,e:[]})));
+  const state=count?'available':!configured&&!batchCount?'not_configured':!batchCount?'no_batch_data':'filtered_out';
+  return {state,count,batchCount,label:count?`${num(count)} 条`:({not_configured:'当前国家未配置',no_batch_data:'本批无有效回答',filtered_out:'当前筛选无回答'})[state]};
+}
+function updatePlatformOptions(){
+  for(const side of ['a','b','review']){
+    const f=filters(side),picker=$('filter-'+side).querySelector('.picker[data-key=e]');
+    for(const input of picker.querySelectorAll('input')){
+      const label=input.parentElement,status=platformAvailability(D.rows,D.model_policy?.models||{},f,input.value);
+      if(!label.querySelector('.platform-name')){
+        for(const node of [...label.childNodes])if(node!==input)node.remove();
+        label.insertAdjacentHTML('beforeend','<span class="platform-name"></span><small class="platform-status"></small>');
+      }
+      label.querySelector('.platform-name').textContent=engineName(input.value);
+      label.querySelector('.platform-status').textContent=status.label;
+      label.dataset.platformState=status.state;
+      label.title=`${engineName(input.value)} · ${status.label}`+(status.state==='filtered_out'?`；当前国家本批有 ${num(status.batchCount)} 条，已被日期、分组、标签或题文条件筛除。`:'');
+    }
+    picker.querySelector('summary span').textContent=!f.e.length?'全部':f.e.length===1?engineName(f.e[0]):`已选 ${f.e.length} 项`;
+  }
+}
+const baseRender=render;
+render=function(){
+  baseRender();
+  updatePlatformOptions();
+  const f=filters(), rows=D.rows.filter(r=>matches(r.d,f)), n=total(rows), unnamed=rows.filter(r=>!r.d[4]);
+  const dates=[...new Set(rows.map(r=>r.d[2]))].sort(), markets=[...new Set(rows.map(r=>r.d[0]))], days=windowLength(f);
+  const finding=absenceFinding(rows);findingCard.hidden=false;
+  $("headline").textContent=f.from>f.to?'日期区间无效：开始日期晚于结束日期。':!n?'当前筛选暂无数据。可切换国家、平台或日期。':finding?
+    `${marketName(finding.lead.d[0])}「${groupName(finding.lead.d[3]).replace(/^\d+\s*/,'')}」${engineName(finding.lead.d[1])}：提及率 ${ratio(finding.hits,finding.n)}。先核对未提及或负面回答的选型依据。`:
+    `当前范围有 ${num(n)} 条有效回答；提及率 ${ratio(sum(unnamed,r=>mentionCount(r)),total(unnamed))}。`;
+  $("preview-facts").innerHTML=`<span>实际回答 <b>${dates.length?dates.map(d=>d.slice(5)).join('、'):'暂无'}</b></span><span>有回答 <b>${markets.length} 国</b></span><span>样本 <b>${num(n)} 条</b></span><a href="#metrics/metric-core">现行口径 ⓘ</a>`;
+  $("scope").textContent=filterSummary(f)+` · ${num(n)} 条有效回答`;
+  const kpis=$("kpis").children;if(kpis[1])kpis[1].querySelector('small').textContent=`${num(sum(rows,r=>r.first))}/${num(n)} · ${f.named.length?'当前题型':'全部题型'} · 正文出现顺序`;
+  if(kpis[2])kpis[2].querySelector('b').textContent='Kalodata 负面与褒贬并存';
+  countryOverview(rows,f);brandChart(rows,f);
+  for(const side of ['a','b','review']){
+    const condition=filters(side), form=$("filter-"+side), selected=condition.named.length;
+    form.querySelector('.advanced-filters>summary').textContent=selected?`更多筛选 · 已选 ${selected} 项`:'更多筛选';
+  }
+  const negativeGroups=Object.keys(D.groups).filter(g=>D.groups[g].includes('负面倾向'));
+  const negativeRows=rows.filter(r=>negativeGroups.includes(r.d[3]));
+  const namedN=total(negativeRows.filter(r=>r.d[4])),unnamedN=total(negativeRows.filter(r=>!r.d[4]));
+  const generic=negativeRows.find(r=>!r.d[4]&&Object.values(r.evidence||{}).some(e=>e.text));
+  const example=generic&&Object.values(generic.evidence).find(e=>e.text);
+  $("topic-naming").innerHTML=`<p>「负面倾向」是题类，是否点名按提问题文独立判断。当前筛选该题类：点名 ${num(namedN)} 条，未点名 ${num(unnamedN)} 条；矩阵只计算后者。</p>${example?`<p>未点名题示例：${esc(example.text)}</p>`:''}<a href="#metrics/metric-preview-naming">查看判定规则 ↗</a>`;
+  const known=sum(rows,r=>r.links.Kalodata?.[3]||0), unknown=sum(rows,r=>r.sent.unknown||0);
+  const qualityRows=(D.quality?.records||[]).filter(r=>matches(r.d,f));
+  const excluded=qualityRows.filter(r=>r.status!=='accepted').length;
+  const notes=[];
+  if(f.from>f.to)notes.push('日期区间无效');
+  if(dates.length<days)notes.push(`已存回答覆盖 ${dates.length}/${days} 天`);
+  if(unknown)notes.push(`当前 ${num(unknown)} 条口碑未知`);
+  if(n-known)notes.push(`当前 ${num(n-known)} 条正式来源字段缺失`);
+  if(excluded)notes.push(`当前 ${num(excluded)} 条质量异常已排除`);
+  notes.push('采样覆盖率缺少计划量');
+  $("home-status").textContent='数据提醒：'+notes.slice(0,3).join('；')+(notes.length>3?`；另 ${notes.length-3} 项`:'')+'。';
+  $("status-details").insertAdjacentHTML('afterbegin',table(['范围','状态','影响与核查'],[
+    ['当前本地预览',`${num(n)} 条 · ${dates.length}/${days} 天有已存回答`,`${f.from}—${f.to}；实际日期 ${dates.join('、')||'暂无'}。缺失日期未重新取数，不按0表现处理。`],
+    ['原成功批次',originalBatch.begin_date+'—'+originalBatch.end_date,'最后成功取数 '+fmtDate(originalBatch.fetched_at_utc)+'（北京时间）；沿用原质量与题号匹配结果。'],
+    ['另一次刷新请求',`${PV.failed_attempt.window.join('—')} · ${num(PV.failed_attempt.conflicts)} 条题号冲突`,PV.failed_attempt.time+' 停止；未并入本地预览。回飞书题库与 Answerbit 用户提问核对。'],
+    ['平台快照','原批次未采集',PV.platform_snapshot],
+    ['逐品牌统一负面核验','未具备独立核验数据','本地版显示现行口径；未生成统一新口径的百分比。'],
+    ['历史周期对比',`本期 ${f.from}—${f.to}；上期 ${previousPeriod(f)?.join('—')||'日期无效'}`,`候选来源：${PV.previous_candidate.source_label}。范围对照与历史周期变化分别处理。`]
+  ]));
+  $("status-details").insertAdjacentHTML('afterbegin',table(['国家','上周期比较','未通过的具体条件'],currentPeriodResults.map(r=>[
+    esc(marketName(r.market)),r.status==='comparable'?periodDeltaMarkup(r):'不比较',esc(r.reasons.join('；')||'两期同条件，按提及率差计算')
+  ])));
+  const history=PV.previous_candidate;
+  $("status-details").insertAdjacentHTML('afterbegin',table(['周期比较依据','本期来源','上期历史候选'],[
+    ['分析窗口',esc(f.from+'—'+f.to),esc(previousPeriod(f)?.join('—')||'日期无效')],
+    ['题库校验值',esc(originalBatch.question_version.slice(0,12)),esc(history.batch.question_version.slice(0,12))],
+    ['指标口径',esc(originalBatch.metric_version),esc(history.batch.metric_version)],
+    ['分析口径',esc(D.analysis_version),esc(history.analysis_version)]
+  ]));
+  $("quality").insertAdjacentHTML('afterbegin',table(['本地展示','数据来源'],[
+    ['窗口',batch.begin_date+'—'+batch.end_date],['实际有回答日期',dates.join('、')||'暂无'],
+    ['原批次返回',num(originalBatch.returned_records)+' 条（全批）'],['当前筛选',num(n)+' 条有效回答']
+  ]));
+  const coverage=$("answer-quality").querySelector('.definition');if(coverage)coverage.textContent=coverage.textContent.replace('全批检查','原成功批次检查');
+  if(activePage==='trends')renderDailyTrend();
+  renderAnswerRecord();
+  $("failure").hidden=true;
+};
+showPage(false,location.hash.slice(1));
+</script></body>
+</html>
